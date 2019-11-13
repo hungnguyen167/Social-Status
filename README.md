@@ -72,3 +72,30 @@ Previous empirical studies:
 Coughlin 1979, 1980
 Svallfors 1993
 Matheson 1993
+
+# Critique (from Hung's notes plus comments from Lisa)
+
+-	Limited to one point in time.
+-	Southern European economies/societies are entirely left out of the picture. 
+-	Low R2 statistics in many models have not been discussed.
+-	The author used the module on Social Inequality (1992). These questions, however, can be found in many other modules. 
+-	Sampling and non-responses have been considered (we should do the same).
+-	Austria case: 1987 ISSP survey instead
+-	Note the way he coded class categorizations (Appendix 2). 1 = “Service I” (higher-level controllers and administrators), 2 = “Service II” (lower-level controllers and administrators), 3 = “Routine non-manual”, 4 = “Skilled manual”, 5 = “Non-skilled manual”, 6 = “Self-employed”. This class schema was built by Goldthorpe et al.
+-	 Legitimate income differences used in multivariate regression analyses: ratio of the three top and the three bottom occupations in every country.
+-	Multivariate analysis with country variables as dummy variables (not multilevel). 
+# Research Plan
+### Ideas
+-	More waves, more modules, more issues. We can try to find similar questions across the modules regarding welfare state issues. Besides redistribution and income differences, we can also add other issues, such as old-age care, pensions, unemployment benefits. We can also consider cross-issue variables, such as unemployment benefits x old-age care. This is particularly interesting in Southern European economies (if I remember correctly), where welfare provisions/transfers for the young unemployed are low and the retired are high.  
+-	Concerning more issues, Svallfors himself makes some interesting suggestions. Namely to differentiate between attitudes on: general and specific questions of social policy, selective and universal social programs, and questions of security and equality … maybe there are respective questions in the ISSP in the meantime?
+-	Similar to what Svallfors suggests in his conclusion we could try to include a dynamic perspective (see how these specific attitudes have developed over time) 
+-	We should avoid getting trapped in the “typology” debate but instead focus on the functionality of our models. I believe every group of issues will be prevalent in a particular group of countries. 
+-	There are more cleavage structures to be considered, for instance, age conflict.  
+-	This type of research is also linked to the overall debate of institutionalism, especially in American sociology. 
+### Action
+#### 1. Replicate Svallfors original analysis of Y1 using 1992 ISSP data to see if we get the same results
+#### 2. Extend Svallfors' analysis to all available waves of ISSP data and see if the results hold or maybe change over time
+#### 3. Improve the analysis (Robustness checking maybe)
+- measurement model for the three combined questions
+- add countries (see above)
+- add variables (see above)
