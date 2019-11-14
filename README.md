@@ -6,7 +6,7 @@ A replication of the paper by Svallfors (1997)
 ### Research Question:
 How are attitudes to redistribution structured in various welfare state regimes?
 elements of analysis:
-#### 1.	Attitudes towards redistribution (depended variables):
+#### 1.	Attitudes towards redistribution (dependent variables):
 -	Y1: The overall support for state intervention and redistribution 
 -	Y2: The range of income differences that are considered legitimate (Nate thinks we should drop this from our replication as Evans and Kelley have analyzed these questions extensively and they mostly reflect the actual distribution of pay in a society, and are not really about the classic social policy - more about distribution rather than redistribution)
 #### 2.	The impact of various structural cleavages on patterns of attitudes (independent variables): 
@@ -60,7 +60,7 @@ X4: position in labor market (Insider/outsider)
 -	Housewife, students
 (Each as dummy) 
 Stages of Analysis:
-1.	Descriptive statistics of depended Variables 
+1.	Descriptive statistics of dependent Variables 
 a.	Aggregated on country level (table 1, 3)  compared  
 b.	Additive Index building for Y1 and Y2 (table 2, 3)
 c.	Aggregated on country level, disaggregated by independent variables (group means)  compared … only in annex (A2)
