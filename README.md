@@ -16,6 +16,7 @@ elements of analysis:
 -	(X4: position in labor market)
 
 #### Hypotheses/Assumptions
+- Germany/Austria
 Assumption: insider/outsider cleavage most dominant (and gender (Taylor-Gooby 1991))
 -	USA/Canada (liberal regime)
 Assumption: class cleavage most dominant
