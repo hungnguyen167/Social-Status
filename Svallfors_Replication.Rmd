@@ -3,32 +3,76 @@ title: "R Notebook"
 output: html_notebook
 
 ---
-This is a replication of Svallfors (1997) 
+**This is a replication of Svallfors (1997)** 
+
+**Research Question:** How are attitudes to redistribution structured in various welfare state regimes?
+**Data:** ISSP, wave of 1992, module on Social Inequality 
 
 ```{r}
+library(dplyr)
 library(pacman)
-pacman::p_load("tidyverse","knitr","haven")
+pacman::p_load("tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr")
 a <- "S:/Für meine Gruppen/Public Opinion and Social Policy/Hung's/OpPol/Data/ISSP/Social Inequality/"
 
 ```
 
-This is where we import our data
+This is where we import the data
 
 ```{r}
 socIn92 <- read_dta(paste(a,"ZA2310.dta",sep=""))
 
 ```
 
-Y1: Attitudes on Redistribution
+Here we rebuild the **dependent variable "government index" (Y)**, defined as attitudes towards the overall support for state intervention and redistribution. It is later used for multivariate analysis. 
 
-- It is the responsibility of the government to reduce the differences between people with high incomes and those with low incomes? --> v57
-- The government should provide a job for everyone who wants one? --> v59
-- The government should provide everyone with a guaranteed basic income? --> v62
+3 questions/variables from the survey are used for its construction: 
+
+1. It is the responsibility of the government to reduce the differences between people with high incomes and those with low incomes? --> v57
+
+2. The government should provide a job for everyone who wants one? --> v59
+
+3. The government should provide everyone with a guaranteed basic income? --> v62
+
+*“For this purpose, an additive index was constructed from the three items, dividing between 'strongly agree' and 'agree' (2); 'neither agree nor disagree' (1); and ‘disagree' and 'strongly disagree' (0). These items were summed, creating an index which may vary between 0 and 6, where 0 means disagreeing with all three propositions and thereby endorsing a clear-cut anti-interventionist stand and 6 means a strong interventionist standpoint“* (Svallfors 1997: 289). 
 
 ```{r}
-socIn92recode<-socIn92 %>%
-  mutate(
-    r1=recode(v57,´1`=2)
+
+socIn92recode <- socIn92 %>%  
+  dplyr::mutate(
+    r1= car::recode(socIn92$v57,recodes = '1:2=2; 3=1; 4:5=0'),
+    r2= car::recode(socIn92$v59,recodes = '1:2=2; 3=1; 4:5=0'),
+    r3= car::recode(socIn92$v59,recodes = '1:2=2; 3=1; 4:5=0'),
+    govIndex = r1+ r2+ r3,
+    r1p= car::recode(socIn92$v57,recodes = '1:2=100; 3:5=0'),
+    r2p= car::recode(socIn92$v59,recodes = '1:2=100; 3:5=0'),
+    r3p= car::recode(socIn92$v59,recodes = '1:2=100; 3:5=0')
+  )%>%
+  
+   dplyr::filter(
+    v3 %in% c(2,5,17,6,1,16,9,10)
   )
+
+socIn92recode<-socIn92recode[complete.cases(socIn92recode$r1p),]
+socIn92recode<-socIn92recode[complete.cases(socIn92recode$r2p),]
+socIn92recode<-socIn92recode[complete.cases(socIn92recode$r3p),]
+
+govinc<-tapply(socIn92recode$r1p,socIn92recode$v3,mean)
+govjobs<-tapply(socIn92recode$r2p,socIn92recode$v3,mean)
+govbas<-tapply(socIn92recode$r3p,socIn92recode$v3,mean)
+
+table1<-as.data.frame(rbind(govinc,govjobs,govbas))
+table1<-table1[,c(6,5,2,4,1,7,8,3)] #we sort the columns of the table
+
+cnt<-c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA")
+item.table1<-c("It is the responsibility of the government to reduce the differences between people with high incomes and those with low incomes?","The government should provide a job for everyone who wants one?","The government should provide everyone with a guaranteed basic income?")
+
+row.names(table1)<-item.table1
+knitr::kable(table1,format="html", digits = round(1),col.names = cnt, caption = "Table 1. Attitudes to redistribution in eight nations.")
+
 ```
+
+```
+
+
+
 
