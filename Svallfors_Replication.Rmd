@@ -1,12 +1,16 @@
 ---
 title: "R Notebook"
-output: html_notebook
-
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 **This is a replication of Svallfors (1997)** 
 
 **Research Question:** How are attitudes to redistribution structured in various welfare state regimes?
+
 **Data:** ISSP, wave of 1992, module on Social Inequality 
+
+**Country Cases:** Swe, Nor, Ger, Aut, Aus, Nz, Can, USA
 
 ```{r}
 library(dplyr)
@@ -16,6 +20,7 @@ a <- "S:/Für meine Gruppen/Public Opinion and Social Policy/Hung's/OpPol/Data/I
 
 ```
 
+
 This is where we import the data
 
 ```{r}
@@ -23,9 +28,9 @@ socIn92 <- read_dta(paste(a,"ZA2310.dta",sep=""))
 
 ```
 
-Here we rebuild the **dependent variable "government index" (Y)**, defined as attitudes towards the overall support for state intervention and redistribution. It is later used for multivariate analysis. 
+In the following we replicate the operationalization of the independent variable of this study: attitudes to redistribution. 
 
-3 questions/variables from the survey are used for its construction: 
+3 questions/variables from the survey are used: 
 
 1. It is the responsibility of the government to reduce the differences between people with high incomes and those with low incomes? --> v57
 
@@ -33,44 +38,90 @@ Here we rebuild the **dependent variable "government index" (Y)**, defined as at
 
 3. The government should provide everyone with a guaranteed basic income? --> v62
 
+Furthermore, we reconstruct the variable "government index" as follows: 
+
 *“For this purpose, an additive index was constructed from the three items, dividing between 'strongly agree' and 'agree' (2); 'neither agree nor disagree' (1); and ‘disagree' and 'strongly disagree' (0). These items were summed, creating an index which may vary between 0 and 6, where 0 means disagreeing with all three propositions and thereby endorsing a clear-cut anti-interventionist stand and 6 means a strong interventionist standpoint“* (Svallfors 1997: 289). 
 
+Having created/recoded theses 4 variables, we replicate table 1 and table 2 of his study.
+
+This is how we proceed in detail: 
 ```{r}
+#First we copy the dataset (first line). Now we have the original version (SocIn92) and a copied version with which we can work (SocIn92recode). In the latter we create new variables (dplyr:mutate) by recoding (car::recode) the above mentioned variables following Svallfors . 
 
 socIn92recode <- socIn92 %>%  
   dplyr::mutate(
     r1= car::recode(socIn92$v57,recodes = '1:2=2; 3=1; 4:5=0'),
     r2= car::recode(socIn92$v59,recodes = '1:2=2; 3=1; 4:5=0'),
     r3= car::recode(socIn92$v59,recodes = '1:2=2; 3=1; 4:5=0'),
-    govIndex = r1+ r2+ r3,
-    r1p= car::recode(socIn92$v57,recodes = '1:2=100; 3:5=0'),
+      
+#Here we create Svallfors additive index "govermental index". Cases with at least one                               NA value are automatically excluded. 
+
+     govIndex = r1+ r2+ r3,   
+ 
+#to measure the percentage of people agreeing (answer category 1 and 2). Needed for table 1.     
+ 
+    r1p= car::recode(socIn92$v57,recodes = '1:2=100; 3:5=0'), 
     r2p= car::recode(socIn92$v59,recodes = '1:2=100; 3:5=0'),
     r3p= car::recode(socIn92$v59,recodes = '1:2=100; 3:5=0')
   )%>%
   
+#Now we reduce our dataset to the countries Svallfors includes in his analysis (dyplr:filter).
+  
    dplyr::filter(
-    v3 %in% c(2,5,17,6,1,16,9,10)
-  )
+     v3 %in% c(2,5,17,6,1,16,9,10)  
+     )
+
+ #We remove all cases with NA values in the variables (complete.cases)
 
 socIn92recode<-socIn92recode[complete.cases(socIn92recode$r1p),]
 socIn92recode<-socIn92recode[complete.cases(socIn92recode$r2p),]
 socIn92recode<-socIn92recode[complete.cases(socIn92recode$r3p),]
 
-govinc<-tapply(socIn92recode$r1p,socIn92recode$v3,mean)
+#Now that we have prepared our variables, we start constructing **table 1: Attitudes to redistribution in eight nations**:
+
+#First, we creat vectors with the country means of our variables r1p, r2p, r3p (tapply).
+
+govinc<-tapply(socIn92recode$r1p,socIn92recode$v3,mean) 
 govjobs<-tapply(socIn92recode$r2p,socIn92recode$v3,mean)
 govbas<-tapply(socIn92recode$r3p,socIn92recode$v3,mean)
 
-table1<-as.data.frame(rbind(govinc,govjobs,govbas))
-table1<-table1[,c(6,5,2,4,1,7,8,3)] #we sort the columns of the table
+#We make a table in form of a dataframe with the just created vectors (rbind) and sort the columns of the table following Svallfors.
 
-cnt<-c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA")
+table1<-as.data.frame(rbind(govinc,govjobs,govbas))
+table1<-table1[,c(6,5,2,4,1,7,8,3)]   
+
+# We creat a vector with the country names in the same order (->cnt) and a vector with the questions belonging to the variables (-> item.table1). The first is used as column names, the latter as row names. 
+
+cnt<-c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA") 
 item.table1<-c("It is the responsibility of the government to reduce the differences between people with high incomes and those with low incomes?","The government should provide a job for everyone who wants one?","The government should provide everyone with a guaranteed basic income?")
 
 row.names(table1)<-item.table1
-knitr::kable(table1,format="html", digits = round(1),col.names = cnt, caption = "Table 1. Attitudes to redistribution in eight nations.")
+
+#Finally, we creat a HTML table (knitr:kable).
+
+knitr::kable(table1,format="html", digits = round(1),col.names = cnt, caption = "Table 1. Attitudes to redistribution in eight nations. Percentage agreeing with certain propositions")
 
 ```
 
+
+
+```{r}
+
+#Here we replicate **tabel 2: Index distribution**  in the same way we constructed table 1. 
+
+govIndexmean<-tapply(socIn92recode$govIndex,socIn92recode$v3,mean)
+govIndexsd<-tapply(socIn92recode$govIndex,socIn92recode$v3,sd)
+
+table2<-as.data.frame(rbind(govIndexmean,govIndexsd))
+table2<-table2[,c(6,5,2,4,1,7,8,3)]
+
+item.table2<-c("Mean","Standard Deviation")
+row.names(table2)<- item.table2
+colnames(table2)<- cnt #make the same way for table 1! table -as r object- is already more complete this way :)
+
+#cronbach's alpha is still missing here 
+
+knitr::kable(table2,format="html", digits = round(2), caption = "Table 2. Government Index. Distributions")
 ```
 
 
