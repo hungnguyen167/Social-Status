@@ -15,7 +15,8 @@ output:
 ```{r}
 library(dplyr)
 library(pacman)
-pacman::p_load("tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr")
+library(ltm)
+pacman::p_load("tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr","ltm")
 a <- "S:/Für meine Gruppen/Public Opinion and Social Policy/Hung's/OpPol/Data/ISSP/Social Inequality/"
 
 ```
@@ -52,7 +53,7 @@ socIn92recode <- socIn92 %>%
   dplyr::mutate(
     r1= car::recode(socIn92$v57,recodes = '1:2=2; 3=1; 4:5=0'),
     r2= car::recode(socIn92$v59,recodes = '1:2=2; 3=1; 4:5=0'),
-    r3= car::recode(socIn92$v59,recodes = '1:2=2; 3=1; 4:5=0'),
+    r3= car::recode(socIn92$v62,recodes = '1:2=2; 3=1; 4:5=0'),
       
 #Here we create Svallfors additive index "govermental index". Cases with at least one                               NA value are automatically excluded. 
 
@@ -62,7 +63,7 @@ socIn92recode <- socIn92 %>%
  
     r1p= car::recode(socIn92$v57,recodes = '1:2=100; 3:5=0'), 
     r2p= car::recode(socIn92$v59,recodes = '1:2=100; 3:5=0'),
-    r3p= car::recode(socIn92$v59,recodes = '1:2=100; 3:5=0')
+    r3p= car::recode(socIn92$v62,recodes = '1:2=100; 3:5=0')
   )%>%
   
 #Now we reduce our dataset to the countries Svallfors includes in his analysis (dyplr:filter).
@@ -96,10 +97,10 @@ cnt<-c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA")
 item.table1<-c("It is the responsibility of the government to reduce the differences between people with high incomes and those with low incomes?","The government should provide a job for everyone who wants one?","The government should provide everyone with a guaranteed basic income?")
 
 row.names(table1)<-item.table1
-
+colnames(table1) = cnt
 #Finally, we creat a HTML table (knitr:kable).
 
-knitr::kable(table1,format="html", digits = round(1),col.names = cnt, caption = "Table 1. Attitudes to redistribution in eight nations. Percentage agreeing with certain propositions")
+knitr::kable(table1,format="html", digits = round(1), caption = "Table 1. Attitudes to redistribution in eight nations. Percentage agreeing with certain propositions")
 
 ```
 
@@ -109,21 +110,44 @@ knitr::kable(table1,format="html", digits = round(1),col.names = cnt, caption = 
 
 #Here we replicate **tabel 2: Index distribution**  in the same way we constructed table 1. 
 
+#mean and standard deviation 
 govIndexmean<-tapply(socIn92recode$govIndex,socIn92recode$v3,mean)
 govIndexsd<-tapply(socIn92recode$govIndex,socIn92recode$v3,sd)
 
-table2<-as.data.frame(rbind(govIndexmean,govIndexsd))
+#cronbach's alpha by country (here for the recoded variable r1,r2,r3 = 394:396!)
+a <- list(1,2,5,6,9,10,16,17)
+cronalpha <- round(unlist(as.data.frame(sapply(a, function(x) {
+  c <-socIn92recode[which(socIn92recode$v3 == x),c(394:396)]
+  cronbach.alpha(c)
+}))[1,]),2)
+table2[3,] <- cronalpha
+
+table2<-as.data.frame(rbind(govIndexmean,govIndexsd,cronalpha))
 table2<-table2[,c(6,5,2,4,1,7,8,3)]
 
-item.table2<-c("Mean","Standard Deviation")
+item.table2<-c("Mean","Standard Deviation", "Cronbach's alpha")
 row.names(table2)<- item.table2
-colnames(table2)<- cnt #make the same way for table 1! table -as r object- is already more complete this way :)
+colnames(table2)<- cnt 
 
-#cronbach's alpha is still missing here 
 
 knitr::kable(table2,format="html", digits = round(2), caption = "Table 2. Government Index. Distributions")
+
+
+
 ```
 
 
+```{r}
+#Now we want to compare our results with the results of Svallfors 
+
+#Here we create a copy of table 1 with the original values of Svallfors
+
+table1Sval<-data.frame(matrix(c(53.7,74.1,45.5,60.0,78.3,78.4,65.5,66.3, 58.1,69.5,72.1,51.2, 42.6, 39.4, 50.9, 53.1, 49.1, 60.5, 47.9, 40.1, 48.6, 38.3, 47.1, 34.2),nrow = 3,ncol = 8))
+row.names(table1Sval)<-item.table1
+colnames(table1Sval) = cnt
+
+#Here we show the deviations of our replicated table (table1) and the original table (table1Sval).
+table1diff <- round(table1 - table1Sval,1)
+```
 
 
