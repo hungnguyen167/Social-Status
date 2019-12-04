@@ -112,6 +112,8 @@ table1.2 <- round(as.data.frame(sapply(list(10,9,2,6,1,16,17,5), function(x) {
   )})),2)
 colnames(table1.2) <- c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA")
 
+#Compare with Svallfors'. Disappointing results though :(
+table1diff2 <- round(table1.2 - table1Sval,2)
 
 
 ```
@@ -159,7 +161,7 @@ row.names(table1Sval)<-item.table1
 colnames(table1Sval) = cnt
 
 #Here we show the deviations of our replicated table (table1) and the original table (table1Sval).
-table1diff <- round(table1 - table1Sval,1)
+table1diff <- round(table1 - table1Sval,2)
 ```
 
 
