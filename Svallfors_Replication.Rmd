@@ -25,7 +25,7 @@ wd <- "S:/Shared with groups/Public Opinion and Social Policy/Hung's/OpPol/Data/
 This is where we import the data
 
 ```{r}
-socIn92 <- read_dta(paste(a,"ZA2310.dta",sep=""))
+socIn92 <- read_dta(paste(wd,"ZA2310.dta",sep=""))
 
 ```
 
