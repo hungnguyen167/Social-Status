@@ -231,5 +231,10 @@ table1.3 <- round(as.data.frame(sapply(list(10,9,2,6,1,16,17,5), function(x) {
   tapply(d$govIndex,d$egp6, mean)
   })),2)
 colnames(table1.3) <- c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA")
+
+#Check the EGP values of Sweden
+unique(newdata[which(newdata$v3 == 10),]$ISCO88)
+
+
 ```
 
