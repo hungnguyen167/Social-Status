@@ -120,6 +120,9 @@ knitr::kable(table1,format="html", digits = round(1), caption = "Table 1. Attitu
 
 
 ```
+
+
+
 ```{r}
 #Lisa's way for table 1 with weights 
 
@@ -143,6 +146,10 @@ colnames(table1_w) = cnt
 knitr::kable(table1_w,format="html", digits = round(1), caption = "Table 1 (with weights). Attitudes to redistribution in eight nations. Percentage agreeing with certain propositions")
 ```
 
+
+
+
+
 ```{r}
 #Hung's way for table 1 with weights
 table1.2 <- round(as.data.frame(sapply(list(10,9,2,6,1,16,17,5), function(x) {
@@ -152,6 +159,10 @@ table1.2 <- round(as.data.frame(sapply(list(10,9,2,6,1,16,17,5), function(x) {
 colnames(table1.2) <- c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA")
 
 ```
+
+
+
+
 
 
 ```{r}
@@ -210,15 +221,24 @@ table1diff_w <- round(table1_w - table1Sval,1)
 
 socIncum <- read_dta(paste(wd, "ZA5890_v1-0-0.dta", sep = ""))
 socIn92new <- socIncum[which(socIncum$V5 %in% c(752, 578, 276, 40, 36, 554, 124, 840) & socIncum$V4 == 1992),]
-socIn92new <- socIn92new[,c("V3","ISCO88")]
+socIn92new <- socIn92new[,c("V3","ISCO88","V5")]
+
 
 socIn92new <- dplyr::rename(socIn92new, v2 = V3)
+socIn92recode$V5 <- car::recode(socIn92recode$v3, recodes = '10 = 752; 1 = 36; 2 = 276; 9 = 578; 6 = 40; 16 = 554; 17 = 124; 5= 840')
+
 
 newdata <- as.data.frame(left_join(socIn92recode, socIn92new, by = "v2"))
 
-newdata$v110 <- car::recode(newdata$v110, recodes = '2=0')
+newdata$self <- car::recode(newdata$v110, recodes = '2=0')
 
-newdata$egp <- occupar::isco88toEGP(newdata$ISCO88, self.employed = newdata$v110, n.employees = newdata$v108)
+#newdata[which(newdata$v3 == 10),]$v108 <- car::recode(newdata[which(newdata$v3 == 10),]$v108, recodes = 'NA = 0')
+
+newdata$sup <- ifelse(newdata$v3 == 10, 0, newdata$v108)
+
+
+
+newdata$egp <- occupar::isco88toEGP(newdata$ISCO88, self.employed = newdata$self,n.employees = newdata$sup)
 
 newdata <- newdata %>%
   mutate(
@@ -233,7 +253,7 @@ table1.3 <- round(as.data.frame(sapply(list(10,9,2,6,1,16,17,5), function(x) {
 colnames(table1.3) <- c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA")
 
 #Check the EGP values of Sweden
-unique(newdata[which(newdata$v3 == 10),]$ISCO88)
+summary(newdata[which(newdata$v3 == 10),]$ISCO88)
 
 
 ```
