@@ -584,10 +584,18 @@ m1aus<- lm(govIndex~female+factor(unskilled)+factor(empl),data = newdata, subset
 m1usa<- lm(govIndex~female+factor(unskilled)+factor(empl),data = newdata, subset = (v3 %in% c(5)))
 
 
-table4<- stargazer(m1nor, m1ger, m1aus, m1usa, title= "Table 4",type = "text", apply.se = function(x) {0}, single.row = TRUE)
+table4<- stargazer(m1nor, m1ger, m1aus, m1usa, title= "Table 4",type = "text", single.row = TRUE, report = "vc*", star.cutoffs = c(0.05,0.01,0.001), covariate.labels = c("Female", "Skilled", "Routine non-manual", "Service class II", "Service class I", "Self-employed", "Unemployed", "Retired", "Others not in labor force"), column.labels = c("Norway", "Germany", "Australia", "USA"))
 
 #to make it a file
 
 table4 %>% paste(., collapse="\n") %>% cat("\n")
+
+newdata2<- subset(newdata,v3==5)
+
+gmean<-tapply(newdata2$govIndex,newdata2$egp,mean)
+gsd<-tapply(newdata2$govIndex,newdata2$egp,sd)
+tableA2<-as.data.frame(rbind(gmean,gsd))
+
+knitr::kable(tableA2,format="html", digits = round(2), caption = "Table A2")
 ```
 
