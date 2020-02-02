@@ -19,11 +19,9 @@ rm(list = ls())
 
 ```{r setup,include=FALSE}
 
-library(dplyr)
 library(pacman)
-library(ltm)
 
-pacman::p_load("tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr","ltm","questionr","survey","remotes","stargazer")
+pacman::p_load("dplyr","tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr","ltm","questionr","survey","remotes","stargazer","lavaan","ltm")
 
 #remotes::install_github("DiogoFerrari/occupar")
 library(occupar)
@@ -31,7 +29,7 @@ library(occupar)
 
 wd <- "S:/Für meine Gruppen/Public Opinion and Social Policy/Hung's/OpPol/Data/ISSP/Social Inequality/"
 
-#wd <- "C:/data/"
+wd <- "C:/data/"
 
 ```
 
@@ -156,7 +154,7 @@ colnames(table1.2) <- c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA")
 ```
 
 
-```{r, echo=T}
+```{r measurement1, echo=T}
 
 #Here we replicate **tabel 2: Index distribution**  in the same way we constructed table 1. 
 
@@ -182,6 +180,62 @@ colnames(table2)<- cnt
 
 knitr::kable(table2,format="html", digits = round(2), caption = "Table 2. Government Index. Distributions")
 
+
+
+
+```
+
+
+
+```{r measurement2, echo = T}
+# Remove missings to use ML estimator
+
+socIn92M <- as.data.frame(dplyr::select(socIn92, v57, v59, v62, v3))
+socIn92M <- na.omit(socIn92M)
+socIn92recodeM <- dplyr::select(socIn92recode, r1p, r2p, r3p, v3)
+socIn92recodeM <- as.data.frame(na.omit(socIn92recodeM))
+
+# Also remove attributes or some lavaan functions do not work
+socIn92M[] = c(socIn92M, recursive=TRUE)
+socIn92recodeM[] = c(socIn92recodeM, recursive=TRUE)
+# Test Svallfors
+m_sval <- 'att_sval =~ r1p + r2p + r3p' #need to fix all parameters to 1
+m_sval1 <- 'att_sval1 =~ 1*r1p + 1*r2p + 1*r3p'
+m_norm <- 'att_norm =~ v57 + v59 + v62'
+
+fit_sval <- cfa(m_sval, data = socIn92recodeM)
+fit_sval1 <- cfa(m_sval1, data = socIn92recodeM)
+fit_norm <- cfa(m_norm, data = socIn92M)
+
+summary(fit_sval, fit.measures=TRUE)
+inspect(fit_sval,what="std")$lambda
+#This command merges the predicted factor scores into the original data
+fs_sval <- lavPredict(fit_sval)
+idx <- lavInspect(fit_sval, "case.idx")
+for (fs in colnames(fs_sval)) {
+  socIn92recodeM[idx, fs] <- fs_sval[ , fs]
+}
+
+
+summary(fit_sval1, fit.measures=TRUE)
+inspect(fit_sval1,what="std")$lambda
+fs_sval1 <- lavPredict(fit_sval1)
+idx <- lavInspect(fit_sval1, "case.idx")
+for (fs in colnames(fs_sval1)) {
+  socIn92recodeM[idx, fs] <- fs_sval1[ , fs]
+}
+# Need to compare predicted fs to see if it is identical to Svallfors' additive scale
+
+
+summary(fit_norm, fit.measures=TRUE)
+inspect(fit_norm,what="std")$lambda
+fs_norm <- lavPredict(fit_norm)
+idx <- lavInspect(fit_norm, "case.idx")
+for (fs in colnames(fs_norm)) {
+  socIn92M[idx, fs] <- fs_norm[ , fs]
+}
+
+# Run SEMs to test if the items predict the various factors (i.e., predict the distributions); then compare fit
 
 
 ```
@@ -547,8 +601,8 @@ newdata$isco88se <- car::recode(newdata$s106, recodes = "
                                  961 = 3475; 
                                  971 = 5143; 
                                  979 = 5149; 
-                                 981 = 110; 
-                                 989 = 110")
+  981 = 110; 
+  989 = 110")
 
 #now merge the imputed SE ISCO 
 newdata$ISCO88 <- ifelse(newdata$v3==10,newdata$isco88se,newdata$ISCO88)
