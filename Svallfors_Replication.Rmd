@@ -1,47 +1,14 @@
 ---
-title: "R Notebook"
+title: "Attitudes toward Redistribution Thirty Years After: Theoretical and Empirical Reflections on Svallfors’ (1997) Findings"
 output:
   pdf_document: default
   html_notebook: default
 ---
-**This is a replication of Svallfors (1997)** 
+### Description
 
-**Research Question:** How are attitudes to redistribution structured in various welfare state regimes?
+In the following we replicate the operationalization of the independent variable of Svallfors (1997) regarding attitudes to redistribution. 
 
-**Data:** ISSP, wave of 1992, module on Social Inequality 
-
-**Country Cases:** Swe, Nor, Ger, Aut, Aus, Nz, Can, USA
-
-```{r}
-rm(list = ls())
-```
-
-
-```{r setup,include=FALSE}
-
-library(pacman)
-
-pacman::p_load("dplyr","tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr","ltm","questionr","survey","remotes","stargazer","lavaan","ltm")
-
-#remotes::install_github("DiogoFerrari/occupar")
-library(occupar)
-
-
-wd <- "S:/Für meine Gruppen/Public Opinion and Social Policy/Hung's/OpPol/Data/ISSP/Social Inequality/"
-
-wd <- "C:/data/"
-
-```
-
-
-This is where we import the data
-
-```{r readdata, include=FALSE}
-socIn92 <- read_dta(paste(wd,"ZA2310.dta",sep=""))
-
-```
-
-In the following we replicate the operationalization of the independent variable of this study: attitudes to redistribution. 
+We use the ISSP 1992 'Social Inequality' data provided by GESIS. File (https://www.gesis.org/issp/modules/issp-modules-by-topic/social-inequality/1992 "ZA.2310.dta").
 
 3 questions/variables from the survey are used: 
 
@@ -57,55 +24,92 @@ Furthermore, we reconstruct the variable "government index" as follows:
 
 Having created and recoded theses 4 variables, we replicate table 1 and table 2 of his study.
 
-This is how we proceed in detail: 
-```{r, echo = T}
-#First we copy the dataset (first line). Now we have the original version (SocIn92) and a copied version with which we can work (SocIn92recode). In the latter we create new variables (dplyr:mutate) by recoding (car::recode) the above mentioned variables following Svallfors . 
+**Savllfors Original Country Cases:** Swe, Nor, Ger, Aut, Aus, Nz, Can, USA
 
+```{r, include = F}
+rm(list = ls())
+```
+
+
+```{r setup, include=FALSE}
+
+library(pacman)
+
+pacman::p_load("dplyr","tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr","ltm","questionr","survey","remotes","stargazer","lavaan","ltm", "tidylog")
+
+#remotes::install_github("DiogoFerrari/occupar")
+library(occupar)
+
+
+#wd <- "S:/Für meine Gruppen/Public Opinion and Social Policy/Hung's/OpPol/Data/ISSP/Social Inequality/"
+
+wd <- "C:/data/"
+
+```
+
+
+This is where we import the data
+
+```{r readdata, include=FALSE}
+socIn92 <- read_dta(paste(wd,"ZA2310.dta",sep=""))
+
+```
+
+
+### Dataset prep
+
+First we copy the dataset (first line). Now we have the original version (SocIn92) and a copied version with which we can work (SocIn92recode). In the latter we create new variables (dplyr:mutate) by recoding (car::recode) the above mentioned variables following Svallfors .
+
+```{r, echo = T}
 socIn92recode <- socIn92 %>%  
   dplyr::mutate(
     r1= car::recode(socIn92$v57,recodes = '1:2=2; 3=1; 4:5=0'),
     r2= car::recode(socIn92$v59,recodes = '1:2=2; 3=1; 4:5=0'),
     r3= car::recode(socIn92$v62,recodes = '1:2=2; 3=1; 4:5=0'),
       
-#Here we create Svallfors additive index "govermental index". Cases with at least one                               NA value are automatically excluded. 
+# Here we create Svallfors additive index "govermental index". Cases with at least one NA value are automatically excluded. 
 
      govIndex = r1+ r2+ r3,   
 
-#to measure the percentage of people agreeing (answer category 1 and 2). Needed for table 1.     
+# to measure the percentage of people agreeing (answer category 1 and 2). Needed for table 1.     
  
     r1p= car::recode(socIn92$v57,recodes = '1:2=100; 3:5=0'), 
     r2p= car::recode(socIn92$v59,recodes = '1:2=100; 3:5=0'),
     r3p= car::recode(socIn92$v62,recodes = '1:2=100; 3:5=0')
   )%>%
   
-#Now we reduce our dataset to the countries Svallfors includes in his analysis (dyplr:filter).
+# Now we reduce our dataset to the countries Svallfors includes in his analysis (dyplr:filter).
   
    dplyr::filter(
      v3 %in% c(2,5,17,6,1,16,9,10)  
      )
 
- #We remove all cases with NA values in the variables (complete.cases)
+ # We remove all cases with NA values in the variables (complete.cases)
 
 socIn92recode<-socIn92recode[complete.cases(socIn92recode$r1p),]
 socIn92recode<-socIn92recode[complete.cases(socIn92recode$r2p),]
 socIn92recode<-socIn92recode[complete.cases(socIn92recode$r3p),]
+```
 
-#Now that we have prepared our variables, we start constructing **table 1: Attitudes to redistribution in eight nations**:
+### Table 1
 
-#First, we creat vectors with the country means of our variables r1p, r2p, r3p (tapply).
+Now that we have prepared our variables, we start constructing **Table 1: Attitudes to redistribution in eight nations**:
+
+
+```{r Table1, echo = T}
+
+# First, we creat vectors with the country means of our variables r1p, r2p, r3p (tapply).
 
 govinc<-tapply(socIn92recode$r1p,socIn92recode$v3,mean) 
 govjobs<-tapply(socIn92recode$r2p,socIn92recode$v3,mean)
 govbas<-tapply(socIn92recode$r3p,socIn92recode$v3,mean)
 
-
-#We make a table in form of a dataframe with the just created vectors (rbind) and sort the columns of the table following Svallfors.
+# We make a table in form of a dataframe with the just created vectors (rbind) and sort the columns of the table following Svallfors.
 
 table1<-as.data.frame(rbind(govinc,govjobs,govbas))
 table1<-table1[,c(6,5,2,4,1,7,8,3)]   
 
-
-# We creat a vector with the country names in the same order (->cnt) and a vector with the questions belonging to the variables (-> item.table1). The first is used as column names, the latter as row names. 
+# We create a vector with the country names in the same order (->cnt) and a vector with the questions belonging to the variables (-> item.table1). The first is used as column names, the latter as row names. 
 
 cnt<-c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA") 
 item.table1<-c("It is the responsibility of the government to reduce the differences between people with high incomes and those with low incomes?","The government should provide a job for everyone who wants one?","The government should provide everyone with a guaranteed basic income?")
@@ -116,12 +120,13 @@ colnames(table1) = cnt
 
 knitr::kable(table1,format="html", digits = round(1), caption = "Table 1. Attitudes to redistribution in eight nations. Percentage agreeing with certain propositions")
 
-
-
-
 ```
+### Table 1. Weighted
+
+This table uses the dplyr::mutate function to obtain weighted means then tabulates.
+
 ```{r, echo = T}
-#Lisa's way for table 1 with weights 
+
 
 socIn92recode<-socIn92recode %>%
   group_by(v3)%>% 
@@ -142,6 +147,9 @@ colnames(table1_w) = cnt
 
 knitr::kable(table1_w,format="html", digits = round(1), caption = "Table 1 (with weights). Attitudes to redistribution in eight nations. Percentage agreeing with certain propositions")
 ```
+### Table 1. Weights, alternative method
+
+This version uses sapply with a function to generate weighted means.
 
 ```{r, echo = T}
 #Hung's way for table 1 with weights
@@ -153,10 +161,13 @@ colnames(table1.2) <- c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA")
 
 ```
 
+### Table 2
+
+Here we replicate **Tabel 2: Index distribution**  in the same way we constructed table 1. 
 
 ```{r measurement1, echo=T}
 
-#Here we replicate **tabel 2: Index distribution**  in the same way we constructed table 1. 
+
 
 #mean and standard deviation 
 govIndexmean<-tapply(socIn92recode$govIndex,socIn92recode$v3,mean)
@@ -180,14 +191,38 @@ colnames(table2)<- cnt
 
 knitr::kable(table2,format="html", digits = round(2), caption = "Table 2. Government Index. Distributions")
 
+```
+### Table A. Correlations
 
+Classic attitude theory suggests that agree/disagree (or 'Likert' type response questions) tend to be normally distributed around some mean. In fact, latent varaible measurment of attitudes also tends toward this assumption. Svallfors forces the three ISSP questions into somewhat dichotomous distributions by collapsing the two agree categories and the two disagree categories. 
 
+We turn this into an empirical question by comparing the Svallfors' distribution versus a more 'classical' attitudes distribution.
 
+For starters we look at the correlations between the attitude variables and a few criterion variables.
+
+```{r measurement2, echo = T, include = T}
+# Correlation commands are easier when the data.frame has only the variables of interest.
+
+socIn92cor <- as.data.frame(dplyr::select(socIn92recode, v57, v59, v62, r1p, r2p, r3p, v3, v99, v100, v102))
+
+# Make 'agree' = higher values
+car::recode(socIn92cor$v57,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
+car::recode(socIn92cor$v59,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
+car::recode(socIn92cor$v62,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
+
+socIn92cor <- drop_na(socIn92cor)
+
+cor <- cor(socIn92cor)
+# This keeps only one side of the diagonal
+cor[upper.tri(cor, diag=TRUE)] <- as.numeric("")
+
+options(knitr.kable.NA = '')
+knitr::kable(cor,format="html", digits = round(2), col.names = c("IncD_5","Jobs_5","BasicI_5","IncD_3","Jobs_3","BasicI_3","Country","Male","Age","Ed_Years"), caption = "Table A. Correlations of Original and Recoded ISSP Questions from Svallfors (1997)")
 ```
 
+# Now prep data for SEM, separate data.frames for each.
 
-
-```{r measurement2, echo = T}
+```{r measurement3, echo = F, include = T}
 # Remove missings to use ML estimator
 
 socIn92M <- as.data.frame(dplyr::select(socIn92, v57, v59, v62, v3))
@@ -198,10 +233,21 @@ socIn92recodeM <- as.data.frame(na.omit(socIn92recodeM))
 # Also remove attributes or some lavaan functions do not work
 socIn92M[] = c(socIn92M, recursive=TRUE)
 socIn92recodeM[] = c(socIn92recodeM, recursive=TRUE)
-# Test Svallfors
-m_sval <- 'att_sval =~ r1p + r2p + r3p' #need to fix all parameters to 1
-m_sval1 <- 'att_sval1 =~ 1*r1p + 1*r2p + 1*r3p'
+
+```
+
+```{r measurement4, echo = T}
+# This model performs a factor analysis using Svallfors' coding of the three items (3-categories). Agree / Neutral / Disagree.
+m_sval <- 'att_sval =~ r1p + r2p + r3p' 
+
+# This model reflects Savllfors' actual scaling with each item's factor loading fixed at 1. The 1 determines that each has equal weight in constructing the scale. Any additive index automatically assigns equal weight to every item in the scale.
+m_sval1 <- 'att_sval1 =~ 1*r1p + 1*r2p + 1*r3p' # 1* = fixed at 1
+
+# This model uses the original coding of the variables (5-categories). Strongly agree / Agree / Neutral / Disagree / Strongly disagree
 m_norm <- 'att_norm =~ v57 + v59 + v62'
+
+
+# The 'cfa' command is known as a "confirmatory factor analysis". This simply means that we assign the factor structure to the model, rather than having the model do an "exploratory factor analysis" where it tests different possible factor structures among the various combinations.
 
 fit_sval <- cfa(m_sval, data = socIn92recodeM)
 fit_sval1 <- cfa(m_sval1, data = socIn92recodeM)
@@ -209,6 +255,7 @@ fit_norm <- cfa(m_norm, data = socIn92M)
 
 summary(fit_sval, fit.measures=TRUE)
 inspect(fit_sval,what="std")$lambda
+
 #This command merges the predicted factor scores into the original data
 fs_sval <- lavPredict(fit_sval)
 idx <- lavInspect(fit_sval, "case.idx")
