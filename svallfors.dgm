@@ -1,0 +1,56 @@
+VERSION 1.1.0
+INPUT
+TITLE:
+ Your title goes here
+DATA:
+ FILE = "C:/data/svallfors.dat";
+VARIABLE:
+NAMES = row incd jobs basic incd3 jobs3 basic3 country male age edyrs;
+USEVARIABLES = incd jobs basic;
+ANALYSIS:
+MODEL = NOMEANSTRUCTURE;
+INFORMATION = EXPECTED;
+OUTPUT:
+STDYX;
+MODEL:
+scale BY incd jobs basic;
+INPUT_END
+2
+2
+0
+2
+ML
+1
+GENERAL
+0
+3
+1
+0
+incd jobs basic scale
+1
+-1 -1 -1 0
+0
+1
+scale
+incd jobs basic
+1 1 scale incd    1.000    0.000
+1 1 scale jobs    1.219    0.028
+1 1 scale basic    1.161    0.026
+4 1 incd    0.850    0.017
+4 1 jobs    0.577    0.019
+4 1 basic    0.742    0.019
+5 1 scale    0.566    0.021
+11 1 scale incd    0.632    0.009
+11 1 scale jobs    0.770    0.009
+11 1 scale basic    0.712    0.009
+14 1 incd    0.600    0.011
+14 1 jobs    0.407    0.013
+14 1 basic    0.493    0.012
+15 1 scale    1.000    0.000
+31 1 scale incd    0.752    0.014
+31 1 scale jobs    0.917    0.014
+31 1 scale basic    0.874    0.014
+34 1 incd    0.850    0.017
+34 1 jobs    0.577    0.019
+34 1 basic    0.742    0.019
+35 1 scale    1.000    0.000
