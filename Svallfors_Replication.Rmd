@@ -541,24 +541,19 @@ socIn92recodeM$fgovp <- predict(fitgovindex)
 socIn92recodeM$resid <- socIn92recodeM$fgovp - socIn92recodeM$att_sval1
 ```
 
-```{r resid}
-
-
-```
-
 ### Plotted Residuals of Svallfors' variables and the Fitted Factor
-```{r resid2}
+```{r resid2, include = T}
 # They do not follow a normal distribution
 
 hist(socIn92recodeM$resid, breaks = 20)
 ```
 
 ### The values of the fitted factor (quasi normally distributed, no?)
-```{r fittedindex}
+```{r fittedindex, include = T}
 hist(socIn92recodeM$fgovp, breaks = 20)
 ```
 
-```{r indivplots}
+```{r indivplots, include = T}
 socIn92recode$scale <- as.factor(round((socIn92recode$v57 + socIn92recode$v59 + socIn92recode$v62)/3, digits = 0))
 #create likert labels
 likert <- c("strongly disagree","disagree","neutral","agree","strongly agree")
@@ -573,21 +568,21 @@ ggplot(socIn92recode, aes(v57)) +
 ```
 
 
-```{r indivplots2}
+```{r indivplots2, include = T}
 ggplot(socIn92recode, aes(v59)) +
   geom_bar(fill = "black") + 
   scale_x_discrete("Original Response Choices (missing/don't know omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree")) + 
   ggtitle("Gov. Reduce Income Differences")
 ```
 
-```{r indivplots3}
+```{r indivplots3, include = T}
 ggplot(socIn92recode, aes(v62)) +
   geom_bar(fill = "black") + 
   scale_x_discrete("Original Response Choices (missing/don't know omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree")) + 
   ggtitle("Gov. Provide Basic Income")
 ```
 
-```{r scaleplot}
+```{r scaleplot, include = T}
 # If we assume an underlying latent with equal weight assigned to each variable, the distribution looks skewed normal
 ggplot(socIn92recode, aes(scale)) +
   geom_bar(fill = "black") + 
@@ -597,7 +592,7 @@ ggplot(socIn92recode, aes(scale)) +
 
 
 
-```{r}
+```{r xxx, include = T}
 # How well do Svallfors recoded measures predict gov index
 fitgovindex2 <- lm(att_sval1 ~ r1 + r2 + r3 ,data = socIn92recodeM)
 lm.beta(fitgovindex2)
