@@ -6,6 +6,7 @@ output:
     df_print: paged
   html_notebook: default
   pdf_document: default
+  toc: true
 ---
 
 $~$
@@ -41,6 +42,7 @@ We use the ISSP 1992 'Social Inequality' data provided by GESIS. File "[ZA.2310.
 **He used eight country cases:** 
 
 Swe, Nor, Ger, Aut, Aus, Nz, Can, USA
+Theese are in v3 coded as Swe=10,Nor=9,GermanyW=2,Aut=6,Aus=1,NZ=16,Can=17,US=5
 
 ```{r, include = F}
 rm(list = ls())
@@ -51,7 +53,7 @@ rm(list = ls())
 
 library(pacman)
 
-pacman::p_load("dplyr","tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr","ltm","questionr","survey","remotes","stargazer","lavaan","ltm", "tidylog", "kableExtra","lm.beta")
+pacman::p_load("dplyr","tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr","ltm","questionr","survey","remotes","stargazer","lavaan","ltm", "tidylog", "kableExtra","lm.beta","MplusAutomation")
 
 #remotes::install_github("DiogoFerrari/occupar")
 library(occupar)
@@ -273,7 +275,7 @@ column_spec(t4b, 2:9, "4em")
 
 ### Class Scheme Coding
 
-We attempt to replicate the Erikson, Goldthorpe and Portracrero [1979](https://www.jstor.org/stable/589632) Class Scheme. From Svallfors' article he was following their coding scheme. We follow the EGP to the best of our ability by recoding various occupational codes provided by the countries in 1992; in other words, not all provided ISCO back then. Our resulting EGP scheme follows but does not exactly replicate Svallfors' results. We are unsure if this is a result of the data being slight different (see Tables 1-4) or if Svallfors' class coding scheme was different.
+We attempt to replicate the Erikson, Goldthorpe and Portracrero [1979](https://www.jstor.org/stable/589632) Class Scheme. From Svallfors' article he claims to followtheir coding scheme. We follow the EGP to the best of our ability by recoding various occupational codes provided by the countries in 1992; in other words, not all provided ISCO back then. Our resulting EGP scheme follows but does not exactly replicate Svallfors' results. We are unsure if this is a result of the data being slight different (see Tables 1-4) or if Svallfors' class coding scheme was different.
 
 Svallfors provides his original SPSS coding to construct his class schemes. **We will replicate this coding at some point.**
 ```{r EGP, include = T, echo = T}
@@ -368,22 +370,46 @@ Classic attitude theory suggests that agree/disagree (or 'Likert' type response 
 
 We turn this into an empirical question by comparing the Svallfors' distribution versus a more 'classical' attitudes distribution.
 
+NOTE: it appears that Andress and Heien used the same three ISSP 1992 questions for their study. The treated their scale as continuous and normally distributed. We should mention this in our paper.
+
+After working with lavaan for some time it became clear that there are too many limitations. lavaan cannot do an efficient exploratory factor analysis, handle dichotomous latent variable outcomes (i.e. 'latent class analysis'), and is limited in its multi-group modelling. Therefore, we need to use Mplus to fully investigate Svallfors' scale.
+
 ### Table A. Correlations
 
-For starters we look at the correlations between the attitude variables and a few criterion variables.
+In this chunk we create an export .dat file for Mplus, in addition to looking at the correlations between the attitude variables and a few criterion variables.
 
 ```{r measurement2, echo = T, include = T}
 # Correlation commands are easier when the data.frame has only the variables of interest.
 
-socIn92cor <- as.data.frame(dplyr::select(socIn92recode, v57, v59, v62, r1, r2, r3, v3, v99, v100, v102))
+socIn92cor <- as.data.frame(dplyr::select(socIn92recode, v57, v59, v62, r1, r2, r3, v3, v99, v100, v102, s103, cdn103))
 
 # Make 'agree' = higher values
 socIn92cor <- socIn92cor %>% dplyr::mutate(
 v57 = car::recode(socIn92cor$v57,recodes = '1=5; 2=4; 3=3; 4=2; 5=1'),
 v59 = car::recode(socIn92cor$v59,recodes = '1=5; 2=4; 3=3; 4=2; 5=1'),
-v62 = car::recode(socIn92cor$v62,recodes = '1=5; 2=4; 3=3; 4=2; 5=1'))
+v62 = car::recode(socIn92cor$v62,recodes = '1=5; 2=4; 3=3; 4=2; 5=1'),
+#Canada missing ed in years, impute, best guess (1=none, 2= grade school, 3= some high, 4=hs complete, 5=some college, 6= college complete, 7=university complete, 8=grad school)
+cdn103 = car::recode(socIn92cor$cdn103,recodes = '1=4; 2=8; 3=10; 4=12; 5=14; 6=16; 7=17; 8=20'),
+#Sweden impute (1=primary, 2=secondary(2 years), 3=secondary(3 years), 4= university) 
+s103 = car::recode(socIn92cor$s103,recode = '1=8; 2=10; 3=12; 4=15'),
+#Swe=10,Nor=9,GermanyW=2,Aut=6,Aus=1,NZ=16,Can=17,US=5
+v3 = car::recode(socIn92cor$v3,recodes = '10=752; 9=578; 2=276; 1=36; 6=40; 16=554; 17=124; 5=840'))
 
+socIn92cor$s103 <- ifelse(is.na(socIn92cor$s103), socIn92cor$cdn103, socIn92cor$s103)
+socIn92cor$v102 <- ifelse(is.na(socIn92cor$v102), socIn92cor$s103, socIn92cor$v102)
+
+
+socIn92cor <- as.data.frame(dplyr::select(socIn92cor, v57, v59, v62, r1, r2, r3, v3, v99, v100, v102))
 socIn92cor <- drop_na(socIn92cor)
+
+# output Mplus data (future iterations should include missing values)
+# does not accept haven attributes, remove them by exporting to csv and reimporting
+write.csv(socIn92cor, file = "svtemp.csv")
+socinm <- as.data.frame(read.csv(file = "svtemp.csv"))
+unlink("svtemp.csv")
+
+
+prepareMplusData(socinm, filename = "svallfors.dat", inpfile = T)
 
 cor <- cor(socIn92cor)
 # This keeps only one side of the diagonal
@@ -394,6 +420,27 @@ t10 <- knitr::kable(cor,format="html", digits = round(2), col.names = c("IncD_5"
 
 column_spec(t10, 2:10, "5em")
 ```
+
+### Note from Mplus results (and you can see this below in lavaan)
+The basic three factor scale is "just identified", this means it has as many estimated parameters as observed parameters. This means there is no possibility to use the global chi-square fit test. We thus have to rely on indices (AIC, Log-likelihood) to compare models.
+
+## Guide to Mplus models by name
+
+These are the two models, they produce good loadings. But they cannot be compared because the underlying data are different between the models
+
+# svallfors.inp = CFA, jobs incd basic (the 'typical' model)
+# svallfors1.inp = CFA, jobs3 incd3 basic3 (Svallfors' model)
+
+Let's say Svallfors assumed that his 3 category collapse was 'right'. We can test this by predicting
+
+
+
+
+
+
+
+
+
 
 ### Measurement Models
 
@@ -491,18 +538,69 @@ lm.beta(fitgovindex)
 # Inspect residuals
 
 socIn92recodeM$fgovp <- predict(fitgovindex)
-
 socIn92recodeM$resid <- socIn92recodeM$fgovp - socIn92recodeM$att_sval1
+```
 
+```{r resid}
+
+
+```
+
+### Plotted Residuals of Svallfors' variables and the Fitted Factor
+```{r resid2}
 # They do not follow a normal distribution
 
 hist(socIn92recodeM$resid, breaks = 20)
+```
 
-#perhaps a logit function?
+### The values of the fitted factor (quasi normally distributed, no?)
+```{r fittedindex}
+hist(socIn92recodeM$fgovp, breaks = 20)
+```
 
+```{r indivplots}
+socIn92recode$scale <- as.factor(round((socIn92recode$v57 + socIn92recode$v59 + socIn92recode$v62)/3, digits = 0))
+#create likert labels
+likert <- c("strongly disagree","disagree","neutral","agree","strongly agree")
+# Why should we expect a normal distribution? This is how the raw data look
+socIn92recode$v57 <- as.factor(socIn92recode$v57)
+socIn92recode$v59 <- as.factor(socIn92recode$v59)
+socIn92recode$v62 <- as.factor(socIn92recode$v62)
+ggplot(socIn92recode, aes(v57)) +
+  geom_bar(fill = "black") + 
+  scale_x_discrete("Original Response Choices (missing/don't know omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree")) + 
+  ggtitle("Gov. Provide Jobs for Everyone that Wants One")
+```
+
+
+```{r indivplots2}
+ggplot(socIn92recode, aes(v59)) +
+  geom_bar(fill = "black") + 
+  scale_x_discrete("Original Response Choices (missing/don't know omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree")) + 
+  ggtitle("Gov. Reduce Income Differences")
+```
+
+```{r indivplots3}
+ggplot(socIn92recode, aes(v62)) +
+  geom_bar(fill = "black") + 
+  scale_x_discrete("Original Response Choices (missing/don't know omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree")) + 
+  ggtitle("Gov. Provide Basic Income")
+```
+
+```{r scaleplot}
+# If we assume an underlying latent with equal weight assigned to each variable, the distribution looks skewed normal
+ggplot(socIn92recode, aes(scale)) +
+  geom_bar(fill = "black") + 
+  scale_x_discrete("Averaged Response Choice, all three questions", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree")) + 
+  ggtitle("Support for Government Intervention Scale")
+```
+
+
+
+```{r}
 # How well do Svallfors recoded measures predict gov index
 fitgovindex2 <- lm(att_sval1 ~ r1 + r2 + r3 ,data = socIn92recodeM)
 lm.beta(fitgovindex2)
-
 ```
+
 
