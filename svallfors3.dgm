@@ -1,0 +1,276 @@
+VERSION 1.1.0
+INPUT
+TITLE:
+
+svallfors1 = Multigroup model everything constrained except latent means
+
+svallfors2 = This model includes fixed factor loadings by group
+and intercepts for jobs allowed to vary other two fixed,
+, but means allowed to vary by group;
+
+svallfors3 = everything free by group, except factor loadings
+DATA:
+ FILE = svallfors.dat;
+VARIABLE:
+    NAMES = row incd jobs basic incd3 jobs3
+        basic3 country male age edyrs;
+    USEVARIABLES = incd3 jobs3 basic3;
+      GROUPING is country (752=Swe,578=Nor,276=Ger,40=Aut,
+        36=Aus,554=NZ,124=Can,840=USA);
+ANALYSIS:
+    TYPE = general;
+OUTPUT:
+STDYX; MODINDICES(4);
+MODEL:
+    scale BY incd3(a);
+    scale BY jobs3(b);
+    scale BY basic3(c);
+    basic3;
+    jobs3*;
+    incd3*;
+    [jobs3*];
+    [incd3*];
+    [jobs3*];
+INPUT_END
+2
+2
+0
+2
+ML
+1
+GENERAL
+8
+AUS
+AUT
+CAN
+GER
+NZ
+NOR
+SWE
+USA
+3
+1
+0
+incd3 jobs3 basic3 scale
+1
+-1 -1 -1 0
+0
+1
+scale
+incd3 jobs3 basic3
+1 1 scale incd3    1.000    0.000
+1 1 scale jobs3    1.142    0.029
+91 1 scale jobs3 b
+1 1 scale basic3    1.151    0.029
+91 1 scale basic3 c
+4 1 incd3    0.520    0.020
+4 1 jobs3    0.390    0.019
+4 1 basic3    0.397    0.019
+5 1 scale    0.288    0.016
+1 2 scale incd3    1.000    0.000
+1 2 scale jobs3    1.142    0.029
+91 2 scale jobs3 b
+1 2 scale basic3    1.151    0.029
+91 2 scale basic3 c
+4 2 incd3    0.471    0.026
+4 2 jobs3    0.332    0.022
+4 2 basic3    0.606    0.034
+5 2 scale    0.140    0.014
+1 3 scale incd3    1.000    0.000
+1 3 scale jobs3    1.142    0.029
+91 3 scale jobs3 b
+1 3 scale basic3    1.151    0.029
+91 3 scale basic3 c
+4 3 incd3    0.436    0.027
+4 3 jobs3    0.361    0.027
+4 3 basic3    0.466    0.031
+5 3 scale    0.325    0.024
+1 4 scale incd3    1.000    0.000
+1 4 scale jobs3    1.142    0.029
+91 4 scale jobs3 b
+1 4 scale basic3    1.151    0.029
+91 4 scale basic3 c
+4 4 incd3    0.418    0.017
+4 4 jobs3    0.319    0.016
+4 4 basic3    0.401    0.019
+5 4 scale    0.240    0.014
+1 5 scale incd3    1.000    0.000
+1 5 scale jobs3    1.142    0.029
+91 5 scale jobs3 b
+1 5 scale basic3    1.151    0.029
+91 5 scale basic3 c
+4 5 incd3    0.554    0.028
+4 5 jobs3    0.469    0.027
+4 5 basic3    0.470    0.027
+5 5 scale    0.233    0.018
+1 6 scale incd3    1.000    0.000
+1 6 scale jobs3    1.142    0.029
+91 6 scale jobs3 b
+1 6 scale basic3    1.151    0.029
+91 6 scale basic3 c
+4 6 incd3    0.506    0.022
+4 6 jobs3    0.229    0.014
+4 6 basic3    0.299    0.016
+5 6 scale    0.149    0.011
+1 7 scale incd3    1.000    0.000
+1 7 scale jobs3    1.142    0.029
+91 7 scale jobs3 b
+1 7 scale basic3    1.151    0.029
+91 7 scale basic3 c
+4 7 incd3    0.551    0.035
+4 7 jobs3    0.201    0.020
+4 7 basic3    0.480    0.033
+5 7 scale    0.202    0.018
+1 8 scale incd3    1.000    0.000
+1 8 scale jobs3    1.142    0.029
+91 8 scale jobs3 b
+1 8 scale basic3    1.151    0.029
+91 8 scale basic3 c
+4 8 incd3    0.440    0.023
+4 8 jobs3    0.354    0.022
+4 8 basic3    0.311    0.021
+5 8 scale    0.382    0.024
+11 1 scale incd3    0.597    0.014
+11 1 scale jobs3    0.700    0.015
+91 1 scale jobs3 b
+11 1 scale basic3    0.700    0.014
+91 1 scale basic3 c
+14 1 incd3    0.643    0.017
+14 1 jobs3    0.509    0.021
+14 1 basic3    0.510    0.020
+15 1 scale    1.000    0.000
+11 2 scale incd3    0.479    0.022
+11 2 scale jobs3    0.596    0.026
+91 2 scale jobs3 b
+11 2 scale basic3    0.484    0.022
+91 2 scale basic3 c
+14 2 incd3    0.771    0.021
+14 2 jobs3    0.645    0.031
+14 2 basic3    0.766    0.022
+15 2 scale    1.000    0.000
+11 3 scale incd3    0.653    0.019
+11 3 scale jobs3    0.735    0.020
+91 3 scale jobs3 b
+11 3 scale basic3    0.693    0.019
+91 3 scale basic3 c
+14 3 incd3    0.573    0.025
+14 3 jobs3    0.460    0.029
+14 3 basic3    0.520    0.026
+15 3 scale    1.000    0.000
+11 4 scale incd3    0.604    0.014
+11 4 scale jobs3    0.704    0.015
+91 4 scale jobs3 b
+11 4 scale basic3    0.665    0.016
+91 4 scale basic3 c
+14 4 incd3    0.635    0.017
+14 4 jobs3    0.505    0.021
+14 4 basic3    0.558    0.021
+15 4 scale    1.000    0.000
+11 5 scale incd3    0.544    0.019
+11 5 scale jobs3    0.627    0.020
+91 5 scale jobs3 b
+11 5 scale basic3    0.630    0.019
+91 5 scale basic3 c
+14 5 incd3    0.704    0.020
+14 5 jobs3    0.607    0.026
+14 5 basic3    0.603    0.024
+15 5 scale    1.000    0.000
+11 6 scale incd3    0.478    0.017
+11 6 scale jobs3    0.678    0.018
+91 6 scale jobs3 b
+11 6 scale basic3    0.631    0.018
+91 6 scale basic3 c
+14 6 incd3    0.772    0.016
+14 6 jobs3    0.541    0.025
+14 6 basic3    0.602    0.023
+15 6 scale    1.000    0.000
+11 7 scale incd3    0.518    0.022
+11 7 scale jobs3    0.752    0.025
+91 7 scale jobs3 b
+11 7 scale basic3    0.598    0.022
+91 7 scale basic3 c
+14 7 incd3    0.732    0.023
+14 7 jobs3    0.434    0.038
+14 7 basic3    0.642    0.027
+15 7 scale    1.000    0.000
+11 8 scale incd3    0.682    0.015
+11 8 scale jobs3    0.765    0.015
+91 8 scale jobs3 b
+11 8 scale basic3    0.787    0.015
+91 8 scale basic3 c
+14 8 incd3    0.535    0.021
+14 8 jobs3    0.415    0.023
+14 8 basic3    0.380    0.024
+15 8 scale    1.000    0.000
+31 1 scale incd3    0.537    0.015
+31 1 scale jobs3    0.613    0.017
+91 1 scale jobs3 b
+31 1 scale basic3    0.618    0.016
+91 1 scale basic3 c
+34 1 incd3    0.520    0.020
+34 1 jobs3    0.390    0.019
+34 1 basic3    0.397    0.019
+35 1 scale    1.000    0.000
+31 2 scale incd3    0.374    0.018
+31 2 scale jobs3    0.428    0.021
+91 2 scale jobs3 b
+31 2 scale basic3    0.431    0.021
+91 2 scale basic3 c
+34 2 incd3    0.471    0.026
+34 2 jobs3    0.332    0.022
+34 2 basic3    0.606    0.034
+35 2 scale    1.000    0.000
+31 3 scale incd3    0.570    0.021
+31 3 scale jobs3    0.651    0.024
+91 3 scale jobs3 b
+31 3 scale basic3    0.656    0.024
+91 3 scale basic3 c
+34 3 incd3    0.436    0.027
+34 3 jobs3    0.361    0.027
+34 3 basic3    0.466    0.031
+35 3 scale    1.000    0.000
+31 4 scale incd3    0.490    0.014
+31 4 scale jobs3    0.559    0.015
+91 4 scale jobs3 b
+31 4 scale basic3    0.564    0.016
+91 4 scale basic3 c
+34 4 incd3    0.418    0.017
+34 4 jobs3    0.319    0.016
+34 4 basic3    0.401    0.019
+35 4 scale    1.000    0.000
+31 5 scale incd3    0.483    0.018
+31 5 scale jobs3    0.551    0.021
+91 5 scale jobs3 b
+31 5 scale basic3    0.556    0.021
+91 5 scale basic3 c
+34 5 incd3    0.554    0.028
+34 5 jobs3    0.469    0.027
+34 5 basic3    0.470    0.027
+35 5 scale    1.000    0.000
+31 6 scale incd3    0.387    0.014
+31 6 scale jobs3    0.442    0.015
+91 6 scale jobs3 b
+31 6 scale basic3    0.445    0.015
+91 6 scale basic3 c
+34 6 incd3    0.506    0.022
+34 6 jobs3    0.229    0.014
+34 6 basic3    0.299    0.016
+35 6 scale    1.000    0.000
+31 7 scale incd3    0.449    0.020
+31 7 scale jobs3    0.513    0.022
+91 7 scale jobs3 b
+31 7 scale basic3    0.517    0.023
+91 7 scale basic3 c
+34 7 incd3    0.551    0.035
+34 7 jobs3    0.201    0.020
+34 7 basic3    0.480    0.033
+35 7 scale    1.000    0.000
+31 8 scale incd3    0.618    0.019
+31 8 scale jobs3    0.706    0.021
+91 8 scale jobs3 b
+31 8 scale basic3    0.711    0.021
+91 8 scale basic3 c
+34 8 incd3    0.440    0.023
+34 8 jobs3    0.354    0.022
+34 8 basic3    0.311    0.021
+35 8 scale    1.000    0.000
