@@ -1,0 +1,246 @@
+Mplus VERSION 8.3
+MUTHEN & MUTHEN
+03/10/2020   8:14 AM
+
+INPUT INSTRUCTIONS
+
+  TITLE:
+  DATA: FILE = svallfors.dat;
+  VARIABLE:
+      NAMES = row incd jobs basic incd3 jobs3
+          basic3 country male age edyrs;
+      !MISSING=.;
+      USEVARIABLES = incd3 jobs3 basic3 male age edyrs;
+        !GROUPING is country (752=Swe,578=Nor,276=Ger,40=Aut,
+          !36=Aus,554=NZ,124=Can,840=USA);
+
+  ANALYSIS:
+      TYPE = general;
+  MODEL:
+      scale BY incd3(a);
+      scale BY jobs3(b);
+      scale BY basic3(c);
+
+      scale ON male age edyrs;
+
+
+
+
+  OUTPUT:
+
+  STDYX;
+
+
+
+INPUT READING TERMINATED NORMALLY
+
+
+
+
+SUMMARY OF ANALYSIS
+
+Number of groups                                                 1
+Number of observations                                        9892
+
+Number of dependent variables                                    3
+Number of independent variables                                  3
+Number of continuous latent variables                            1
+
+Observed dependent variables
+
+  Continuous
+   INCD3       JOBS3       BASIC3
+
+Observed independent variables
+   MALE        AGE         EDYRS
+
+Continuous latent variables
+   SCALE
+
+
+Estimator                                                       ML
+Information matrix                                        OBSERVED
+Maximum number of iterations                                  1000
+Convergence criterion                                    0.500D-04
+Maximum number of steepest descent iterations                   20
+
+Input data file(s)
+  svallfors.dat
+
+Input data format  FREE
+
+
+
+UNIVARIATE SAMPLE STATISTICS
+
+
+     UNIVARIATE HIGHER-ORDER MOMENT DESCRIPTIVE STATISTICS
+
+         Variable/         Mean/     Skewness/   Minimum/ % with                Percentiles
+        Sample Size      Variance    Kurtosis    Maximum  Min/Max      20%/60%    40%/80%    Median
+
+     INCD3                 1.241      -0.488       0.000   29.37%       0.000      1.000      2.000
+            9892.000       0.770      -1.526       2.000   53.45%       2.000      2.000
+     JOBS3                 1.301      -0.619       0.000   26.58%       0.000      1.000      2.000
+            9892.000       0.742      -1.369       2.000   56.65%       2.000      2.000
+     BASIC3                1.234      -0.476       0.000   30.64%       0.000      1.000      2.000
+            9892.000       0.792      -1.570       2.000   54.07%       2.000      2.000
+     MALE                  1.502      -0.010       1.000   49.76%       1.000      1.000      2.000
+            9892.000       0.250      -2.000       2.000   50.24%       2.000      2.000
+     AGE                  44.584       0.367      16.000    0.45%      29.000     38.000     42.000
+            9892.000     274.456      -0.804      92.000    0.04%      47.000     61.000
+     EDYRS                11.631       0.531       1.000    0.01%       9.000     10.000     11.000
+            9892.000      10.052       0.246      26.000    0.01%      12.000     14.000
+
+
+THE MODEL ESTIMATION TERMINATED NORMALLY
+
+
+
+MODEL FIT INFORMATION
+
+Number of Free Parameters                       12
+
+Loglikelihood
+
+          H0 Value                      -35228.711
+          H1 Value                      -35193.833
+
+Information Criteria
+
+          Akaike (AIC)                   70481.422
+          Bayesian (BIC)                 70567.816
+          Sample-Size Adjusted BIC       70529.682
+            (n* = (n + 2) / 24)
+
+Chi-Square Test of Model Fit
+
+          Value                             69.757
+          Degrees of Freedom                     6
+          P-Value                           0.0000
+
+RMSEA (Root Mean Square Error Of Approximation)
+
+          Estimate                           0.033
+          90 Percent C.I.                    0.026  0.040
+          Probability RMSEA <= .05           1.000
+
+CFI/TLI
+
+          CFI                                0.989
+          TLI                                0.979
+
+Chi-Square Test of Model Fit for the Baseline Model
+
+          Value                           5988.044
+          Degrees of Freedom                    12
+          P-Value                           0.0000
+
+SRMR (Standardized Root Mean Square Residual)
+
+          Value                              0.016
+
+
+
+MODEL RESULTS
+
+                                                    Two-Tailed
+                    Estimate       S.E.  Est./S.E.    P-Value
+
+ SCALE    BY
+    INCD3              1.000      0.000    999.000    999.000
+    JOBS3              1.174      0.029     41.090      0.000
+    BASIC3             1.072      0.025     42.517      0.000
+
+ SCALE    ON
+    MALE               0.135      0.013     10.712      0.000
+    AGE               -0.004      0.000     -8.956      0.000
+    EDYRS             -0.047      0.002    -21.508      0.000
+
+ Intercepts
+    INCD3              1.741      0.040     43.043      0.000
+    JOBS3              1.887      0.047     40.183      0.000
+    BASIC3             1.770      0.043     41.142      0.000
+
+ Residual Variances
+    INCD3              0.482      0.009     51.706      0.000
+    JOBS3              0.345      0.010     35.710      0.000
+    BASIC3             0.461      0.010     48.257      0.000
+    SCALE              0.262      0.010     26.975      0.000
+
+
+STANDARDIZED MODEL RESULTS
+
+
+STDYX Standardization
+
+                                                    Two-Tailed
+                    Estimate       S.E.  Est./S.E.    P-Value
+
+ SCALE    BY
+    INCD3              0.611      0.009     66.421      0.000
+    JOBS3              0.731      0.009     81.336      0.000
+    BASIC3             0.646      0.009     72.095      0.000
+
+ SCALE    ON
+    MALE               0.126      0.011     10.976      0.000
+    AGE               -0.109      0.012     -9.054      0.000
+    EDYRS             -0.277      0.012    -23.758      0.000
+
+ Intercepts
+    INCD3              1.983      0.046     43.266      0.000
+    JOBS3              2.191      0.054     40.486      0.000
+    BASIC3             1.989      0.048     41.436      0.000
+
+ Residual Variances
+    INCD3              0.626      0.011     55.642      0.000
+    JOBS3              0.465      0.013     35.395      0.000
+    BASIC3             0.582      0.012     50.242      0.000
+    SCALE              0.909      0.007    136.460      0.000
+
+
+R-SQUARE
+
+    Observed                                        Two-Tailed
+    Variable        Estimate       S.E.  Est./S.E.    P-Value
+
+    INCD3              0.374      0.011     33.210      0.000
+    JOBS3              0.535      0.013     40.668      0.000
+    BASIC3             0.418      0.012     36.048      0.000
+
+     Latent                                         Two-Tailed
+    Variable        Estimate       S.E.  Est./S.E.    P-Value
+
+    SCALE              0.091      0.007     13.599      0.000
+
+
+QUALITY OF NUMERICAL RESULTS
+
+     Condition Number for the Information Matrix              0.293E-05
+       (ratio of smallest to largest eigenvalue)
+
+
+DIAGRAM INFORMATION
+
+  Use View Diagram under the Diagram menu in the Mplus Editor to view the diagram.
+  If running Mplus from the Mplus Diagrammer, the diagram opens automatically.
+
+  Diagram output
+    c:\github\svallfors-1997-replication\semlearn2.dgm
+
+     Beginning Time:  08:14:03
+        Ending Time:  08:14:03
+       Elapsed Time:  00:00:00
+
+
+
+MUTHEN & MUTHEN
+3463 Stoner Ave.
+Los Angeles, CA  90066
+
+Tel: (310) 391-9971
+Fax: (310) 391-8971
+Web: www.StatModel.com
+Support: Support@StatModel.com
+
+Copyright (c) 1998-2019 Muthen & Muthen
