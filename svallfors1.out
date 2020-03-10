@@ -1,6 +1,6 @@
-Mplus VERSION 8.2
+Mplus VERSION 8.3
 MUTHEN & MUTHEN
-03/06/2020   9:26 AM
+03/10/2020   8:09 AM
 
 INPUT INSTRUCTIONS
 
@@ -1459,9 +1459,9 @@ DIAGRAM INFORMATION
   Diagram output
     c:\github\svallfors-1997-replication\svallfors1.dgm
 
-     Beginning Time:  09:26:32
-        Ending Time:  09:26:32
-       Elapsed Time:  00:00:00
+     Beginning Time:  08:09:01
+        Ending Time:  08:09:02
+       Elapsed Time:  00:00:01
 
 
 
@@ -1474,4 +1474,4 @@ Fax: (310) 391-8971
 Web: www.StatModel.com
 Support: Support@StatModel.com
 
-Copyright (c) 1998-2018 Muthen & Muthen
+Copyright (c) 1998-2019 Muthen & Muthen
