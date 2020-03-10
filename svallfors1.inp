@@ -1,6 +1,17 @@
-TITLE: This model includes fixed factor loadings by group
-and fixed intercepts by group item, but means allowed to vary 
-by group;
+TITLE: 
+
+Model list (those ending in "c" use the original variables,
+without "c" are Svallfors collapsed categories).
+
+Those ending in "di" are dichotomous latents.
+
+svallfors1 = Multigroup model everything constrained except latent means
+
+svallfors2 = This model includes fixed factor loadings by group
+and intercepts for jobs allowed to vary other two fixed,
+, but means allowed to vary by group;
+
+svallfors3 = everything free by group, except factor loadings
 DATA: FILE = svallfors.dat;
 VARIABLE: 
     NAMES = row incd jobs basic incd3 jobs3 
