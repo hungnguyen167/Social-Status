@@ -1,0 +1,305 @@
+Mplus VERSION 8.3
+MUTHEN & MUTHEN
+03/10/2020   9:06 AM
+
+INPUT INSTRUCTIONS
+
+  TITLE:
+
+  Model list (those ending in "c" use the original variables,
+  without "c" are Svallfors collapsed categories).
+
+  Those ending in "lca" are latent class analyses looking to recover
+  2 classes of respondents, like the extreme U-shaped distribution
+  of Svallfors' coding scheme.
+
+  svallfors1 = Multigroup model everything constrained except latent means
+
+  svallfors2 = This model includes fixed factor loadings by group
+  and intercepts for jobs allowed to vary other two fixed,
+  , but means allowed to vary by group;
+
+  svallfors3 = everything free by group, except factor loadings
+  DATA: FILE = svallfors.dat;
+  VARIABLE:
+        NAMES = row incd jobs basic incd3 jobs3
+            basic3 country male age edyrs;
+        !MISSING=.;
+
+        USEVARIABLES = incd jobs basic;
+          !GROUPING is country (752=Swe,578=Nor,276=Ger,40=Aut,
+            !36=Aus,554=NZ,124=Can,840=USA);
+        CLASSES = c(2);
+        !KNOWNCLASS = c(jobs3 = 0-2);
+
+  ANALYSIS:
+      TYPE = mixture;
+
+  OUTPUT:
+
+
+
+*** WARNING in MODEL command
+  All variables are uncorrelated with all other variables within class.
+  Check that this is what is intended.
+   1 WARNING(S) FOUND IN THE INPUT INSTRUCTIONS
+
+
+
+
+
+Model list (those ending in "c" use the original variables,
+without "c" are Svallfors collapsed categories).
+
+Those ending in "lca" are latent class analyses looking to recover
+2 classes of respondents, like the extreme U-shaped distribution
+of Svallfors' coding scheme.
+
+svallfors1 = Multigroup model everything constrained except latent means
+
+svallfors2 = This model includes fixed factor loadings by group
+and intercepts for jobs allowed to vary other two fixed,
+, but means allowed to vary by group;
+
+svallfors3 = everything free by group, except factor loadings
+
+SUMMARY OF ANALYSIS
+
+Number of groups                                                 1
+Number of observations                                        9892
+
+Number of dependent variables                                    3
+Number of independent variables                                  0
+Number of continuous latent variables                            0
+Number of categorical latent variables                           1
+
+Observed dependent variables
+
+  Continuous
+   INCD        JOBS        BASIC
+
+Categorical latent variables
+   C
+
+
+Estimator                                                      MLR
+Information matrix                                        OBSERVED
+Optimization Specifications for the Quasi-Newton Algorithm for
+Continuous Outcomes
+  Maximum number of iterations                                 100
+  Convergence criterion                                  0.100D-05
+Optimization Specifications for the EM Algorithm
+  Maximum number of iterations                                 500
+  Convergence criteria
+    Loglikelihood change                                 0.100D-06
+    Relative loglikelihood change                        0.100D-06
+    Derivative                                           0.100D-05
+Optimization Specifications for the M step of the EM Algorithm for
+Categorical Latent variables
+  Number of M step iterations                                    1
+  M step convergence criterion                           0.100D-05
+  Basis for M step termination                           ITERATION
+Optimization Specifications for the M step of the EM Algorithm for
+Censored, Binary or Ordered Categorical (Ordinal), Unordered
+Categorical (Nominal) and Count Outcomes
+  Number of M step iterations                                    1
+  M step convergence criterion                           0.100D-05
+  Basis for M step termination                           ITERATION
+  Maximum value for logit thresholds                            15
+  Minimum value for logit thresholds                           -15
+  Minimum expected cell size for chi-square              0.100D-01
+Optimization algorithm                                         EMA
+Random Starts Specifications
+  Number of initial stage random starts                         20
+  Number of final stage optimizations                            4
+  Number of initial stage iterations                            10
+  Initial stage convergence criterion                    0.100D+01
+  Random starts scale                                    0.500D+01
+  Random seed for generating random starts                       0
+
+Input data file(s)
+  svallfors.dat
+Input data format  FREE
+
+
+
+UNIVARIATE SAMPLE STATISTICS
+
+
+     UNIVARIATE HIGHER-ORDER MOMENT DESCRIPTIVE STATISTICS
+
+         Variable/         Mean/     Skewness/   Minimum/ % with                Percentiles
+        Sample Size      Variance    Kurtosis    Maximum  Min/Max      20%/60%    40%/80%    Median
+
+     INCD                  3.326      -0.350       1.000    7.63%       2.000      3.000      4.000
+            9892.000       1.434      -0.935       5.000   16.10%       4.000      4.000
+     JOBS                  3.457      -0.388       1.000    5.68%       2.000      3.000      4.000
+            9892.000       1.433      -0.926       5.000   21.28%       4.000      5.000
+     BASIC                 3.325      -0.346       1.000    8.51%       2.000      3.000      4.000
+            9892.000       1.524      -1.007       5.000   17.56%       4.000      4.000
+
+RANDOM STARTS RESULTS RANKED FROM THE BEST TO THE WORST LOGLIKELIHOOD VALUES
+
+Final stage loglikelihood values at local maxima, seeds, and initial stage start numbers:
+
+          -44357.481  608496           4
+          -44357.481  399671           13
+          -44357.481  650371           14
+          -44357.481  462953           7
+
+
+
+THE BEST LOGLIKELIHOOD VALUE HAS BEEN REPLICATED.  RERUN WITH AT LEAST TWICE THE
+RANDOM STARTS TO CHECK THAT THE BEST LOGLIKELIHOOD IS STILL OBTAINED AND REPLICATED.
+
+
+THE MODEL ESTIMATION TERMINATED NORMALLY
+
+
+
+MODEL FIT INFORMATION
+
+Number of Free Parameters                       10
+
+Loglikelihood
+
+          H0 Value                      -44357.481
+          H0 Scaling Correction Factor      1.2302
+            for MLR
+
+Information Criteria
+
+          Akaike (AIC)                   88734.962
+          Bayesian (BIC)                 88806.957
+          Sample-Size Adjusted BIC       88775.178
+            (n* = (n + 2) / 24)
+
+
+
+FINAL CLASS COUNTS AND PROPORTIONS FOR THE LATENT CLASSES
+BASED ON THE ESTIMATED MODEL
+
+    Latent
+   Classes
+
+       1       3474.51541          0.35124
+       2       6417.48459          0.64876
+
+
+FINAL CLASS COUNTS AND PROPORTIONS FOR THE LATENT CLASSES
+BASED ON ESTIMATED POSTERIOR PROBABILITIES
+
+    Latent
+   Classes
+
+       1       3474.51541          0.35124
+       2       6417.48459          0.64876
+
+
+FINAL CLASS COUNTS AND PROPORTIONS FOR THE LATENT CLASSES
+BASED ON THEIR MOST LIKELY LATENT CLASS MEMBERSHIP
+
+Class Counts and Proportions
+
+    Latent
+   Classes
+
+       1             3516          0.35544
+       2             6376          0.64456
+
+
+CLASSIFICATION QUALITY
+
+     Entropy                         0.814
+
+
+Average Latent Class Probabilities for Most Likely Latent Class Membership (Row)
+by Latent Class (Column)
+
+           1        2
+
+    1   0.917    0.083
+    2   0.039    0.961
+
+
+Classification Probabilities for the Most Likely Latent Class Membership (Column)
+by Latent Class (Row)
+
+           1        2
+
+    1   0.928    0.072
+    2   0.045    0.955
+
+
+Logits for the Classification Probabilities for the Most Likely Latent Class Membership (Column)
+by Latent Class (Row)
+
+              1        2
+
+    1      2.556    0.000
+    2     -3.045    0.000
+
+
+MODEL RESULTS
+
+                                                    Two-Tailed
+                    Estimate       S.E.  Est./S.E.    P-Value
+
+Latent Class 1
+
+ Means
+    INCD               2.493      0.029     87.423      0.000
+    JOBS               2.137      0.023     94.288      0.000
+    BASIC              2.415      0.028     87.266      0.000
+
+ Variances
+    INCD               1.059      0.022     48.471      0.000
+    JOBS               0.489      0.020     24.542      0.000
+    BASIC              1.076      0.023     46.197      0.000
+
+Latent Class 2
+
+ Means
+    INCD               3.776      0.017    218.205      0.000
+    JOBS               4.171      0.014    297.958      0.000
+    BASIC              3.817      0.018    212.684      0.000
+
+ Variances
+    INCD               1.059      0.022     48.471      0.000
+    JOBS               0.489      0.020     24.542      0.000
+    BASIC              1.076      0.023     46.197      0.000
+
+Categorical Latent Variables
+
+ Means
+    C#1               -0.614      0.028    -21.949      0.000
+
+
+QUALITY OF NUMERICAL RESULTS
+
+     Condition Number for the Information Matrix              0.278E-01
+       (ratio of smallest to largest eigenvalue)
+
+
+DIAGRAM INFORMATION
+
+  Mplus diagrams are currently not available for Mixture analysis.
+  No diagram output was produced.
+
+
+     Beginning Time:  09:06:16
+        Ending Time:  09:06:18
+       Elapsed Time:  00:00:02
+
+
+
+MUTHEN & MUTHEN
+3463 Stoner Ave.
+Los Angeles, CA  90066
+
+Tel: (310) 391-9971
+Fax: (310) 391-8971
+Web: www.StatModel.com
+Support: Support@StatModel.com
+
+Copyright (c) 1998-2019 Muthen & Muthen
