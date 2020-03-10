@@ -615,12 +615,14 @@ hist(socIn92recodeM$fgovp, breaks = 20)
 ```
 
 ```{r indivplots, include = T}
-socIn92recode$scale <- as.factor(round((socIn92recode$v57 + socIn92recode$v59 + socIn92recode$v62)/3, digits = 0))
+
 
 
 socIn92recode$v57 <- car::recode(socIn92recode$v57,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
 socIn92recode$v59 <- car::recode(socIn92recode$v59,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
 socIn92recode$v62 <- car::recode(socIn92recode$v62,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
+
+socIn92recode$scale <- as.factor(round((socIn92recode$v57 + socIn92recode$v59 + socIn92recode$v62)/3, digits = 0))
 
 # Why should we expect a normal distribution? This is how the raw data look
 socIn92recode$v57 <- as.factor(socIn92recode$v57)
