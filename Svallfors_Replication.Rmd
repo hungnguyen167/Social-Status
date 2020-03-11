@@ -434,7 +434,7 @@ The basic three factor scale is "just identified", this means it has as many est
 ## Import results from Mplus
 
 ```{r}
-lca <- readModels("C:/Users/hnguyen/Documents/GitHub/Svallfors-1997-Replication/svallfors1lca.out", recursive = TRUE)
+lca <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lca.out", recursive = TRUE)
 ```
 
 
