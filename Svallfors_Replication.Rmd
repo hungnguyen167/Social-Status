@@ -179,6 +179,13 @@ t2 <- knitr::kable(table1_w,format="html", digits = round(1), caption = "Table 2
 
 column_spec(t2, 2:9, "4em")
 ```
+```{r govindex dist}
+ggplot(socIn92recode, aes(govIndex)) +
+  geom_bar(fill = "black") + 
+  ggtitle("Svallfors Collapsed Categories as Additive Index")
+hist(socIn92recode$r1, 3)
+
+```
 
 
 ```{r, include = F}
@@ -424,19 +431,72 @@ column_spec(t10, 2:10, "5em")
 ### Note from Mplus results (and you can see this below in lavaan)
 The basic three factor scale is "just identified", this means it has as many estimated parameters as observed parameters. This means there is no possibility to use the global chi-square fit test. We thus have to rely on indices (AIC, Log-likelihood) to compare models.
 
-## Guide to Mplus models by name
+## Import results from Mplus
 
-These are the two models, they produce good loadings. But they cannot be compared because the underlying data are different between the models
+```{r}
+lca <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lca.out", recursive = TRUE)
+```
 
-# svallfors.inp = CFA, jobs incd basic (the 'typical' model)
-# svallfors1.inp = CFA, jobs3 incd3 basic3 (Svallfors' model)
 
 Let's say Svallfors assumed that his 3 category collapse was 'right'. We can test this by predicting
 
+## Fit statistics from Mplus
+### 2 Classes
+
+Loglikelihood
+
+          H0 Value                      -44357.481
+          H0 Scaling Correction Factor      1.2302
+            for MLR
+
+Information Criteria
+
+          Akaike (AIC)                   88734.962
+          Bayesian (BIC)                 88806.957
+          Sample-Size Adjusted BIC       88775.178
 
 
 
+#### 3 Classes
+Loglikelihood
 
+          H0 Value                      -43773.940
+          H0 Scaling Correction Factor      1.0185
+            for MLR
+
+Information Criteria
+
+          Akaike (AIC)                   87575.880
+          Bayesian (BIC)                 87676.673
+          Sample-Size Adjusted BIC       87632.183
+
+
+### 4 Classes
+Loglikelihood
+
+          H0 Value                      -42770.138
+          H0 Scaling Correction Factor      1.0992
+            for MLR
+
+Information Criteria
+
+          Akaike (AIC)                   85576.275
+          Bayesian (BIC)                 85705.866
+          Sample-Size Adjusted BIC       85648.665
+          
+
+### 5 Classes
+Loglikelihood
+
+          H0 Value                      -42107.759
+          H0 Scaling Correction Factor      1.1210
+            for MLR
+
+Information Criteria
+
+          Akaike (AIC)                   84259.517
+          Bayesian (BIC)                 84417.906
+          Sample-Size Adjusted BIC       84347.993
 
 
 
@@ -460,7 +520,7 @@ socIn92recodeM[] = c(socIn92recodeM, recursive=TRUE)
 
 
 
-```{r measurement4, echo = T}
+```{r measurement4, include = F}
 # This assigns a factor structure to a latent variable "att_sval" using the three questions after they were recoded with Svallfors' 3-categories scheme. Agree / Neutral / Disagree.
 m_sval <- 'att_sval =~ r1 + r2 + r3' 
 
@@ -492,7 +552,7 @@ for (fs in colnames(fs_sval)) {
 ```
 
 
-```{r measurement5, echo = T}
+```{r measurement5, include = F}
 summary(fit_sval1, fit.measures=TRUE)
 inspect(fit_sval1,what="std")$lambda
 fs_sval1 <- lavPredict(fit_sval1)
@@ -505,7 +565,7 @@ for (fs in colnames(fs_sval1)) {
 ```
 
 
-```{r measurement6, echo = T}
+```{r measurement6, include = F}
 # Need to compare predicted fs to see if it is identical to Svallfors' additive scale
 
 
@@ -554,9 +614,15 @@ hist(socIn92recodeM$fgovp, breaks = 20)
 ```
 
 ```{r indivplots, include = T}
+
+
+
+socIn92recode$v57 <- car::recode(socIn92recode$v57,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
+socIn92recode$v59 <- car::recode(socIn92recode$v59,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
+socIn92recode$v62 <- car::recode(socIn92recode$v62,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
+
 socIn92recode$scale <- as.factor(round((socIn92recode$v57 + socIn92recode$v59 + socIn92recode$v62)/3, digits = 0))
-#create likert labels
-likert <- c("strongly disagree","disagree","neutral","agree","strongly agree")
+
 # Why should we expect a normal distribution? This is how the raw data look
 socIn92recode$v57 <- as.factor(socIn92recode$v57)
 socIn92recode$v59 <- as.factor(socIn92recode$v59)

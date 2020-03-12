@@ -1,6 +1,6 @@
 Mplus VERSION 8.3
 MUTHEN & MUTHEN
-03/10/2020   8:56 AM
+03/10/2020   9:05 AM
 
 INPUT INSTRUCTIONS
 
@@ -26,11 +26,11 @@ INPUT INSTRUCTIONS
             basic3 country male age edyrs;
         !MISSING=.;
 
-        USEVARIABLES = incd3 jobs3 basic3;
+        USEVARIABLES = incd jobs basic;
           !GROUPING is country (752=Swe,578=Nor,276=Ger,40=Aut,
             !36=Aus,554=NZ,124=Can,840=USA);
         CLASSES = c(3);
-        KNOWNCLASS = c(jobs3 = 0-2);
+        !KNOWNCLASS = c(jobs3 = 0-2);
 
   ANALYSIS:
       TYPE = mixture;
@@ -68,7 +68,7 @@ SUMMARY OF ANALYSIS
 Number of groups                                                 1
 Number of observations                                        9892
 
-Number of dependent variables                                    2
+Number of dependent variables                                    3
 Number of independent variables                                  0
 Number of continuous latent variables                            0
 Number of categorical latent variables                           1
@@ -76,12 +76,10 @@ Number of categorical latent variables                           1
 Observed dependent variables
 
   Continuous
-   INCD3       BASIC3
+   INCD        JOBS        BASIC
 
 Categorical latent variables
    C
-
-  Knownclass            C
 
 
 Estimator                                                      MLR
@@ -111,6 +109,13 @@ Categorical (Nominal) and Count Outcomes
   Minimum value for logit thresholds                           -15
   Minimum expected cell size for chi-square              0.100D-01
 Optimization algorithm                                         EMA
+Random Starts Specifications
+  Number of initial stage random starts                         20
+  Number of final stage optimizations                            4
+  Number of initial stage iterations                            10
+  Initial stage convergence criterion                    0.100D+01
+  Random starts scale                                    0.500D+01
+  Random seed for generating random starts                       0
 
 Input data file(s)
   svallfors.dat
@@ -126,10 +131,26 @@ UNIVARIATE SAMPLE STATISTICS
          Variable/         Mean/     Skewness/   Minimum/ % with                Percentiles
         Sample Size      Variance    Kurtosis    Maximum  Min/Max      20%/60%    40%/80%    Median
 
-     INCD3                 1.241      -0.488       0.000   29.37%       0.000      1.000      2.000
-            9892.000       0.770      -1.526       2.000   53.45%       2.000      2.000
-     BASIC3                1.234      -0.476       0.000   30.64%       0.000      1.000      2.000
-            9892.000       0.792      -1.570       2.000   54.07%       2.000      2.000
+     INCD                  3.326      -0.350       1.000    7.63%       2.000      3.000      4.000
+            9892.000       1.434      -0.935       5.000   16.10%       4.000      4.000
+     JOBS                  3.457      -0.388       1.000    5.68%       2.000      3.000      4.000
+            9892.000       1.433      -0.926       5.000   21.28%       4.000      5.000
+     BASIC                 3.325      -0.346       1.000    8.51%       2.000      3.000      4.000
+            9892.000       1.524      -1.007       5.000   17.56%       4.000      4.000
+
+RANDOM STARTS RESULTS RANKED FROM THE BEST TO THE WORST LOGLIKELIHOOD VALUES
+
+Final stage loglikelihood values at local maxima, seeds, and initial stage start numbers:
+
+          -43773.940  851945           18
+          -43773.940  unperturbed      0
+          -43773.940  462953           7
+          -43773.940  195873           6
+
+
+
+THE BEST LOGLIKELIHOOD VALUE HAS BEEN REPLICATED.  RERUN WITH AT LEAST TWICE THE
+RANDOM STARTS TO CHECK THAT THE BEST LOGLIKELIHOOD IS STILL OBTAINED AND REPLICATED.
 
 
 THE MODEL ESTIMATION TERMINATED NORMALLY
@@ -138,19 +159,19 @@ THE MODEL ESTIMATION TERMINATED NORMALLY
 
 MODEL FIT INFORMATION
 
-Number of Free Parameters                       10
+Number of Free Parameters                       14
 
 Loglikelihood
 
-          H0 Value                      -32910.897
-          H0 Scaling Correction Factor      0.9668
+          H0 Value                      -43773.940
+          H0 Scaling Correction Factor      1.0185
             for MLR
 
 Information Criteria
 
-          Akaike (AIC)                   65841.793
-          Bayesian (BIC)                 65913.788
-          Sample-Size Adjusted BIC       65882.009
+          Akaike (AIC)                   87575.880
+          Bayesian (BIC)                 87676.673
+          Sample-Size Adjusted BIC       87632.183
             (n* = (n + 2) / 24)
 
 
@@ -161,9 +182,68 @@ BASED ON THE ESTIMATED MODEL
     Latent
    Classes
 
-       1       2629.00000          0.26577
-       2       1659.00000          0.16771
-       3       5604.00000          0.56652
+       1       4578.91456          0.46289
+       2       2880.05726          0.29115
+       3       2433.02818          0.24596
+
+
+FINAL CLASS COUNTS AND PROPORTIONS FOR THE LATENT CLASSES
+BASED ON ESTIMATED POSTERIOR PROBABILITIES
+
+    Latent
+   Classes
+
+       1       4578.91456          0.46289
+       2       2880.05726          0.29115
+       3       2433.02818          0.24596
+
+
+FINAL CLASS COUNTS AND PROPORTIONS FOR THE LATENT CLASSES
+BASED ON THEIR MOST LIKELY LATENT CLASS MEMBERSHIP
+
+Class Counts and Proportions
+
+    Latent
+   Classes
+
+       1             5019          0.50738
+       2             2811          0.28417
+       3             2062          0.20845
+
+
+CLASSIFICATION QUALITY
+
+     Entropy                         0.762
+
+
+Average Latent Class Probabilities for Most Likely Latent Class Membership (Row)
+by Latent Class (Column)
+
+           1        2        3
+
+    1   0.853    0.033    0.113
+    2   0.035    0.965    0.000
+    3   0.096    0.000    0.904
+
+
+Classification Probabilities for the Most Likely Latent Class Membership (Column)
+by Latent Class (Row)
+
+           1        2        3
+
+    1   0.935    0.022    0.043
+    2   0.058    0.942    0.000
+    3   0.234    0.000    0.766
+
+
+Logits for the Classification Probabilities for the Most Likely Latent Class Membership (Column)
+by Latent Class (Row)
+
+              1        2        3
+
+    1      3.079   -0.689    0.000
+    2     10.974   13.755    0.000
+    3     -1.189  -11.358    0.000
 
 
 MODEL RESULTS
@@ -171,46 +251,52 @@ MODEL RESULTS
                                                     Two-Tailed
                     Estimate       S.E.  Est./S.E.    P-Value
 
-Latent Class 1 (0)
+Latent Class 1
 
  Means
-    INCD3              0.630      0.017     37.903      0.000
-    BASIC3             0.579      0.017     34.787      0.000
+    INCD               3.398      0.018    185.592      0.000
+    JOBS               3.745      0.013    285.535      0.000
+    BASIC              3.359      0.019    181.428      0.000
 
  Variances
-    INCD3              0.620      0.007     86.446      0.000
-    BASIC3             0.612      0.008     80.393      0.000
+    INCD               1.027      0.016     64.811      0.000
+    JOBS               0.276      0.011     26.104      0.000
+    BASIC              0.999      0.017     58.646      0.000
 
-Latent Class 2 (1)
+Latent Class 2
 
  Means
-    INCD3              1.203      0.020     60.428      0.000
-    BASIC3             1.131      0.019     58.607      0.000
+    INCD               2.467      0.023    105.716      0.000
+    JOBS               1.902      0.014    138.061      0.000
+    BASIC              2.388      0.023    101.768      0.000
 
  Variances
-    INCD3              0.620      0.007     86.446      0.000
-    BASIC3             0.612      0.008     80.393      0.000
+    INCD               1.027      0.016     64.811      0.000
+    JOBS               0.276      0.011     26.104      0.000
+    BASIC              0.999      0.017     58.646      0.000
 
-Latent Class 3 (2)
+Latent Class 3
 
  Means
-    INCD3              1.539      0.010    153.918      0.000
-    BASIC3             1.572      0.010    158.003      0.000
+    INCD               4.205      0.022    189.119      0.000
+    JOBS               4.754      0.022    211.432      0.000
+    BASIC              4.370      0.024    184.430      0.000
 
  Variances
-    INCD3              0.620      0.007     86.446      0.000
-    BASIC3             0.612      0.008     80.393      0.000
+    INCD               1.027      0.016     64.811      0.000
+    JOBS               0.276      0.011     26.104      0.000
+    BASIC              0.999      0.017     58.646      0.000
 
 Categorical Latent Variables
 
  Means
-    C#1               -0.757      0.024    -32.018      0.000
-    C#2               -1.217      0.028    -43.551      0.000
+    C#1                0.632      0.048     13.285      0.000
+    C#2                0.169      0.040      4.207      0.000
 
 
 QUALITY OF NUMERICAL RESULTS
 
-     Condition Number for the Information Matrix              0.393E-01
+     Condition Number for the Information Matrix              0.220E-02
        (ratio of smallest to largest eigenvalue)
 
 
@@ -220,9 +306,9 @@ DIAGRAM INFORMATION
   No diagram output was produced.
 
 
-     Beginning Time:  08:56:37
-        Ending Time:  08:56:37
-       Elapsed Time:  00:00:00
+     Beginning Time:  09:05:58
+        Ending Time:  09:06:01
+       Elapsed Time:  00:00:03
 
 
 
