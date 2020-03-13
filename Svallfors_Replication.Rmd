@@ -44,6 +44,12 @@ We use the ISSP 1992 'Social Inequality' data provided by GESIS. File "[ZA.2310.
 Swe, Nor, Ger, Aut, Aus, Nz, Can, USA
 Theese are in v3 coded as Swe=10,Nor=9,GermanyW=2,Aut=6,Aus=1,NZ=16,Can=17,US=5
 
+#######################
+#2-points to follow up on
+#on the GESIS archive there appears to be older versions of the data, we should try this version to see if we get an exact replication of Svallfors
+#the codebook states that respondents could select "Don't know/can't choose" and it should have been coded "8", but there is no such code here. We should email GESIS and ask about this.
+#######################
+
 ```{r, include = F}
 rm(list = ls())
 ```
@@ -74,6 +80,9 @@ knitr::opts_chunk$set(message = F)
 # Here we import the data. 
 
 socIn92 <- read_dta(paste(wd,"ZA2310.dta",sep=""))
+
+
+
 
 ```
 
@@ -116,7 +125,11 @@ socIn92recode<-socIn92recode[complete.cases(socIn92recode$r2p),]
 socIn92recode<-socIn92recode[complete.cases(socIn92recode$r3p),]
 ```
 
-### Table 1. "Table 1" from Svallfors (1997)
+### A Reproduction of "Table 1" from Svallfors (1997, p. 288)
+
+### The original Table 1
+
+![Table 1 Svallfors](Svallfors_1997_Table_1.bmp)
 
 Now that we have prepared our variables, we construct **Table 1: Attitudes to redistribution in eight nations**:
 
@@ -151,9 +164,15 @@ column_spec(t1, 2:9, "4em")
 
 ```
 
-### Table 2. A Weighted version of Svallfors' Table 1
+### Reproductions of Table 2 (Svallfors 1997, p. 289). 
 
-This table uses the dplyr::mutate function to obtain weighted means then tabulates.
+### The Original Table 2
+
+![Table 2 Svallfors](Svallfors_1997_Table_2.bmp)
+
+OUr first reproduction is a weighted version of Svallfors' Table 1
+
+This table uses the dplyr::mutate function to obtain weighted means using the ISSP provided weights, we should check these at some point - are the provided for each country? are they plausible?.
 
 ```{r, echo = T, incldue = T}
 
@@ -179,13 +198,7 @@ t2 <- knitr::kable(table1_w,format="html", digits = round(1), caption = "Table 2
 
 column_spec(t2, 2:9, "4em")
 ```
-```{r govindex dist}
-ggplot(socIn92recode, aes(govIndex)) +
-  geom_bar(fill = "black") + 
-  ggtitle("Svallfors Collapsed Categories as Additive Index")
-hist(socIn92recode$r1, 3)
 
-```
 
 
 ```{r, include = F}
@@ -335,7 +348,7 @@ t5 <- knitr::kable(tableA2,format="html", digits = round(2), caption = "Distribu
 column_spec(t5, 2:9, "4em")
 ```
 
-
+### Attempt to Reproduce Results. The differences are sometimes worrysome. 
 
 ```{r}
 
@@ -380,6 +393,18 @@ We turn this into an empirical question by comparing the Svallfors' distribution
 NOTE: it appears that Andress and Heien used the same three ISSP 1992 questions for their study. The treated their scale as continuous and normally distributed. We should mention this in our paper.
 
 After working with lavaan for some time it became clear that there are too many limitations. lavaan cannot do an efficient exploratory factor analysis, handle dichotomous latent variable outcomes (i.e. 'latent class analysis'), and is limited in its multi-group modelling. Therefore, we need to use Mplus to fully investigate Svallfors' scale.
+
+### Table X. The Distribution of Svallfors' Scale (Additive, thus assigning equal weight to each of the three variables)
+
+Distribution is not normal.
+
+```{r govindex dist}
+ggplot(socIn92recode, aes(govIndex)) +
+  geom_bar(fill = "black") + 
+  ggtitle("Svallfors Collapsed Categories as Additive Index")
+hist(socIn92recode$r1, 3)
+
+```
 
 ### Table A. Correlations
 
@@ -428,75 +453,31 @@ t10 <- knitr::kable(cor,format="html", digits = round(2), col.names = c("IncD_5"
 column_spec(t10, 2:10, "5em")
 ```
 
+### Missing data
+
+```{r missing}
+
+```
+
 ### Note from Mplus results (and you can see this below in lavaan)
 The basic three factor scale is "just identified", this means it has as many estimated parameters as observed parameters. This means there is no possibility to use the global chi-square fit test. We thus have to rely on indices (AIC, Log-likelihood) to compare models.
 
 ## Import results from Mplus
 
-```{r}
-lca <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lca.out", recursive = TRUE)
+```{r fitimport}
+lca2 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac2.out", recursive = TRUE)
+lca3 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac3.out", recursive = TRUE)
+lca4 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac4.out", recursive = TRUE)
+lca5 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac5.out", recursive = TRUE)
+
 ```
 
 
-Let's say Svallfors assumed that his 3 category collapse was 'right'. We can test this by predicting
+The risk in collapsing response categories is that important information about the underlying attitude might be thrown away, and worse that this might introduce error that is non-random and produces artificial results. However, Svallfors' collapsed coding might still be empirically appropriate, if not somehow superior to using the data in its original format. We assume he had a logical basis for this methodological choice. We test this first by estimating an ordered probit model of each of the questions with their original responses. To support Svallfors decision we would expect that the cutpoints would show little distance between strongly agree and agree, and the same for strongly disagree and disagree. If found, we would have evidence that respondents who select either of the two responses do not systematically differ.
+
+We have a second strategy for testing this and further testing the choice of combining these three particular items into a scale. ...would be different latent class analyses (LCA) using the question data in their original 5-category response format. To substantiate Svallfors' method we would expect that the LCAs do not show 
 
 ## Fit statistics from Mplus
-### 2 Classes
-
-Loglikelihood
-
-          H0 Value                      -44357.481
-          H0 Scaling Correction Factor      1.2302
-            for MLR
-
-Information Criteria
-
-          Akaike (AIC)                   88734.962
-          Bayesian (BIC)                 88806.957
-          Sample-Size Adjusted BIC       88775.178
-
-
-
-#### 3 Classes
-Loglikelihood
-
-          H0 Value                      -43773.940
-          H0 Scaling Correction Factor      1.0185
-            for MLR
-
-Information Criteria
-
-          Akaike (AIC)                   87575.880
-          Bayesian (BIC)                 87676.673
-          Sample-Size Adjusted BIC       87632.183
-
-
-### 4 Classes
-Loglikelihood
-
-          H0 Value                      -42770.138
-          H0 Scaling Correction Factor      1.0992
-            for MLR
-
-Information Criteria
-
-          Akaike (AIC)                   85576.275
-          Bayesian (BIC)                 85705.866
-          Sample-Size Adjusted BIC       85648.665
-          
-
-### 5 Classes
-Loglikelihood
-
-          H0 Value                      -42107.759
-          H0 Scaling Correction Factor      1.1210
-            for MLR
-
-Information Criteria
-
-          Akaike (AIC)                   84259.517
-          Bayesian (BIC)                 84417.906
-          Sample-Size Adjusted BIC       84347.993
 
 
 
