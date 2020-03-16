@@ -1,0 +1,458 @@
+---
+title: 'Attitudes toward Redistribution Thirty Years After: Theoretical and Empirical
+  Reflections on Svallfors’ (1997) Findings'
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+  toc: true
+---
+
+$~$
+$~$
+
+#### **Nate Breznau, Lisa Heukamp & Hung H.V. Nguyen**
+#### **University of Bremen**
+
+_____________________________________________________________________________
+
+$~$
+$~$
+
+## DESCRIPTION
+
+This is an expansion of the work of Svallfors (1997) following an earlier expansion of his work by Linos and West (2003). A replication of his original study is available in our 'Replication Appendix' Here we offer our main analyses. 
+
+
+### Abstract
+
+In 1997, Stefan Svallfors "[(1997)](https://doi.org/10.1093/oxfordjournals.esr.a018219)" published, “Worlds of Welfare and Attitudes to Redistribution: A Comparison of Eight Western Nations” in which he analyzed data from the 1992 ‘Social Inequality Module’ of the International Social Survey Program (ISSP). He wanted to understand how attitudes are structured in various welfare regimes. For twenty years, his study has been a standard citation in scholarship on comparative welfare states and social policy preferences. The ISSP was the first macro-comparative survey of policy preferences, and Svallfors’ work was one of the first to compare attitudes toward redistribution in as many as eight countries using the 1992 data (there as a ISSP in 1985 but it only had 5 countries). In this paper we revisit his path-breaking work in light of theories of policy preferences. We replicate his work, we further investigate his measurement and distributional assumptions about attitudes toward redistribtuion, and we then expand his original work to include more recent waves of ISSP data.
+
+GESIS provides the ISSP 1992 'Social Inequality' data  "[ZA2310.dta](https://www.gesis.org/issp/modules/issp-modules-by-topic/social-inequality/1992)".
+
+However, these data have both non-response and the response choice "Can't choose" coded as missing ("." in Stata). Therefore, we contaced GESIS and got the file ZA2310_2006-07-18.dta, which we suspect is likely just the old SPSS version transferred into Stata ("[ZA2310_2006-07-18.sav"](https://dbk.gesis.org/dbksearch/sdesc2.asp?no=2310&db=E&tab=3)")
+
+There was already an expansion of his original study by Linos and West "[2003](https://doi.org/10.1093/esr/19.4.393)" that added gender, marital status, income, years of education and years of ed squared (p. 298).
+
+They also point out that: "As responses to individual questions were constrained to five options, we considered employing a model appropriate for a limited dependent variable. However, the combination of index construction
+and multiple imputation made OLS appropriate, because the following conditions held. First, the dependent variable was essentially continuous. Even using only actual responses from the data-set, our index permits us to observe the dependent variable at 15 points. Moreover, we imputed even more intermediate values in order to increase the precision of the estimation. Secondly, the distribution of the dependent variable was not truncated or censored." (p. 397)
+
+They also impute values, we should consider this step carefully. 
+
+They only analyze the four countries that Svallfors 'selects' due to missing data. We should consider finding a way to analyze all eight. 
+
+### The Original Svallfors Study
+
+**His original study used three questions:** 
+
+1. It is the responsibility of the government to reduce the differences between people with high incomes and those with low incomes? --> v57
+
+2. The government should provide a job for everyone who wants one? --> v59
+
+3. The government should provide everyone with a guaranteed basic income? --> v62
+
+**He constructed a "government index" scale from the three questions as follows:** 
+
+*“For this purpose, an additive index was constructed from the three items, dividing between 'strongly agree' and 'agree' (2); 'neither agree nor disagree' (1); and ‘disagree' and 'strongly disagree' (0). These items were summed, creating an index which may vary between 0 and 6, where 0 means disagreeing with all three propositions and thereby endorsing a clear-cut anti-interventionist stand and 6 means a strong interventionist standpoint“* (Svallfors 1997: 289). 
+
+
+**He used eight country cases:** 
+
+Swe, Nor, Ger, Aut, Aus, Nz, Can, USA
+Theese are in v3 coded as Swe=10,Nor=9,GermanyW=2,Aut=6,Aus=1,NZ=16,Can=17,US=5
+
+```{r, include = F}
+rm(list = ls())
+```
+
+
+```{r setup, include=FALSE}
+
+library(pacman)
+
+pacman::p_load("dplyr","tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr","ltm","questionr","survey","remotes","stargazer","lavaan","ltm", "tidylog", "kableExtra","lm.beta","MplusAutomation","MASS")
+
+#remotes::install_github("DiogoFerrari/occupar")
+library(occupar)
+
+
+wd <- "C:/data/"
+
+# We don't want to see messages in the final document
+knitr::opts_chunk$set(message = F)
+
+```
+
+## SETUP
+
+```{r readdata, include=FALSE}
+# Here we import version with 'Can't choose' left in the data. 
+issp92 <- read_dta(paste(wd, "ZA2310_2006-07-18.dta",sep=""))
+
+
+```
+
+### Dependent Variable
+
+It seems like Linos and West (2003, p. 398, "We imputed even more intermediate values...") imputed DV values. We are hesitant to do this; however, we should consider a maximum likelihood estimation routine
+```{r dv, echo=T}
+
+# code higher vales to more agreement (8="can't choose")
+issp92$v57 <- car::recode(issp92$v57,recodes = '1=5; 2=4; 3=3; 4=2; 5=1; 8=8; 9=NA')
+issp92$v59 <- car::recode(issp92$v59,recodes = '1=5; 2=4; 3=3; 4=2; 5=1; 8=8; 9=NA')
+issp92$v62 <- car::recode(issp92$v62,recodes = '1=5; 2=4; 3=3; 4=2; 5=1; 8=8; 9=NA')
+
+```
+
+### Independent Variables
+
+#### Class Scheme Coding
+
+We attempt to replicate the Erikson, Goldthorpe and Portracrero [1979](https://www.jstor.org/stable/589632) Class Scheme. From Svallfors' article he claims to followtheir coding scheme. We follow the EGP to the best of our ability by recoding various occupational codes provided by the countries in 1992; in other words, not all provided ISCO back then. Our resulting EGP scheme follows but does not exactly replicate Svallfors' results. We are unsure if this is a result of the data being slight different (see Tables 1-4) or if Svallfors' class coding scheme was different.
+
+```{r EGP, include = T, echo = T}
+#here we replicate the class scheme
+
+#we thought we could get the scheme from the cumulative ISSP 
+
+isspCUM <- read_dta(paste(wd, "ZA5890_v1-0-0.dta", sep = ""))
+df2 <- isspCUM[which(isspCUM$V5 %in% c(752, 578, 276, 40, 36, 554, 124, 840) & isspCUM$V4 == 1992),] 
+df2 <- df2[,c("V3","ISCO88")]
+
+#but there are no ISCO88 codes for 1992 so we are stuck with the Swedish coding
+#It uses NYK 'Nordic Occupational Classification System
+
+df2 <- dplyr::rename(df2, v2 = V3)
+
+df <- as.data.frame(left_join(issp92, df2, by = "v2"))
+
+df$v110 <- car::recode(df$v110, recodes = '2=0')
+
+#Here is the NYK scheme for Sweden (variable s106)
+#It appears that Svallfors' original data was SEI classification (2-digit), but that provided in the ISSP from GESIS is NYK83
+#we use Erik Bihagen's translation of NYK into ISCO88 [although they are not perfectly transferrable!!] http://www.camsis.stir.ac.uk/occunits/SwedishNYK8590majgpsv1.sps
+
+df$isco88se <- car::recode(df$s106, recodes = "
+1 = 2141; 2 = 2143; 3 = 2144; 4 = 2145; 5 = 3116; 6 = 3117; 7 = 2142; 8 = 2148; 9 = 3119; 12 = 3211; 13 = 3211; 14 = 2114; 15 = 2112; 16 = 2113; 19 = 3111; 21 = 2211; 22 = 3213; 23 = 3213; 29 = 2211; 30 = 1210; 31 = 2310; 32 = 2320; 33 = 2331; 34 = 2320; 35 = 2359; 36 = 2320; 37 = 2352; 39 = 2359; 41 = 2460; 49 = 3480; 51 = 2421; 52 = 2429; 53 = 2429; 
+54 = 2429; 59 = 2429; 61 = 2451; 62 = 1234; 63 = 1229; 69 = 2451; 71 = 2452; 72 = 3471; 73 = 3471; 74 = 3131; 75 = 3474; 76 = 2453; 77 = 2455; 79 = 2455; 91 = 2432; 92 = 2431; 99 = 2446; 101 = 2221; 102 = 2230; 103 = 3231; 104 = 3232; 105 = 3133; 106 = 5132; 107 = 5132; 109 = 9132; 111 = 3226; 112 = 2229; 119 = 3226; 121 = 2222; 122 = 3225; 123 = 3225; 129 = 3225; 131 = 2224; 139 = 3228; 141 = 2223; 149 = 3227; 151 = 2446; 152 = 1228; 153 = 5131; 154 = 5133; 155 = 1228; 159 = 2446; 161 = 3152; 162 = 3151; 169 = 3152; 191 = 2445; 192 = 3223; 199 = 3460; 201 = 1110; 202 = 3443; 203 = 3444; 209 = 1110; 211 = 2419; 212 = 3431; 219 = 2419; 221 = 2412; 222 = 3423; 229 = 2412; 231 = 2411; 232 = 2411; 239 = 4121; 241 = 4115; 242 = 4111; 249 = 4190; 251 = 2131; 252 = 3122; 259 = 3121; 261 = 2441; 262 = 2122; 269 = 2441; 291 = 4190; 292 = 4122; 293 = 3412; 294 = 3412; 295 = 4221; 296 = 3422; 297 = 1317; 299 = 4190; 311 = 3471; 312 = 3413; 313 = 3419; 319 = 3419; 321 = 3416; 331 = 1314; 332 = 5220; 333 = 5220; 339 = 5220; 399 = 5220; 400 = 1311; 401 = 6112; 402 = 6130; 403 = 6130; 404 = 6130; 405 = 6130; 406 = 6129; 409 = 6112; 411 = 6112; 412 = 6121; 413 = 6112; 414 = 6129; 419 = 6121; 421 = 6154; 431 = 6152; 432 = 6151; 439 = 6152; 441 = 6141; 449 = 6141; 501 = 7111; 509 = 7111; 511 = 8113; 521 = 8121; 531 = 8155; 599 = 7111; 601 = 3142; 602 = 3142; 603 = 3141; 609 = 3142; 611 = 8340; 612 = 8340; 619 = 8340; 621 = 3143; 629 = 3143; 631 = 8311; 640 = 8322; 641 = 8324; 642 = 8322; 643 = 9151; 649 = 8334; 651 = 3144; 652 = 5112; 653 = 5111; 659 = 5112; 661 = 4133; 662 = 3144; 663 = 8312; 664 = 4133; 669 = 4133; 671 = 4142; 673 = 3132; 674 = 3132; 675 = 3132; 679 = 4142; 681 = 4142; 682 = 9151; 689 = 4142; 691 = 4133; 699 = 9330; 701 = 8261; 702 = 7332; 703 = 7432; 705 = 8262; 706 = 7435; 707 = 3152; 709 = 7332; 711 = 7433; 712 = 7434; 713 = 7433; 714 = 7437; 715 = 7435; 716 = 7433; 719 = 7436; 721 = 7442; 722 = 7442; 723 = 8268; 729 = 8269; 731 = 8121; 732 = 8122; 733 = 8122; 735 = 7215; 736 = 7221; 737 = 7211; 739 = 8122; 741 = 7311; 742 = 7311; 743 = 3224; 744 = 3211; 745 = 7313; 746 = 7323; 749 = 7222; 751 = 8211; 752 = 7233; 753 = 7231; 754 = 7213; 755 = 7136; 756 = 7212; 757 = 7214; 758 = 8223; 759 = 7214; 761 = 7241; 762 = 7241; 763 = 8282; 764 = 7244; 765 = 7245; 766 = 3131; 769 = 8282; 771 = 6141; 772 = 8141; 773 = 8240; 775 = 7331; 776 = 7331; 777 = 7423; 779 = 8141; 781 = 7141; 782 = 7132; 783 = 7141; 789 = 7139; 791 = 7122; 793 = 7123; 794 = 7124; 795 = 7134; 796 = 7135; 799 = 7129; 801 = 7341; 802 = 7343; 803 = 8251; 804 = 7345; 805 = 8224; 809 = 8251; 811 = 7322; 812 = 7321; 813 = 8131; 814 = 7323; 819 = 8139; 821 = 8273; 822 = 7412; 823 = 8274; 824 = 8278; 825 = 9320; 826 = 7411; 827 = 8272; 828 = 8279; 829 = 8278; 831 = 8159; 832 = 8151; 833 = 8151; 834 = 8231; 835 = 8232; 839 = 8159; 841 = 8142; 842 = 8143; 843 = 8253; 849 = 8142; 851 = 7129; 852 = 8265; 853 = 7312; 854 = 7113; 859 = 7222; 861 = 8161; 869 = 8161; 871 = 8333; 872 = 8332; 873 = 8334; 879 = 9330; 881 = 9320; 882 = 9330; 889 = 9320; 891 = 9151; 901 = 5161; 902 = 9162; 903 = 5162; 904 = 3441; 905 = 5163; 906 = 5169; 909 = 5169; 911 = 1225; 912 = 5122; 913 = 5123; 914 = 5123; 915 = 4222; 916 = 5111; 919 = 5123; 921 = 5121; 929 = 5121; 931 = 9141; 932 = 9131; 939 = 9141; 941 = 5141; 942 = 5149; 949 = 5141; 951 = 9133; 952 = 9133; 959 = 9133; 961 = 3475; 971 = 5143; 979 = 5149; 981 = 110; 989 = 110")
+
+#now merge the imputed SE ISCO 
+df$ISCO88 <- ifelse(df$v3==10,df$isco88se,df$ISCO88)
+
+df$egp <- occupar::isco88toEGP(df$ISCO88, self.employed = df$v110, n.employees = df$v108)
+
+df <- df %>%
+  mutate(
+    egp6 = car::recode(egp, recodes = '"I     Service class I" = "Service I";"II    Service class II" = "Service II"; "III.a Routine non-manual, higher grade" = "Routine"; "III.b Routine non-manual, lower grade" = "Routine"; "IV.a  Self-employed with employees" = "Self"; "IV.b  Self-employed with no empoyees" = "Self"; "IV.c  Self-employed Farmers etc" = "Self"; "V     Manual supervisors/Lower grade technicians" = "Skilled";"VI    Skilled workers" = "Skilled"; "VII.a Unskilled workers" = "Unskilled"; "VII.b Farm labours" = "Unskilled"')
+  ) #V Manual supervisors = Skilled in Svallfors' original coding.
+```
+
+#### Income
+
+```{r income, echo=T}
+df$hhinc <- coalesce(df$cdn116,df$s116,df$usa116,df$n116,df$a116,df$aus116,df$nz116,df$d116)
+df$hhinc <- car::recode(df$hhinc,recodes = '97:99=NA')
+
+# Standardize income per country
+# The HH income is measured on different scales, this is a rough and relative measure
+df <- df %>%
+  group_by(v3) %>%
+  mutate(
+    hhinc_gz = scale(hhinc))
+```
+
+
+#### Other SES & Demographics
+
+```{r sesdem, echo=T}
+
+#Canada missing ed in years, impute, best guess (1=none, 2= grade school, 3= some high, 4=hs complete, 5=some college, 6= college complete, 7=university complete, 8=grad school)
+df$cdn103 = car::recode(df$cdn103,recodes = '1=4; 2=8; 3=10; 4=12; 5=14; 6=16; 7=17; 8=20; 99=NA')
+#Sweden impute (1=primary, 2=secondary(2 years), 3=secondary(3 years), 4= university) 
+df$s103 = car::recode(df$s103,recode = '1=8; 2=10; 3=12; 4=15; 99=NA')
+#Swe=10,Nor=9,GermanyW=2,Aut=6,Aus=1,NZ=16,Can=17,US=5
+df$cntry = car::recode(df$v3,recodes = '10=752; 9=578; 2=276; 1=36; 6=40; 16=554; 17=124; 5=840; 3:4=NA; 7:8=NA; 11:15=NA; 18=NA')
+df$female = car::recode(df$v99,recodes = '2=0; 9=NA')
+#trim age to 80
+df$age = car::recode(df$v100,recodes = '80:98=80; 99=NA')
+#Married (not separted) and Widowed = partnered, all else = 'not partnered')
+df$partnered = car::recode(df$v101,recodes = '1:2=1; 3:9=0')
+
+df$s103 <- ifelse(is.na(df$s103), df$cdn103, df$s103)
+df$v102 <- ifelse(is.na(df$v102), df$s103, df$v102)
+
+# Select only the 8 countries
+df <-df[complete.cases(df$cntry),]
+```
+
+### Create Listwise Dataframe
+
+
+```{r}
+# Create a listwise deleted df
+df_list <-df[complete.cases(df$v57),]
+df_list <-df_list[complete.cases(df_list$v59),]
+df_list <-df_list[complete.cases(df_list$v62),]
+
+```
+
+_______________________________________________________________________________________
+
+## Measuring "Redistributive Attitudes" 
+
+Classic attitude theory suggests that agree/disagree (or 'Likert' type response questions) tend to be normally distributed around some mean. In fact, latent variable measurment of attitudes also tends toward this assumption. Svallfors forces the three ISSP questions into somewhat dichotomous distributions by collapsing the two agree categories and the two disagree categories. It leads to a bit of a U-shape. However, then he combines the three collapsed variables into one additive scale. Generally linear scaling practices lead to continuous variables.  
+
+SVallfors does not offer an argumentation. Linos and West (2003) argue for a continuous variable. empirical question by comparing the Svallfors' distribution versus a more 'classical' attitudes distribution.
+
+NOTE: it appears that Andress and Heien used the same three ISSP 1992 questions for their study. The treated their scale as continuous and normally distributed. We should mention this in our paper.
+
+After working with lavaan for some time it became clear that there are too many limitations. lavaan cannot do an efficient exploratory factor analysis, handle dichotomous latent variable outcomes (i.e. 'latent class analysis'), and is limited in its multi-group modelling. Therefore, we need to use Mplus to fully investigate Svallfors' scale.
+
+### Table 1. The Distribution of Svallfors' Scale (Additive, thus assigning equal weight to each of the three variables)
+
+Distribution is not normal, also does not appear 'continuous' as this would imply a normal distribution or something smooth or curved. Figure 1 shows a strong skew between those who answered agree or strongly agree to all 3 questions, and everyone else.
+
+```{r govindex dist}
+ggplot(socIn92recode, aes(govIndex)) +
+  geom_bar(fill = "black") + 
+  ggtitle("Figure 1. Svallfors Collapsed Categories as Additive Index")
+
+```
+```{r indivplots, include = T}
+
+socIn92m$v57 <- car::recode(socIn92m$v57,recodes = '1=5; 2=4; 3=3; 4=2; 5=1; 8=8; 9=NA')
+socIn92m$v59 <- car::recode(socIn92m$v59,recodes = '1=5; 2=4; 3=3; 4=2; 5=1; 8=8; 9=NA')
+socIn92m$v62 <- car::recode(socIn92m$v62,recodes = '1=5; 2=4; 3=3; 4=2; 5=1; 8=8; 9=NA')
+
+socIn92recode$scale <- as.factor(round((socIn92recode$v57 + socIn92recode$v59 + socIn92recode$v62)/3, digits = 0))
+
+
+socIn92recode$v57 <- as.factor(socIn92recode$v57)
+socIn92recode$v59 <- as.factor(socIn92recode$v59)
+socIn92recode$v62 <- as.factor(socIn92recode$v62)
+socIn92m$v57 <- as.factor(socIn92m$v57)
+socIn92m$v59 <- as.factor(socIn92m$v59)
+socIn92m$v62 <- as.factor(socIn92m$v62)
+socIn92m<-socIn92m[complete.cases(socIn92m$v57),]
+socIn92m<-socIn92m[complete.cases(socIn92m$v59),]
+socIn92m<-socIn92m[complete.cases(socIn92m$v62),]
+
+# Why should we expect a normal distribution? This is how the raw data look
+ggplot(socIn92recode, aes(v57)) +
+  geom_bar(fill = "black") + 
+  scale_x_discrete("Original Response Choices (can't choose/non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree")) + 
+  ggtitle("Gov. Provide Jobs for Everyone that Wants One")
+```
+
+```{r jobsm, include=T}
+ggplot(socIn92m, aes(v57)) +
+  geom_bar(fill = "black") + 
+  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
+  ggtitle("Gov. Provide Jobs for Everyone that Wants One")
+```
+
+```{r indivplots2, include = T}
+ggplot(socIn92m, aes(v59)) +
+  geom_bar(fill = "black") + 
+  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree","Can't choose")) + 
+  ggtitle("Gov. Reduce Income Differences")
+```
+
+```{r indivplots3, include = T}
+ggplot(socIn92m, aes(v62)) +
+  geom_bar(fill = "black") + 
+  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree","Can't choose")) + 
+  ggtitle("Gov. Provide Basic Income")
+```
+
+```{r scaleplot, include = T}
+# If we assume an underlying latent with equal weight assigned to each variable, the distribution looks skewed normal
+ggplot(socIn92recode, aes(scale)) +
+  geom_bar(fill = "black") + 
+  scale_x_discrete("*Averaged Continuous Response Choice, 3 questions", labels = c("Strongly disagree*","Disagree*","Neutral*" ,"Agree*" ,"Strongly agree*")) + 
+  ggtitle("Support for Government Intervention Scale")
+```
+
+
+
+### Table A. Correlations
+
+In this chunk we create an export .dat file for Mplus, in addition to looking at the correlations between the attitude variables and a few criterion variables.
+
+```{r measurement2, echo = T, include = T}
+# Correlation commands are easier when the data.frame has only the variables of interest.
+
+socIn92cor <- as.data.frame(dplyr::select(socIn92recode, v57, v59, v62, r1, r2, r3, v3, v99, v100, v102, s103, cdn103))
+
+# output Mplus data (future iterations should include missing values)
+# does not accept haven attributes, remove them by exporting to csv and reimporting
+write.csv(socIn92cor, file = "svtemp.csv")
+socinm <- as.data.frame(read.csv(file = "svtemp.csv"))
+unlink("svtemp.csv")
+
+
+prepareMplusData(socinm, filename = "svallfors.dat", inpfile = T)
+
+cor <- cor(socIn92cor)
+# This keeps only one side of the diagonal
+cor[upper.tri(cor, diag=TRUE)] <- as.numeric("")
+
+options(knitr.kable.NA = '')
+t10 <- knitr::kable(cor,format="html", digits = round(2), col.names = c("IncD_5","Jobs_5","BasicI_5","IncD_3","Jobs_3","BasicI_3","Country","Male","Age","Ed_Years"), caption = "Table 10. Correlations of Original and Recoded ISSP Questions from Svallfors (1997)")
+
+column_spec(t10, 2:10, "5em")
+```
+
+### Missing data
+
+```{r missing}
+
+```
+
+### Note from Mplus results (and you can see this below in lavaan)
+The basic three factor scale is "just identified", this means it has as many estimated parameters as observed parameters. This means there is no possibility to use the global chi-square fit test. We thus have to rely on indices (AIC, Log-likelihood) to compare models.
+
+## Import results from Mplus
+
+```{r fitimport}
+lca2 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac2.out", recursive = TRUE)
+lca3 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac3.out", recursive = TRUE)
+lca4 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac4.out", recursive = TRUE)
+lca5 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac5.out", recursive = TRUE)
+
+```
+
+
+The risk in collapsing response categories is that important information about the underlying attitude might be thrown away, and worse that this might introduce error that is non-random and produces artificial results. However, Svallfors' collapsed coding might still be empirically appropriate, if not somehow superior to using the data in its original format. We assume he had a logical basis for this methodological choice. We test this first by estimating an ordered probit model of each of the questions with their original responses. To support Svallfors decision we would expect that the cutpoints would show little distance between strongly agree and agree, and the same for strongly disagree and disagree. If found, we would have evidence that respondents who select either of the two responses do not systematically differ.
+
+We have a second strategy for testing this and further testing the choice of combining these three particular items into a scale. ...would be different latent class analyses (LCA) using the question data in their original 5-category response format. To substantiate Svallfors' method we would expect that the LCAs do not show 
+
+## Fit statistics from Mplus
+
+
+
+
+
+### Measurement Models
+
+Prep data for SEM, separate data.frames for each SEM seems to work best. Also, attributes must be removed for lavaan to operate properly.
+
+```{r measurement3, echo = F, include = T}
+# Remove missings to use ML estimator
+
+socIn92recodeM <- dplyr::select(socIn92recode, v57, v59, v62, r1, r2, r3, v3)
+socIn92recodeM <- as.data.frame(na.omit(socIn92recodeM))
+
+# Remove attributes or some lavaan functions do not work
+socIn92recodeM[] = c(socIn92recodeM, recursive=TRUE)
+
+```
+
+
+
+
+```{r measurement4, include = F}
+# This assigns a factor structure to a latent variable "att_sval" using the three questions after they were recoded with Svallfors' 3-categories scheme. Agree / Neutral / Disagree.
+m_sval <- 'att_sval =~ r1 + r2 + r3' 
+
+# This factor structure is equivalent to Savllfors' "government index" scale. Each item's factor loading is fixed at 1. The 1 determines that each has equal weight in constructing the scale. Any additive index automatically assigns equal weight to every item in the scale, thus the two are perfectly correlated, but likely have different means.
+m_sval1 <- 'att_sval1 =~ 1*r1 + 1*r2 + 1*r3' # 1* = fixed at 1
+
+# This model uses the original 5-category coding of the three variables. Strongly agree / Agree / Neutral / Disagree / Strongly disagree
+m_norm <- 'att_norm =~ v57 + v59 + v62'
+
+
+# The 'cfa' command is known as a "confirmatory factor analysis". This simply means that we assign the factor structure to the model, rather than having the model do an "exploratory factor analysis" where it 'explores' different possible factor structures among the various combinations of variables.
+
+fit_sval <- cfa(m_sval, data = socIn92recodeM)
+fit_sval1 <- cfa(m_sval1, data = socIn92recodeM)
+fit_norm <- cfa(m_norm, data = socIn92recodeM)
+
+# Normally we look at standardized factor scores for comparison.
+
+summary(fit_sval, fit.measures=TRUE)
+inspect(fit_sval,what="std")$lambda
+
+#This command merges the predicted factor scores into the original data
+
+fs_sval <- lavPredict(fit_sval)
+sval_idx <- lavInspect(fit_sval, "case.idx")
+for (fs in colnames(fs_sval)) {
+  socIn92recodeM[sval_idx, fs] <- fs_sval[ , fs]
+}
+```
+
+
+```{r measurement5, include = F}
+summary(fit_sval1, fit.measures=TRUE)
+inspect(fit_sval1,what="std")$lambda
+fs_sval1 <- lavPredict(fit_sval1)
+sval1_idx <- lavInspect(fit_sval1, "case.idx")
+for (fs in colnames(fs_sval1)) {
+  socIn92recodeM[sval1_idx, fs] <- fs_sval1[ , fs]
+}
+
+
+```
+
+
+```{r measurement6, include = F}
+# Need to compare predicted fs to see if it is identical to Svallfors' additive scale
+
+
+summary(fit_norm, fit.measures=TRUE)
+inspect(fit_norm,what="std")$lambda
+fs_norm <- lavPredict(fit_norm)
+norm_idx <- lavInspect(fit_norm, "case.idx")
+for (fs in colnames(fs_norm)) {
+  socIn92recodeM[norm_idx, fs] <- fs_norm[ , fs]
+}
+
+# We can test that this version is identical to an additive scale
+
+socIn92recodeM$govindex <- socIn92recodeM$r1 + socIn92recodeM$r2 + socIn92recodeM$r3
+
+acor <- cor(socIn92recodeM)
+print(acor[11,9])
+
+#We will accept 0.999 as 'identical' assuming rounding error is present
+
+
+```
+
+```{r fitgovindex, echo = T}
+# How well do the attitude measures predict Svallfors' gov index
+
+fitgovindex <- lm(att_sval1 ~ v57 + v59 + v62 ,data = socIn92recodeM)
+lm.beta(fitgovindex)
+
+# Inspect residuals
+
+socIn92recodeM$fgovp <- predict(fitgovindex)
+socIn92recodeM$resid <- socIn92recodeM$fgovp - socIn92recodeM$att_sval1
+```
+
+### Plotted Residuals of Svallfors' variables and the Fitted Factor
+```{r resid2, include = T}
+# They do not follow a normal distribution
+
+hist(socIn92recodeM$resid, breaks = 20)
+```
+
+### The values of the fitted factor (quasi normally distributed, no?)
+```{r fittedindex, include = T}
+hist(socIn92recodeM$fgovp, breaks = 20)
+```
+
+
+
+
+
+```{r xxx, include = T}
+# How well do Svallfors recoded measures predict gov index
+fitgovindex2 <- lm(att_sval1 ~ r1 + r2 + r3 ,data = socIn92recodeM)
+lm.beta(fitgovindex2)
+```
+
+
