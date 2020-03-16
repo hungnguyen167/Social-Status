@@ -1,5 +1,5 @@
 ---
-title: 'Attitudes toward Redistribution Thirty Years After: Theoretical and Empirical
+title: 'Replication Appendix; Attitudes toward Redistribution Thirty Years After: Theoretical and Empirical
   Reflections on Svallfors’ (1997) Findings'
 output:
   html_document:
@@ -20,11 +20,17 @@ _____________________________________________________________________________
 $~$
 $~$
 
-### Description
+## DESCRIPTION
 
-In 1997, Stefan Svallfors (1997) published, “Worlds of Welfare and Attitudes to Redistribution: A Comparison of Eight Western Nations” in which he analyzed data from the 1992 ‘Social Inequality Module’ of the International Social Survey Program (ISSP). He wanted to understand how attitudes are structured in various welfare regimes. For twenty years, his study has been a standard citation in scholarship on comparative welfare states and social policy preferences. The ISSP was the first macro-comparative survey of policy preferences, and Svallfors’ work was one of the first to compare attitudes toward redistribution in as many as eight countries using these data. In this paper we revisit his path-breaking work in light of theories of policy preferences. We replicate his work, we further investigate his measurement and distributional assumptions about attitudes toward redistribtuion, and we then expand his original work.
+This is an appendix to our study, "Attitudes toward Redistribution Thirty Years After: Theoretical and Empirical Reflections on Svallfors’ (1997) Findings"
 
-We use the ISSP 1992 'Social Inequality' data provided by GESIS. File "[ZA.2310.dta](https://www.gesis.org/issp/modules/issp-modules-by-topic/social-inequality/1992)".
+In 1997, Stefan Svallfors "[(1997)](https://doi.org/10.1093/oxfordjournals.esr.a018219)" published, “Worlds of Welfare and Attitudes to Redistribution: A Comparison of Eight Western Nations” in which he analyzed data from the 1992 ‘Social Inequality Module’ of the International Social Survey Program (ISSP). He wanted to understand how attitudes are structured in various welfare regimes. For twenty years, his study has been a standard citation in scholarship on comparative welfare states and social policy preferences. The ISSP was the first macro-comparative survey of policy preferences, and Svallfors’ work was one of the first to compare attitudes toward redistribution in as many as eight countries using the 1992 data (there as a ISSP in 1985 but it only had 5 countries). In this paper we revisit his path-breaking work in light of theories of policy preferences. We replicate his work, we further investigate his measurement and distributional assumptions about attitudes toward redistribtuion, and we then expand his original work to include more recent waves of ISSP data.
+
+GESIS provides the ISSP 1992 'Social Inequality' data  "[ZA2310.dta](https://www.gesis.org/issp/modules/issp-modules-by-topic/social-inequality/1992)".
+
+However, these data have both non-response and the response choice "Can't choose" coded as missing ("." in Stata). Therefore, we contaced GESIS and got the file ZA2310_2006-07-18.dta, which we suspect is likely just the old SPSS version transferred into Stata ("[ZA2310_2006-07-18.sav"](https://dbk.gesis.org/dbksearch/sdesc2.asp?no=2310&db=E&tab=3)")
+
+### The Original Svallfors Study
 
 **His original study used three questions:** 
 
@@ -44,11 +50,10 @@ We use the ISSP 1992 'Social Inequality' data provided by GESIS. File "[ZA.2310.
 Swe, Nor, Ger, Aut, Aus, Nz, Can, USA
 Theese are in v3 coded as Swe=10,Nor=9,GermanyW=2,Aut=6,Aus=1,NZ=16,Can=17,US=5
 
-#######################
-#2-points to follow up on
-#on the GESIS archive there appears to be older versions of the data, we should try this version to see if we get an exact replication of Svallfors
-#the codebook states that respondents could select "Don't know/can't choose" and it should have been coded "8", but there is no such code here. We should email GESIS and ask about this.
-#######################
+
+____________________________________________________________________________________________________________________
+### SETUP
+
 
 ```{r, include = F}
 rm(list = ls())
@@ -79,27 +84,28 @@ knitr::opts_chunk$set(message = F)
 ```{r readdata, include=FALSE}
 # Here we import the data. 
 
-socIn92 <- read_dta(paste(wd,"ZA2310.dta",sep=""))
-
-
+# Version with 'Can't choose' left in the data
+socIn92m <- read_dta(paste(wd, "ZA2310_2006-07-18.dta",sep=""))
 
 
 ```
 
 __________________________________________________________________________________
 
-## PART ONE: Replication of Svallfors (1997)
+### Disclaimer
+
+Note that this part will go in an **online appendix**. When we arrive at the linear models we cannot replicate his results exactly. Some of the differences are worrysome. This is not the main point of our paper. Nate contacted some colleagues at Svallfors dept. and they siad they did not expect him to have the original data or code. Nate contacted GESIS about an earlier version of the ISSP 1992 and they said they had no record of one. Nate contacted ISSP principals Jonathan Kelley and Mariah Evans about the possibility of an earlier data version, but they have not yet replied (16.03.2020)
 
 ### Dataset Prep
 
-We imported the original dataset (SocIn92) and then generate a recoded dataset (SocIn92recode). We create new variables (dplyr:mutate) by recoding (car::recode) the above mentioned variables following Svallfors workflow.
+We imported the original dataset (SocIn92) and then generate a recoded dataset (SocIn92recode). We create new variables by recoding the above mentioned variables following Svallfors workflow.
 
-```{r, echo = T}
-socIn92recode <- socIn92 %>%  
+```{r index, echo = T}
+socIn92recode <- socIn92m %>%  
   dplyr::mutate(
-    r1= car::recode(socIn92$v57,recodes = '1:2=2; 3=1; 4:5=0'),
-    r2= car::recode(socIn92$v59,recodes = '1:2=2; 3=1; 4:5=0'),
-    r3= car::recode(socIn92$v62,recodes = '1:2=2; 3=1; 4:5=0'),
+    r1= car::recode(socIn92m$v57,recodes = '1:2=2; 3=1; 4:5=0; 8:9=NA'),
+    r2= car::recode(socIn92m$v59,recodes = '1:2=2; 3=1; 4:5=0; 8:9=NA'),
+    r3= car::recode(socIn92m$v62,recodes = '1:2=2; 3=1; 4:5=0; 8:9=NA'),
       
 # Here we create Svallfors additive index "govermental index". Cases with at least one NA value are automatically excluded. 
 
@@ -107,9 +113,9 @@ socIn92recode <- socIn92 %>%
 
 # to measure the percentage of people agreeing (answer category 1 and 2). Needed for table 1.     
  
-    r1p= car::recode(socIn92$v57,recodes = '1:2=100; 3:5=0'), 
-    r2p= car::recode(socIn92$v59,recodes = '1:2=100; 3:5=0'),
-    r3p= car::recode(socIn92$v62,recodes = '1:2=100; 3:5=0')
+    r1p= car::recode(socIn92m$v57,recodes = '1:2=100; 3:5=0'), 
+    r2p= car::recode(socIn92m$v59,recodes = '1:2=100; 3:5=0'),
+    r3p= car::recode(socIn92m$v62,recodes = '1:2=100; 3:5=0')
   )%>%
   
 # Now we reduce our dataset to the countries Svallfors includes in his analysis (dyplr:filter).
@@ -118,16 +124,26 @@ socIn92recode <- socIn92 %>%
      v3 %in% c(2,5,17,6,1,16,9,10)  
      )
 
- # We remove all cases with NA values in the variables (complete.cases)
+# We remove all cases with NA values in the variables (complete.cases)
 
-socIn92recode<-socIn92recode[complete.cases(socIn92recode$r1p),]
-socIn92recode<-socIn92recode[complete.cases(socIn92recode$r2p),]
-socIn92recode<-socIn92recode[complete.cases(socIn92recode$r3p),]
+socIn92recode<-socIn92recode[complete.cases(socIn92recode$r1),]
+socIn92recode<-socIn92recode[complete.cases(socIn92recode$r2),]
+socIn92recode<-socIn92recode[complete.cases(socIn92recode$r3),]
+
+# Second dataset, 'can't choose included'
+socIn92recodem <- socIn92m %>%  
+  dplyr::mutate(
+    r1= car::recode(socIn92m$v57,recodes = '1:2=2; 3=1; 4:5=0; 8=8; 9=NA'),
+    r2= car::recode(socIn92m$v59,recodes = '1:2=2; 3=1; 4:5=0; 8=8; 9=NA'),
+    r3= car::recode(socIn92m$v62,recodes = '1:2=2; 3=1; 4:5=0; 8=8; 9=NA'))%>%
+   dplyr::filter(
+     v3 %in% c(2,5,17,6,1,16,9,10)  
+     )
 ```
 
-### A Reproduction of "Table 1" from Svallfors (1997, p. 288)
+### Table A. A Reproduction of "Table 1" from Svallfors (1997, p. 288)
 
-### The original Table 1
+#### The original Table 1
 
 ![Table 1 Svallfors](Svallfors_1997_Table_1.bmp)
 
@@ -164,18 +180,12 @@ column_spec(t1, 2:9, "4em")
 
 ```
 
-### Reproductions of Table 2 (Svallfors 1997, p. 289). 
-
-### The Original Table 2
-
-![Table 2 Svallfors](Svallfors_1997_Table_2.bmp)
-
-OUr first reproduction is a weighted version of Svallfors' Table 1
+### Table B. Weighted version of Svallfors' Table 1
 
 This table uses the dplyr::mutate function to obtain weighted means using the ISSP provided weights, we should check these at some point - are the provided for each country? are they plausible?.
 
-```{r, echo = T, incldue = T}
 
+```{r, echo = T, incldue = T}
 
 socIn92recode<-socIn92recode %>%
   group_by(v3)%>% 
@@ -215,7 +225,13 @@ colnames(table1.2) <- c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA")
 
 ```
 
-### Table 3. Replication of Svallfors "Table 2"
+
+#### The Original Table 2
+
+![Table 2 Svallfors](Svallfors_1997_Table_2.bmp)
+
+
+### Table C. Replication of Svallfors "Table 2" (1997, p. 289).
 
 Here we replicate **Tabel 2: Index distribution**  in the same way we constructed Table 1. 
 
@@ -241,16 +257,18 @@ row.names(table2)<- item.table2
 colnames(table2)<- cnt 
 
 
-t3 <- knitr::kable(table2,format="html", digits = round(2), caption = "Table 3. Government Index Descriptives and Alpha (replication of \"Table 2\" in Svallfors (1997)")
+t3 <- knitr::kable(table2,format="html", digits = round(2), caption = "Table C. Government Index Descriptives and Alpha (replication of \"Table 2\" in Svallfors (1997)")
 
 column_spec(t3, 2:9, "4em")
 
 ```
-### Table 4. Descrepancies in our results
+
+
+### Table D. Descrepancies in our results
 
 From the start of this project we noticed small differences in the descriptive statistics between the original Svallfors study and ours. We suspect this is due to our usage of the GESIS 1992 ISSP data versus Svallfors' 1992 data file which was not cleaned, standardized and archived. **We plan to contact Svallfors when our work is closer to completion to ask about these descrepancies.**
 
-Table 4 demonstrates the differences between our results and Svallfors' results. Panel A has unweighted and Panel B weighted differences in means.
+Appendix Table D demonstrates the differences between our results and Svallfors' results. Panel A has unweighted and Panel B weighted differences in means.
 
 ```{r compareT1, echo = T, incldue = T}
 #Now we want to compare our results for table 1 with the results of Svallfors 
@@ -282,7 +300,7 @@ column_spec(t4b, 2:9, "4em")
 
 ```
 
-Table 4. Descrepancies in Author Results versus Svallfors' (1997) Original.
+### Table D. Descrepancies in Author Results versus Svallfors' (1997) Original.
 ```{r compareT4, echo = F}
 t4a <- knitr::kable(table1diff, format="html", digits = round(3), caption = "Panel A. Unweighted Discrepancies")
 
@@ -293,7 +311,7 @@ t4b <- knitr::kable(table1diff_w, format="html", digits = round(3), caption = "P
 column_spec(t4b, 2:9, "4em")
 ```
 
-### Class Scheme Coding
+#### Class Scheme Coding
 
 We attempt to replicate the Erikson, Goldthorpe and Portracrero [1979](https://www.jstor.org/stable/589632) Class Scheme. From Svallfors' article he claims to followtheir coding scheme. We follow the EGP to the best of our ability by recoding various occupational codes provided by the countries in 1992; in other words, not all provided ISCO back then. Our resulting EGP scheme follows but does not exactly replicate Svallfors' results. We are unsure if this is a result of the data being slight different (see Tables 1-4) or if Svallfors' class coding scheme was different.
 
@@ -335,7 +353,7 @@ newdata <- newdata %>%
   ) #V Manual supervisors = Skilled in Svallfors' coding. It's another decision he made.
 ```
 
-### Table 5. Distribution of Government Index by EGP Class and Country
+### Table E. Distribution of Government Index by EGP Class and Country
 
 ```{r EGP2, include = T, echo = T}
 tableA2 <- round(as.data.frame(sapply(list(10,9,2,6,1,16,17,5), function(x) {
@@ -343,12 +361,14 @@ tableA2 <- round(as.data.frame(sapply(list(10,9,2,6,1,16,17,5), function(x) {
   tapply(d$govIndex,d$egp6, mean)
   })),2)
 colnames(tableA2) <- c("Swe","Nor","Ger","Aut","Aus","NZ","Can","USA")
-t5 <- knitr::kable(tableA2,format="html", digits = round(2), caption = "Distribution of \'Government Index\' by EGP Class and Country. Part of Svallfors\' \"Table A2\"")
+t5 <- knitr::kable(tableA2,format="html", digits = round(2), caption = "Table E. Distribution of \'Government Index\' by EGP Class and Country. Part of Svallfors\' \"Table A2\"")
 
 column_spec(t5, 2:9, "4em")
 ```
 
 ### Attempt to Reproduce Results. The differences are sometimes worrysome. 
+
+### Table F. Replication of Svallfors Regressions
 
 ```{r}
 
@@ -382,267 +402,8 @@ knitr::kable(table6,format="html", digits = round(2), caption = "Exploring the S
 ```
 
 
-_______________________________________________________________________________________
 
-## PART TWO: Questioning Svallfors Construct of "Redistributive Attitudes" 
 
-Classic attitude theory suggests that agree/disagree (or 'Likert' type response questions) tend to be normally distributed around some mean. In fact, latent varaible measurment of attitudes also tends toward this assumption. Svallfors forces the three ISSP questions into somewhat dichotomous distributions by collapsing the two agree categories and the two disagree categories. 
 
-We turn this into an empirical question by comparing the Svallfors' distribution versus a more 'classical' attitudes distribution.
-
-NOTE: it appears that Andress and Heien used the same three ISSP 1992 questions for their study. The treated their scale as continuous and normally distributed. We should mention this in our paper.
-
-After working with lavaan for some time it became clear that there are too many limitations. lavaan cannot do an efficient exploratory factor analysis, handle dichotomous latent variable outcomes (i.e. 'latent class analysis'), and is limited in its multi-group modelling. Therefore, we need to use Mplus to fully investigate Svallfors' scale.
-
-### Table X. The Distribution of Svallfors' Scale (Additive, thus assigning equal weight to each of the three variables)
-
-Distribution is not normal.
-
-```{r govindex dist}
-ggplot(socIn92recode, aes(govIndex)) +
-  geom_bar(fill = "black") + 
-  ggtitle("Svallfors Collapsed Categories as Additive Index")
-hist(socIn92recode$r1, 3)
-
-```
-
-### Table A. Correlations
-
-In this chunk we create an export .dat file for Mplus, in addition to looking at the correlations between the attitude variables and a few criterion variables.
-
-```{r measurement2, echo = T, include = T}
-# Correlation commands are easier when the data.frame has only the variables of interest.
-
-socIn92cor <- as.data.frame(dplyr::select(socIn92recode, v57, v59, v62, r1, r2, r3, v3, v99, v100, v102, s103, cdn103))
-
-# Make 'agree' = higher values
-socIn92cor <- socIn92cor %>% dplyr::mutate(
-v57 = car::recode(socIn92cor$v57,recodes = '1=5; 2=4; 3=3; 4=2; 5=1'),
-v59 = car::recode(socIn92cor$v59,recodes = '1=5; 2=4; 3=3; 4=2; 5=1'),
-v62 = car::recode(socIn92cor$v62,recodes = '1=5; 2=4; 3=3; 4=2; 5=1'),
-#Canada missing ed in years, impute, best guess (1=none, 2= grade school, 3= some high, 4=hs complete, 5=some college, 6= college complete, 7=university complete, 8=grad school)
-cdn103 = car::recode(socIn92cor$cdn103,recodes = '1=4; 2=8; 3=10; 4=12; 5=14; 6=16; 7=17; 8=20'),
-#Sweden impute (1=primary, 2=secondary(2 years), 3=secondary(3 years), 4= university) 
-s103 = car::recode(socIn92cor$s103,recode = '1=8; 2=10; 3=12; 4=15'),
-#Swe=10,Nor=9,GermanyW=2,Aut=6,Aus=1,NZ=16,Can=17,US=5
-v3 = car::recode(socIn92cor$v3,recodes = '10=752; 9=578; 2=276; 1=36; 6=40; 16=554; 17=124; 5=840'))
-
-socIn92cor$s103 <- ifelse(is.na(socIn92cor$s103), socIn92cor$cdn103, socIn92cor$s103)
-socIn92cor$v102 <- ifelse(is.na(socIn92cor$v102), socIn92cor$s103, socIn92cor$v102)
-
-
-socIn92cor <- as.data.frame(dplyr::select(socIn92cor, v57, v59, v62, r1, r2, r3, v3, v99, v100, v102))
-socIn92cor <- drop_na(socIn92cor)
-
-# output Mplus data (future iterations should include missing values)
-# does not accept haven attributes, remove them by exporting to csv and reimporting
-write.csv(socIn92cor, file = "svtemp.csv")
-socinm <- as.data.frame(read.csv(file = "svtemp.csv"))
-unlink("svtemp.csv")
-
-
-prepareMplusData(socinm, filename = "svallfors.dat", inpfile = T)
-
-cor <- cor(socIn92cor)
-# This keeps only one side of the diagonal
-cor[upper.tri(cor, diag=TRUE)] <- as.numeric("")
-
-options(knitr.kable.NA = '')
-t10 <- knitr::kable(cor,format="html", digits = round(2), col.names = c("IncD_5","Jobs_5","BasicI_5","IncD_3","Jobs_3","BasicI_3","Country","Male","Age","Ed_Years"), caption = "Table 10. Correlations of Original and Recoded ISSP Questions from Svallfors (1997)")
-
-column_spec(t10, 2:10, "5em")
-```
-
-### Missing data
-
-```{r missing}
-
-```
-
-### Note from Mplus results (and you can see this below in lavaan)
-The basic three factor scale is "just identified", this means it has as many estimated parameters as observed parameters. This means there is no possibility to use the global chi-square fit test. We thus have to rely on indices (AIC, Log-likelihood) to compare models.
-
-## Import results from Mplus
-
-```{r fitimport}
-lca2 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac2.out", recursive = TRUE)
-lca3 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac3.out", recursive = TRUE)
-lca4 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac4.out", recursive = TRUE)
-lca5 <- readModels("C:/GitHub/Svallfors-1997-Replication/svallfors1lcac5.out", recursive = TRUE)
-
-```
-
-
-The risk in collapsing response categories is that important information about the underlying attitude might be thrown away, and worse that this might introduce error that is non-random and produces artificial results. However, Svallfors' collapsed coding might still be empirically appropriate, if not somehow superior to using the data in its original format. We assume he had a logical basis for this methodological choice. We test this first by estimating an ordered probit model of each of the questions with their original responses. To support Svallfors decision we would expect that the cutpoints would show little distance between strongly agree and agree, and the same for strongly disagree and disagree. If found, we would have evidence that respondents who select either of the two responses do not systematically differ.
-
-We have a second strategy for testing this and further testing the choice of combining these three particular items into a scale. ...would be different latent class analyses (LCA) using the question data in their original 5-category response format. To substantiate Svallfors' method we would expect that the LCAs do not show 
-
-## Fit statistics from Mplus
-
-
-
-
-
-### Measurement Models
-
-Prep data for SEM, separate data.frames for each SEM seems to work best. Also, attributes must be removed for lavaan to operate properly.
-
-```{r measurement3, echo = F, include = T}
-# Remove missings to use ML estimator
-
-socIn92recodeM <- dplyr::select(socIn92recode, v57, v59, v62, r1, r2, r3, v3)
-socIn92recodeM <- as.data.frame(na.omit(socIn92recodeM))
-
-# Remove attributes or some lavaan functions do not work
-socIn92recodeM[] = c(socIn92recodeM, recursive=TRUE)
-
-```
-
-
-
-
-```{r measurement4, include = F}
-# This assigns a factor structure to a latent variable "att_sval" using the three questions after they were recoded with Svallfors' 3-categories scheme. Agree / Neutral / Disagree.
-m_sval <- 'att_sval =~ r1 + r2 + r3' 
-
-# This factor structure is equivalent to Savllfors' "government index" scale. Each item's factor loading is fixed at 1. The 1 determines that each has equal weight in constructing the scale. Any additive index automatically assigns equal weight to every item in the scale, thus the two are perfectly correlated, but likely have different means.
-m_sval1 <- 'att_sval1 =~ 1*r1 + 1*r2 + 1*r3' # 1* = fixed at 1
-
-# This model uses the original 5-category coding of the three variables. Strongly agree / Agree / Neutral / Disagree / Strongly disagree
-m_norm <- 'att_norm =~ v57 + v59 + v62'
-
-
-# The 'cfa' command is known as a "confirmatory factor analysis". This simply means that we assign the factor structure to the model, rather than having the model do an "exploratory factor analysis" where it 'explores' different possible factor structures among the various combinations of variables.
-
-fit_sval <- cfa(m_sval, data = socIn92recodeM)
-fit_sval1 <- cfa(m_sval1, data = socIn92recodeM)
-fit_norm <- cfa(m_norm, data = socIn92recodeM)
-
-# Normally we look at standardized factor scores for comparison.
-
-summary(fit_sval, fit.measures=TRUE)
-inspect(fit_sval,what="std")$lambda
-
-#This command merges the predicted factor scores into the original data
-
-fs_sval <- lavPredict(fit_sval)
-sval_idx <- lavInspect(fit_sval, "case.idx")
-for (fs in colnames(fs_sval)) {
-  socIn92recodeM[sval_idx, fs] <- fs_sval[ , fs]
-}
-```
-
-
-```{r measurement5, include = F}
-summary(fit_sval1, fit.measures=TRUE)
-inspect(fit_sval1,what="std")$lambda
-fs_sval1 <- lavPredict(fit_sval1)
-sval1_idx <- lavInspect(fit_sval1, "case.idx")
-for (fs in colnames(fs_sval1)) {
-  socIn92recodeM[sval1_idx, fs] <- fs_sval1[ , fs]
-}
-
-
-```
-
-
-```{r measurement6, include = F}
-# Need to compare predicted fs to see if it is identical to Svallfors' additive scale
-
-
-summary(fit_norm, fit.measures=TRUE)
-inspect(fit_norm,what="std")$lambda
-fs_norm <- lavPredict(fit_norm)
-norm_idx <- lavInspect(fit_norm, "case.idx")
-for (fs in colnames(fs_norm)) {
-  socIn92recodeM[norm_idx, fs] <- fs_norm[ , fs]
-}
-
-# We can test that this version is identical to an additive scale
-
-socIn92recodeM$govindex <- socIn92recodeM$r1 + socIn92recodeM$r2 + socIn92recodeM$r3
-
-acor <- cor(socIn92recodeM)
-print(acor[11,9])
-
-#We will accept 0.999 as 'identical' assuming rounding error is present
-
-
-```
-
-```{r fitgovindex, echo = T}
-# How well do the attitude measures predict Svallfors' gov index
-
-fitgovindex <- lm(att_sval1 ~ v57 + v59 + v62 ,data = socIn92recodeM)
-lm.beta(fitgovindex)
-
-# Inspect residuals
-
-socIn92recodeM$fgovp <- predict(fitgovindex)
-socIn92recodeM$resid <- socIn92recodeM$fgovp - socIn92recodeM$att_sval1
-```
-
-### Plotted Residuals of Svallfors' variables and the Fitted Factor
-```{r resid2, include = T}
-# They do not follow a normal distribution
-
-hist(socIn92recodeM$resid, breaks = 20)
-```
-
-### The values of the fitted factor (quasi normally distributed, no?)
-```{r fittedindex, include = T}
-hist(socIn92recodeM$fgovp, breaks = 20)
-```
-
-```{r indivplots, include = T}
-
-
-
-socIn92recode$v57 <- car::recode(socIn92recode$v57,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
-socIn92recode$v59 <- car::recode(socIn92recode$v59,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
-socIn92recode$v62 <- car::recode(socIn92recode$v62,recodes = '1=5; 2=4; 3=3; 4=2; 5=1')
-
-socIn92recode$scale <- as.factor(round((socIn92recode$v57 + socIn92recode$v59 + socIn92recode$v62)/3, digits = 0))
-
-# Why should we expect a normal distribution? This is how the raw data look
-socIn92recode$v57 <- as.factor(socIn92recode$v57)
-socIn92recode$v59 <- as.factor(socIn92recode$v59)
-socIn92recode$v62 <- as.factor(socIn92recode$v62)
-ggplot(socIn92recode, aes(v57)) +
-  geom_bar(fill = "black") + 
-  scale_x_discrete("Original Response Choices (missing/don't know omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree")) + 
-  ggtitle("Gov. Provide Jobs for Everyone that Wants One")
-```
-
-
-```{r indivplots2, include = T}
-ggplot(socIn92recode, aes(v59)) +
-  geom_bar(fill = "black") + 
-  scale_x_discrete("Original Response Choices (missing/don't know omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree")) + 
-  ggtitle("Gov. Reduce Income Differences")
-```
-
-```{r indivplots3, include = T}
-ggplot(socIn92recode, aes(v62)) +
-  geom_bar(fill = "black") + 
-  scale_x_discrete("Original Response Choices (missing/don't know omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree")) + 
-  ggtitle("Gov. Provide Basic Income")
-```
-
-```{r scaleplot, include = T}
-# If we assume an underlying latent with equal weight assigned to each variable, the distribution looks skewed normal
-ggplot(socIn92recode, aes(scale)) +
-  geom_bar(fill = "black") + 
-  scale_x_discrete("Averaged Response Choice, all three questions", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree")) + 
-  ggtitle("Support for Government Intervention Scale")
-```
-
-
-
-```{r xxx, include = T}
-# How well do Svallfors recoded measures predict gov index
-fitgovindex2 <- lm(att_sval1 ~ r1 + r2 + r3 ,data = socIn92recodeM)
-lm.beta(fitgovindex2)
-```
 
 
