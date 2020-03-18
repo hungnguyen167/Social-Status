@@ -71,7 +71,7 @@ rm(list = ls())
 
 library(pacman)
 
-pacman::p_load("dplyr","tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr","ltm","questionr","survey","remotes","stargazer","lavaan","ltm", "tidylog", "kableExtra","lm.beta","MplusAutomation","MASS")
+pacman::p_load("dplyr","tidyverse","knitr","haven","car","plyr","data.table","expss","htmlTable","magrittr","ltm","questionr","survey","remotes","stargazer","lavaan","ltm", "tidylog", "kableExtra","lm.beta","MplusAutomation","MASS","glm.predict","brant")
 
 #remotes::install_github("DiogoFerrari/occupar")
 library(occupar)
@@ -151,11 +151,13 @@ df <- df %>%
 #### Income
 
 ```{r income, echo=T}
-df$hhinc <- coalesce(df$cdn116,df$s116,df$usa116,df$n116,df$a116,df$aus116,df$nz116,df$d116)
+df$hhinc <- coalesce(df$cdn116,df$s117,df$usa116,df$n116,df$a116,df$aus116,df$nz116,df$d116)
 df$hhinc <- car::recode(df$hhinc,recodes = '97:99=NA')
 
 # Standardize income per country
-# The HH income is measured on different scales, this is a rough and relative measure
+  # The HH income is measured on different scales, this is a rough and relative measure
+  # Sweden did not ask household income, this is also a problem. Use respondent's income for now.
+
 df <- df %>%
   group_by(v3) %>%
   mutate(
@@ -173,7 +175,7 @@ df$cdn103 = car::recode(df$cdn103,recodes = '1=4; 2=8; 3=10; 4=12; 5=14; 6=16; 7
 df$s103 = car::recode(df$s103,recode = '1=8; 2=10; 3=12; 4=15; 99=NA')
 #Swe=10,Nor=9,GermanyW=2,Aut=6,Aus=1,NZ=16,Can=17,US=5
 df$cntry = car::recode(df$v3,recodes = '10=752; 9=578; 2=276; 1=36; 6=40; 16=554; 17=124; 5=840; 3:4=NA; 7:8=NA; 11:15=NA; 18=NA')
-df$female = car::recode(df$v99,recodes = '2=0; 9=NA')
+df$female = car::recode(df$v99,recodes = '2=1; 1=0; 9=NA')
 #trim age to 80
 df$age = car::recode(df$v100,recodes = '80:98=80; 99=NA')
 #Married (not separted) and Widowed = partnered, all else = 'not partnered')
@@ -203,74 +205,156 @@ ________________________________________________________________________________
 
 Classic attitude theory suggests that agree/disagree (or 'Likert' type response questions) tend to be normally distributed around some mean. In fact, latent variable measurment of attitudes also tends toward this assumption. Svallfors forces the three ISSP questions into somewhat dichotomous distributions by collapsing the two agree categories and the two disagree categories. It leads to a bit of a U-shape. However, then he combines the three collapsed variables into one additive scale. Generally linear scaling practices lead to continuous variables.  
 
-SVallfors does not offer an argumentation. Linos and West (2003) argue for a continuous variable. empirical question by comparing the Svallfors' distribution versus a more 'classical' attitudes distribution.
-
-NOTE: it appears that Andress and Heien used the same three ISSP 1992 questions for their study. The treated their scale as continuous and normally distributed. We should mention this in our paper.
+SVallfors does not offer an argumentation. Linos and West (2003) argue for a continuous variable. empirical question by comparing the Svallfors' distribution versus a more 'classical' attitudes distribution. Andress and Heien (2001) also used the same three ISSP 1992 questions for their study. They treated their scale as continuous and normally distributed. We should mention this in our paper.
 
 After working with lavaan for some time it became clear that there are too many limitations. lavaan cannot do an efficient exploratory factor analysis, handle dichotomous latent variable outcomes (i.e. 'latent class analysis'), and is limited in its multi-group modelling. Therefore, we need to use Mplus to fully investigate Svallfors' scale.
 
-### Table 1. The Distribution of Svallfors' Scale (Additive, thus assigning equal weight to each of the three variables)
+### ISSP Question Distributions
 
-Distribution is not normal, also does not appear 'continuous' as this would imply a normal distribution or something smooth or curved. Figure 1 shows a strong skew between those who answered agree or strongly agree to all 3 questions, and everyone else.
+Visualize the distribution of the three questions.
 
-```{r govindex dist}
-ggplot(socIn92recode, aes(govIndex)) +
-  geom_bar(fill = "black") + 
-  ggtitle("Figure 1. Svallfors Collapsed Categories as Additive Index")
+```{r jobsdist, include=T}
+df_list$v57f <- as.factor(df_list$v57)
+df_list$v59f <- as.factor(df_list$v59)
+df_list$v62f <- as.factor(df_list$v62)
 
-```
-```{r indivplots, include = T}
-
-socIn92m$v57 <- car::recode(socIn92m$v57,recodes = '1=5; 2=4; 3=3; 4=2; 5=1; 8=8; 9=NA')
-socIn92m$v59 <- car::recode(socIn92m$v59,recodes = '1=5; 2=4; 3=3; 4=2; 5=1; 8=8; 9=NA')
-socIn92m$v62 <- car::recode(socIn92m$v62,recodes = '1=5; 2=4; 3=3; 4=2; 5=1; 8=8; 9=NA')
-
-socIn92recode$scale <- as.factor(round((socIn92recode$v57 + socIn92recode$v59 + socIn92recode$v62)/3, digits = 0))
-
-
-socIn92recode$v57 <- as.factor(socIn92recode$v57)
-socIn92recode$v59 <- as.factor(socIn92recode$v59)
-socIn92recode$v62 <- as.factor(socIn92recode$v62)
-socIn92m$v57 <- as.factor(socIn92m$v57)
-socIn92m$v59 <- as.factor(socIn92m$v59)
-socIn92m$v62 <- as.factor(socIn92m$v62)
-socIn92m<-socIn92m[complete.cases(socIn92m$v57),]
-socIn92m<-socIn92m[complete.cases(socIn92m$v59),]
-socIn92m<-socIn92m[complete.cases(socIn92m$v62),]
-
-# Why should we expect a normal distribution? This is how the raw data look
-ggplot(socIn92recode, aes(v57)) +
-  geom_bar(fill = "black") + 
-  scale_x_discrete("Original Response Choices (can't choose/non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree")) + 
-  ggtitle("Gov. Provide Jobs for Everyone that Wants One")
-```
-
-```{r jobsm, include=T}
-ggplot(socIn92m, aes(v57)) +
-  geom_bar(fill = "black") + 
+ggplot(df_list, aes(v57f)) +
+  geom_bar(fill = "gray40") + 
   scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
   ggtitle("Gov. Provide Jobs for Everyone that Wants One")
+
+jobsdf <- dplyr::select(df_list, v57f)
+jobsdf$var <- jobsdf$v57f
+jobsdf$Item <- "Jobs"
+incddf <- dplyr::select(df_list, v59f)
+incddf$var <- incddf$v59f
+incddf$Item <- "Income Dif."
+bascdf <- dplyr::select(df_list, v62f)
+bascdf$var <- bascdf$v62f
+bascdf$Item <- "Basic Income"
+
+dfdist <- rbind(jobsdf,incddf,bascdf)
+dfdist$Item <- factor(dfdist$Item, levels = c("Jobs","Income Dif.","Basic Income"))
+
+ggplot(dfdist, aes(fill=Item, x=var)) + 
+    geom_bar(position="dodge", stat="count") +
+    scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
+    ggtitle("Figure 1. Response Pattern in Three Redistribution Questions", subtitle = "ISSP 1992, 8 Countries") +
+    scale_fill_manual(values=c("grey70","grey45","grey20"))
+
 ```
 
-```{r indivplots2, include = T}
-ggplot(socIn92m, aes(v59)) +
-  geom_bar(fill = "black") + 
-  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree","Can't choose")) + 
-  ggtitle("Gov. Reduce Income Differences")
+
+### Test for Response Intervals
+
+We run an ordered logistic regression (ologit) to test what the cutpoints look like. The ologit assumes an underlying normally distributed latent variable and then fits the ordered categories into this distribution. The cutpoints are the locations on the distribution that divide each of the 5 respones into 'zones' of the distribution.
+
+```{r oprobit, echo=T}
+df_list$jobsc <- as.factor(car::recode(df_list$v57,recodes = '8=NA'))
+df_list$incdc <- as.factor(car::recode(df_list$v59,recodes = '8=NA'))
+df_list$basicc <- as.factor(car::recode(df_list$v62,recodes = '8=NA'))
+df_list$edyrs <- df_list$v102
+df_list$edyrs2 <- df_list$edyrs^2
+df_list$cntry <- as.factor(df_list$cntry)
+
+ologit_jobs <- MASS::polr(formula = jobsc ~ female + age + partnered + edyrs + edyrs2 + egp6 + hhinc_gz + cntry, data = df_list, Hess = T)
+
+ologit_incd <- MASS::polr(formula = incdc ~ female + age + partnered + edyrs + edyrs2 + egp6 + hhinc_gz + cntry, data = df_list, Hess = T)
+
+ologit_basic <- MASS::polr(formula = basicc ~ female + age + partnered + edyrs + edyrs2 + egp6 + hhinc_gz + cntry, data = df_list, Hess = T)
+
+# brant(ologit_jobsb)
 ```
 
-```{r indivplots3, include = T}
-ggplot(socIn92m, aes(v62)) +
-  geom_bar(fill = "black") + 
-  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral" ,"Agree" ,"Strongly agree","Can't choose")) + 
-  ggtitle("Gov. Provide Basic Income")
+### Cut Points
+
+```{r predictedologit, echo=T}
+
+cptdf <- data.frame(matrix(ncol = 4, nrow = 6))
+
+cptdf[1,1:3] <- -4
+cptdf[6,1:3] <- 4
+cptdf[2,1] <- ologit_jobs[["zeta"]][["1|2"]]
+cptdf[3,1] <- ologit_jobs[["zeta"]][["2|3"]]
+cptdf[4,1] <- ologit_jobs[["zeta"]][["3|4"]]
+cptdf[5,1] <- ologit_jobs[["zeta"]][["4|5"]]
+
+cptdf[2,2] <- ologit_incd[["zeta"]][["1|2"]]
+cptdf[3,2] <- ologit_incd[["zeta"]][["2|3"]]
+cptdf[4,2] <- ologit_incd[["zeta"]][["3|4"]]
+cptdf[5,2] <- ologit_incd[["zeta"]][["4|5"]]
+
+cptdf[2,3] <- ologit_basic[["zeta"]][["1|2"]]
+cptdf[3,3] <- ologit_basic[["zeta"]][["2|3"]]
+cptdf[4,3] <- ologit_basic[["zeta"]][["3|4"]]
+cptdf[5,3] <- ologit_basic[["zeta"]][["4|5"]]
+
+
+cptdf[1,4] <- cptdf[2,1] + ((cptdf[1,1] - cptdf[2,1])/2)
+cptdf <- round(cptdf,2)
+
+# We assume that our normal distribution runs form -4 SD though 4 SD (this covers 99.9% of the population)
+# Thus the cutpoints we get are splits on a scale from -4 through 4 (see Figure below)
+# We can imagine estimates on a normally distributed underlying 'attitude' that are the midpoints of -4 to cutpoint 1 / cut 1 to cut 2 / and so forth...
+
+###### We can fill this in later in case we want to run analyses with unequal coded intervals
+
+cptdf$X4 <- cptdf$X4 + 3.23
+
+xv = seq(-4,4, length = 1000)
+yv = dnorm(xv)
 ```
+
+Tukey talks about how many scales are technically ordinal when taking the most orthodox empirical position, but that the gains we make in estimation of ordinal scales as 'the correct form' are overshadowed by the losses we incur when not using an interval dependent variable in our models. So long as the ordinal variable has good theoretical ('face-value') properties to be interval and demonstrates reasonable statitical properties as such, we should use it that way or at least estimate both ways. See here for citations or quotes: https://www.cs.uic.edu/~wilkinson/Publications/stevens.pdf
+
+Also
+
+Mohler, Peter Ph., Tom W. Smith, Janet Harkness, and Janet Harkness. 1998. “Respondents’ Ratings of Expressions from Response Scales: A Two-Country, Two-Language Investigation on Equivalence and Translation.” Pp. 159–84 in Cross-Cultural Survey Equivalence. Vol. 3. Mannheim: Zentrum für Umfragen, Methoden und Analysen -ZUMA-.
+
+found using cognitive survey instrument testing of similar 5-ctegory agree/disagree response scales in that the option 'can't choose' is like a neutral midpoint, at least in the German and US-American context.
+
+they also found that the cognitive mapping of the meaning of responses differed between Germans and Americans to some extent (amount of descriptive words and intensity of wording). This is slight evidence of non-invariance of these questions across societies. 
+
+
+```{r distplots}
+# Jobs
+plot(xv, yv, type="l", lty=1, xlab="", ylab="Probability", main="Distribution of 'Jobs' Question", sub="dotted lines are cutpoints when assuming an underlying normal distribution")
+abline(v=cptdf[2,1], col="blue", lty = "dotted")
+abline(v=cptdf[3,1], col="blue", lty = "dotted")
+abline(v=cptdf[4,1], col="blue", lty = "dotted")
+abline(v=cptdf[5,1], col="blue", lty = "dotted")
+
+# Income Differences
+plot(xv, yv, type="l", lty=1, xlab="", ylab="Probability", main="Distribution of 'Income Differences' Question", sub="dotted lines are cutpoints when assuming an underlying normal distribution")
+abline(v=cptdf[2,2], col="blue", lty = "dotted")
+abline(v=cptdf[3,2], col="blue", lty = "dotted")
+abline(v=cptdf[4,2], col="blue", lty = "dotted")
+abline(v=cptdf[5,2], col="blue", lty = "dotted")
+
+# Basic Income
+plot(xv, yv, type="l", lty=1, xlab="", ylab="Probability", main="Distribution of 'Basic Income' Question", sub="dotted lines are cutpoints when assuming an underlying normal distribution")
+abline(v=cptdf[2,3], col="blue", lty = "dotted")
+abline(v=cptdf[3,3], col="blue", lty = "dotted")
+abline(v=cptdf[4,3], col="blue", lty = "dotted")
+abline(v=cptdf[5,3], col="blue", lty = "dotted")
+```
+
+We can see that the distribution when taking the three questions and combining them with equal weighting and then roundig to the nearest value, we get a slightly skewed normal distribution. It looks like what we would expect form attitude research.
 
 ```{r scaleplot, include = T}
-# If we assume an underlying latent with equal weight assigned to each variable, the distribution looks skewed normal
-ggplot(socIn92recode, aes(scale)) +
+# If we assume an underlying latent with equal weight assigned to each variable, the distribution looks quasi-normal
+
+df_list$jobs <- as.numeric(df_list$jobsc)
+df_list$incd <- as.numeric(df_list$incdc)
+df_list$basic <- as.numeric(df_list$basicc)
+
+df_list$scale <- as.factor(round((df_list$jobs + df_list$incd + df_list$basic)/3,0))
+
+df_lista <-df_list[complete.cases(df_list$scale),]
+
+ggplot(df_lista, aes(scale)) +
   geom_bar(fill = "black") + 
-  scale_x_discrete("*Averaged Continuous Response Choice, 3 questions", labels = c("Strongly disagree*","Disagree*","Neutral*" ,"Agree*" ,"Strongly agree*")) + 
+  scale_x_discrete("*Averaged Continuous Response Choice, 3 questions equally weighted", labels = c("Strongly disagree*","Disagree*","Neutral*" ,"Agree*" ,"Strongly agree*")) + 
   ggtitle("Support for Government Intervention Scale")
 ```
 
