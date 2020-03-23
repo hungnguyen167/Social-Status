@@ -20,12 +20,14 @@ _____________________________________________________________________________
 $~$
 $~$
 
-## DESCRIPTION
+## INTRODUCTION
 
 This is an expansion of the work of Svallfors (1997) following an earlier expansion of his work by Linos and West (2003). A replication of his original study is available in our 'Replication Appendix' Here we offer our main analyses. 
 
 
-### Abstract
+### Previous Studies
+
+#### Svallfors (1997)
 
 In 1997, Stefan Svallfors "[(1997)](https://doi.org/10.1093/oxfordjournals.esr.a018219)" published, “Worlds of Welfare and Attitudes to Redistribution: A Comparison of Eight Western Nations” in which he analyzed data from the 1992 ‘Social Inequality Module’ of the International Social Survey Program (ISSP). He wanted to understand how attitudes are structured in various welfare regimes. For twenty years, his study has been a standard citation in scholarship on comparative welfare states and social policy preferences. The ISSP was the first macro-comparative survey of policy preferences, and Svallfors’ work was one of the first to compare attitudes toward redistribution in as many as eight countries using the 1992 data (there as a ISSP in 1985 but it only had 5 countries). In this paper we revisit his path-breaking work in light of theories of policy preferences. We replicate his work, we further investigate his measurement and distributional assumptions about attitudes toward redistribtuion, and we then expand his original work to include more recent waves of ISSP data.
 
@@ -41,8 +43,6 @@ and multiple imputation made OLS appropriate, because the following conditions h
 They also impute values, we should consider this step carefully. 
 
 They only analyze the four countries that Svallfors 'selects' due to missing data. We should consider finding a way to analyze all eight. 
-
-### The Original Svallfors Study
 
 **His original study used three questions:** 
 
@@ -61,6 +61,14 @@ They only analyze the four countries that Svallfors 'selects' due to missing dat
 
 Swe, Nor, Ger, Aut, Aus, Nz, Can, USA
 Theese are in v3 coded as Swe=10,Nor=9,GermanyW=2,Aut=6,Aus=1,NZ=16,Can=17,US=5
+
+#### Linos and West (2003)
+
+In 2003, Linos and West published a follow up to Svallfors’ (1997) study. The expanded his statistical model to include years of education, income and marital status and demonstrated that there were significant differences across countries in the linkage between occupational classes and attitudes toward redistribution. They find a difference by martial status in redistributive preferences but show that the gap disappears or can be explained by other factors in "universalist" regimes (i.e. social democractic institutional arrangements). The find that insider/outsider cleavages are most pronounced in conservative regimes and that class matters more in liberal regimes. 
+
+Criticisms: they have not dealt with marriage and gender together, there is probably an interaction. Also, they treat 'outsiders' as the unemployed. This does not follow the dualist labor market literature which characterizes 'insiders' as those with full-time positions, a permanent or long-term contract and strong social security versus 'outsides' as those with often less than full-time (or full-time, but with several part-time jobs), precarious contracts (hourly, short term) and less or no social security. Class should not matter more in liberal regimes, this seems to contradict the ideas of individualism and neoliberalism which favors values of limited government and strong opposition to free riders (or ethnic-based attitudes).
+
+## SETUP
 
 ```{r, include = F}
 rm(list = ls())
@@ -84,7 +92,7 @@ knitr::opts_chunk$set(message = F)
 
 ```
 
-## SETUP
+## CLEANING
 
 ```{r readdata, include=FALSE}
 # Here we import version with 'Can't choose' left in the data. 
@@ -96,6 +104,7 @@ issp92 <- read_dta(paste(wd, "ZA2310_2006-07-18.dta",sep=""))
 ### Dependent Variable
 
 It seems like Linos and West (2003, p. 398, "We imputed even more intermediate values...") imputed DV values. We are hesitant to do this; however, we should consider a maximum likelihood estimation routine
+
 ```{r dv, echo=T}
 
 # code higher vales to more agreement (8="can't choose")
@@ -131,7 +140,7 @@ df$v110 <- car::recode(df$v110, recodes = '2=0')
 
 #Here is the NYK scheme for Sweden (variable s106)
 #It appears that Svallfors' original data was SEI classification (2-digit), but that provided in the ISSP from GESIS is NYK83
-#we use Erik Bihagen's translation of NYK into ISCO88 [although they are not perfectly transferrable!!] http://www.camsis.stir.ac.uk/occunits/SwedishNYK8590majgpsv1.sps
+#we use Erik Bihagen's translation of NYK into ISCO88 [introduces error/not perfectly translatable] http://www.camsis.stir.ac.uk/occunits/SwedishNYK8590majgpsv1.sps
 
 df$isco88se <- car::recode(df$s106, recodes = "
 1 = 2141; 2 = 2143; 3 = 2144; 4 = 2145; 5 = 3116; 6 = 3117; 7 = 2142; 8 = 2148; 9 = 3119; 12 = 3211; 13 = 3211; 14 = 2114; 15 = 2112; 16 = 2113; 19 = 3111; 21 = 2211; 22 = 3213; 23 = 3213; 29 = 2211; 30 = 1210; 31 = 2310; 32 = 2320; 33 = 2331; 34 = 2320; 35 = 2359; 36 = 2320; 37 = 2352; 39 = 2359; 41 = 2460; 49 = 3480; 51 = 2421; 52 = 2429; 53 = 2429; 
@@ -151,7 +160,7 @@ df <- df %>%
 #### Income
 
 ```{r income, echo=T}
-df$hhinc <- coalesce(df$cdn116,df$s117,df$usa116,df$n116,df$a116,df$aus116,df$nz116,df$d116)
+df$hhinc <- coalesce(df$cdn116,df$s117,df$usa116,df$n116,df$a116,df$aus116,df$nz116,df$d116,df$i116)
 df$hhinc <- car::recode(df$hhinc,recodes = '97:99=NA')
 
 # Standardize income per country
@@ -174,15 +183,21 @@ df$cdn103 = car::recode(df$cdn103,recodes = '1=4; 2=8; 3=10; 4=12; 5=14; 6=16; 7
 #Sweden impute (1=primary, 2=secondary(2 years), 3=secondary(3 years), 4= university) 
 df$s103 = car::recode(df$s103,recode = '1=8; 2=10; 3=12; 4=15; 99=NA')
 #Swe=10,Nor=9,GermanyW=2,Aut=6,Aus=1,NZ=16,Can=17,US=5
-df$cntry = car::recode(df$v3,recodes = '10=752; 9=578; 2=276; 1=36; 6=40; 16=554; 17=124; 5=840; 3:4=NA; 7:8=NA; 11:15=NA; 18=NA')
+df$cntry = car::recode(df$v3,recodes = '10=752; 9=578; 2=276; 1=36; 6=40; 16=554; 17=124; 5=840; 3:4=NA; 7=NA; 8=380; 11:15=NA; 18=NA')
 df$female = car::recode(df$v99,recodes = '2=1; 1=0; 9=NA')
 #trim age to 80
 df$age = car::recode(df$v100,recodes = '80:98=80; 99=NA')
 #Married (not separted) and Widowed = partnered, all else = 'not partnered')
 df$partnered = car::recode(df$v101,recodes = '1:2=1; 3:9=0')
+#Full-time=1 (1 = full-time); part-time (2,3 = part-time or less-than), dependent (5,6,7,9 = unemployed, student, retired perm. disabled), not in lf or unknown (4,8,10, 99 = family care, homemaker, other, missing)
+df$workstat = car::recode(df$v104,recodes = '1=1; 2:3=2; 5:6=3; 7=3; 9=3; 4=4; 8=4; 10=4; 99=4')
 
 df$s103 <- ifelse(is.na(df$s103), df$cdn103, df$s103)
 df$v102 <- ifelse(is.na(df$v102), df$s103, df$v102)
+
+# replace part-time/full-time based on hours worked per week
+df$workstat = ifelse(df$v105>35 & df$v105<96, 1, df$workstat)
+df$workstat = ifelse(df$v105>1 & df$v105<31, 2, df$workstat)
 
 # Select only the 8 countries
 df <-df[complete.cases(df$cntry),]
@@ -250,6 +265,10 @@ ggplot(dfdist, aes(fill=Item, x=var)) +
 We run an ordered logistic regression (ologit) to test what the cutpoints look like. The ologit assumes an underlying normally distributed latent variable and then fits the ordered categories into this distribution. The cutpoints are the locations on the distribution that divide each of the 5 respones into 'zones' of the distribution.
 
 ```{r oprobit, echo=T}
+# At first we exclude Italy to be directly comprable to the Svallfors study.
+df_list$cntry <- ifelse(df_list$cntry==380, NA, df_list$cntry)
+df_list <- df_list[complete.cases(df_list$cntry),]
+
 df_list$jobsc <- as.factor(car::recode(df_list$v57,recodes = '8=NA'))
 df_list$incdc <- as.factor(car::recode(df_list$v59,recodes = '8=NA'))
 df_list$basicc <- as.factor(car::recode(df_list$v62,recodes = '8=NA'))
@@ -301,8 +320,7 @@ cptdf <- round(cptdf,2)
 
 cptdf$X4 <- cptdf$X4 + 3.23
 
-xv = seq(-4,4, length = 1000)
-yv = dnorm(xv)
+
 ```
 
 Tukey talks about how many scales are technically ordinal when taking the most orthodox empirical position, but that the gains we make in estimation of ordinal scales as 'the correct form' are overshadowed by the losses we incur when not using an interval dependent variable in our models. So long as the ordinal variable has good theoretical ('face-value') properties to be interval and demonstrates reasonable statitical properties as such, we should use it that way or at least estimate both ways. See here for citations or quotes: https://www.cs.uic.edu/~wilkinson/Publications/stevens.pdf
@@ -317,29 +335,54 @@ they also found that the cognitive mapping of the meaning of responses differed 
 
 
 ```{r distplots}
+# Create normally distributed data
+xv = seq(-4,4, length = 1000)
+yv = dnorm(xv)
+
 # Jobs
-plot(xv, yv, type="l", lty=1, xlab="", ylab="Probability", main="Distribution of 'Jobs' Question", sub="dotted lines are cutpoints when assuming an underlying normal distribution")
+plot(xv, yv, type="l", lty=1, xlab="", ylab="Probability", main="Response Distribution: Government should provide jobs", sub="dotted lines = cutpoints, assigining responses to a normal distribution")
 abline(v=cptdf[2,1], col="blue", lty = "dotted")
 abline(v=cptdf[3,1], col="blue", lty = "dotted")
 abline(v=cptdf[4,1], col="blue", lty = "dotted")
 abline(v=cptdf[5,1], col="blue", lty = "dotted")
+text(-3.5, 0.035, "strongly", cex=0.6, col="blue")
+text(-3.5, 0.015, "disagree", cex=0.6, col="blue")
+text(-1.7, 0.035, "disagree", cex=0.6, col="blue")
+text(-0.45, 0.035, "neutral", cex=0.6, col="blue")
+text(1, 0.035, "agree", cex=0.6, col="blue")
+text(3.1, 0.035, "strongly", cex=0.6, col="blue")
+text(3.1, 0.015, "agree", cex=0.6, col="blue")
 
 # Income Differences
-plot(xv, yv, type="l", lty=1, xlab="", ylab="Probability", main="Distribution of 'Income Differences' Question", sub="dotted lines are cutpoints when assuming an underlying normal distribution")
+plot(xv, yv, type="l", lty=1, xlab="", ylab="Probability", main="Response Distribution: Government should reduce income differences", sub="dotted lines = cutpoints, assigining responses to a normal distribution")
 abline(v=cptdf[2,2], col="blue", lty = "dotted")
 abline(v=cptdf[3,2], col="blue", lty = "dotted")
 abline(v=cptdf[4,2], col="blue", lty = "dotted")
 abline(v=cptdf[5,2], col="blue", lty = "dotted")
+text(-3.8, 0.035, "strongly", cex=0.6, col="blue")
+text(-3.8, 0.015, "disagree", cex=0.6, col="blue")
+text(-2.2, 0.035, "disagree", cex=0.6, col="blue")
+text(-0.8, 0.035, "neutral", cex=0.6, col="blue")
+text(0.5, 0.035, "agree", cex=0.6, col="blue")
+text(2.96, 0.035, "strongly", cex=0.6, col="blue")
+text(2.96, 0.015, "agree", cex=0.6, col="blue")
 
 # Basic Income
-plot(xv, yv, type="l", lty=1, xlab="", ylab="Probability", main="Distribution of 'Basic Income' Question", sub="dotted lines are cutpoints when assuming an underlying normal distribution")
+plot(xv, yv, type="l", lty=1, xlab="", ylab="Probability", main="Response Distribution: Government should provide a basic income", sub="dotted lines = cutpoints, assigining responses to a normal distribution")
 abline(v=cptdf[2,3], col="blue", lty = "dotted")
 abline(v=cptdf[3,3], col="blue", lty = "dotted")
 abline(v=cptdf[4,3], col="blue", lty = "dotted")
 abline(v=cptdf[5,3], col="blue", lty = "dotted")
+text(-3.6, 0.035, "strongly", cex=0.6, col="blue")
+text(-3.6, 0.015, "disagree", cex=0.6, col="blue")
+text(-2.05, 0.035, "disagree", cex=0.6, col="blue")
+text(-0.85, 0.035, "neutral", cex=0.6, col="blue")
+text(0.45, 0.035, "agree", cex=0.6, col="blue")
+text(3, 0.035, "strongly", cex=0.6, col="blue")
+text(3, 0.015, "agree", cex=0.6, col="blue")
 ```
 
-We can see that the distribution when taking the three questions and combining them with equal weighting and then roundig to the nearest value, we get a slightly skewed normal distribution. It looks like what we would expect form attitude research.
+We can see that the distribution when taking the three questions and combining them with equal weighting and then rounding to the nearest value, we get a slightly skewed normal distribution. It looks like what we would expect form attitude research.
 
 ```{r scaleplot, include = T}
 # If we assume an underlying latent with equal weight assigned to each variable, the distribution looks quasi-normal
@@ -358,7 +401,89 @@ ggplot(df_lista, aes(scale)) +
   ggtitle("Support for Government Intervention Scale")
 ```
 
+```{r cantchoose, echo=T}
+# prepare data for out-of-sample prediction
+dfp <- df
+dfp$edyrs <- dfp$v102
+dfp$edyrs2 <- dfp$edyrs^2
+dfp$cntry <- car::recode(dfp$cntry,recodes='380=NA')
+dfp <- dfp[complete.cases(dfp$cntry),]
+dfp$cntry <- as.factor(dfp$cntry)
 
+# predict probabilities
+
+dfj <- as.data.frame(predict(ologit_jobs, dfp, type="prob"))
+colnames(dfj)[1] <- "jobs1"
+colnames(dfj)[2] <- "jobs2"
+colnames(dfj)[3] <- "jobs3"
+colnames(dfj)[4] <- "jobs4"
+colnames(dfj)[5] <- "jobs5"
+
+dfi <- as.data.frame(predict(ologit_incd, dfp, type="prob"))
+colnames(dfi)[1] <- "incd1"
+colnames(dfi)[2] <- "incd2"
+colnames(dfi)[3] <- "incd3"
+colnames(dfi)[4] <- "incd4"
+colnames(dfi)[5] <- "incd5"
+
+dfb <- as.data.frame(predict(ologit_basic, dfp, type="prob"))
+colnames(dfb)[1] <- "basic1"
+colnames(dfb)[2] <- "basic2"
+colnames(dfb)[3] <- "basic3"
+colnames(dfb)[4] <- "basic4"
+colnames(dfb)[5] <- "basic5"
+
+# predict response
+
+dfjr <- as.data.frame(predict(ologit_jobs, dfp, type="class"))
+colnames(dfjr)[1] <- "jobsR"
+
+
+dfir <- as.data.frame(predict(ologit_incd, dfp, type="class"))
+colnames(dfir)[1] <- "incdR"
+
+
+dfbr <- as.data.frame(predict(ologit_basic, dfp, type="class"))
+colnames(dfbr)[1] <- "basicR"
+
+# convert factor response to numeric
+dfir$incdR <- as.numeric(dfir$incdR)
+dfjr$jobsR <- as.numeric(dfjr$jobsR)
+dfbr$basicR <- as.numeric(dfbr$basicR)
+
+# bind predicted values
+dfp <- cbind.data.frame(dfp, dfj, dfjr, dfi, dfir, dfb, dfbr)
+
+# get probabilities by response to v59 (jobs)
+jm1 <- aggregate(dfp$jobs1, by=list(dfp$v59), FUN = mean, na.rm = T)
+jm2 <- aggregate(dfp$jobs2, by=list(dfp$v59), FUN = mean, na.rm = T)
+jm3 <- aggregate(dfp$jobs3, by=list(dfp$v59), FUN = mean, na.rm = T)
+jm4 <- aggregate(dfp$jobs4, by=list(dfp$v59), FUN = mean, na.rm = T)
+jm5 <- aggregate(dfp$jobs5, by=list(dfp$v59), FUN = mean, na.rm = T)
+
+# get probabilities by response to v59 (jobs)
+im1 <- aggregate(dfp$jobs1, by=list(dfp$v59), FUN = mean, na.rm = T)
+im2 <- aggregate(dfp$jobs2, by=list(dfp$v59), FUN = mean, na.rm = T)
+im3 <- aggregate(dfp$jobs3, by=list(dfp$v59), FUN = mean, na.rm = T)
+im4 <- aggregate(dfp$jobs4, by=list(dfp$v59), FUN = mean, na.rm = T)
+im5 <- aggregate(dfp$jobs5, by=list(dfp$v59), FUN = mean, na.rm = T)
+
+# get mean class by response 
+jmr <- aggregate(dfp$jobsR, by=list(dfp$v59), FUN = mean, na.rm = T)
+imr <- aggregate(dfp$incdR, by=list(dfp$v57), FUN = mean, na.rm = T)
+bmr <- aggregate(dfp$basicR, by=list(dfp$v62), FUN = mean, na.rm = T)
+
+tjobo <- cbind(jmr, imr, bmr)
+
+kable(tjobo)
+```
+Results so far, 
+
+For the Jobs and Income Differences questions, those who selected "Can't choose" are predicted to have the highest response score on average (we should check the N).
+
+For the Basic Income question, the 'Can't choose' are predicted closer to the "agree" category.
+
+But there is a lot of missing data due to so many control variables. **We should try alternative models with fewer**.
 
 ### Table A. Correlations
 
