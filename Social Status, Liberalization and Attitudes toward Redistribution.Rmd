@@ -52,8 +52,13 @@ completeFun <- function(data, desiredCols) {
 
 ```{r read data, include = FALSE}
 
+# Inequality Module
 isspCUM <- read_dta(paste(wd, "ZA5890_v1-0-0.dta",sep=""))
 isspCUM2 <- read_dta(paste(wd, "ZA5891_v1-1-0.dta", sep = ""))
+
+# Environment Module 
+# (if we are only going to use the IncDiff variable, we should merge this)
+
 ```
 ## Data transformation 
 
@@ -66,6 +71,7 @@ isspCUM <- isspCUM %>%
      cntry = v5,
      year = v4,
      female = if_else(sex == 2, 1,0), # female = 1
+     ageC = ifelse(age > 75, 75, age), # also a continuous measure
      age = case_when(                 # trim at 75     
        age %in% c(16,17) ~ 1,
        age %in% c(18:24) ~ 2,
@@ -77,7 +83,7 @@ isspCUM <- isspCUM %>%
        age >= 75 ~ NA_real_,
        TRUE ~ NA_real_
      ),
-     married = case_when(                 # married = 1. Note: using if_else will confound NA with not married (0)
+     married = case_when(                 # married = 1. Note: using if_else will confound NA with not married (0), make sure life partners are coded as married
        marital %in% c(1,2) ~ 1,
        marital %in% c(3:5) ~ 0,
        TRUE ~ NA_real_
@@ -92,8 +98,13 @@ isspCUM <- isspCUM %>%
   )
 ## Respondents' Household income: scaled, in case we need it
 temp <- select(isspCUM2, AT_RIN87:US_RIN09)
-centered.temp <- as.data.frame(scale(temp, scale = TRUE))
+centered.temp <- as.data.frame(scale(temp, scale = TRUE)) # standardizes
 isspCUM <- cbind(isspCUM,centered.temp)
+isspCUM$incZ = rowMeans(isspCUM[,which(names(isspCUM)=="AT_RIN87"):which(names(isspCUM)=="US_RIN09")], na.rm = T)
+isspCUM$incZ = ifelse(isspCUM$incZ=="NaN",NA,isspCUM$incZ)
+
+# Think about ISCED for education (see Schneider's work)
+
 
 ## Class scheme re-coding
 ## EGP
@@ -114,7 +125,7 @@ isspCUM$se_occ <- zap_labels(isspCUM2$SE_OCC92)
 # Recoding to isco88: Australia
 # Data are in ASCO First Edition, emailed Kelley and Evans 10-Jun-20 to ask for correspondance tables
 
-isspCUM$au_occ2 <- isco88conversion::anzscoToISCO(isspCUM$au_occ)
+# isspCUM$au_occ2 <- isco88conversion::anzscoToISCO(isspCUM$au_occ)
 
 
 # Recoding to isco88: Italy
@@ -266,7 +277,7 @@ isspCUM <- isspCUM %>%
 ## Status using Ganzeboom, De Graaf, and Treiman 1992
 
 isspCUM$isei <- occupar::isco88toISEI92(isco88 = isspCUM$isco88)
-df <- isspCUM 
+df <- isspCUM
 ```
 
 ## Construct the measurement model
@@ -276,9 +287,10 @@ df <- isspCUM
 # New variables with unique names
 df <- df %>%
   mutate(
-    incdiff = v33,
+    incdiff = v33, 
     jobs = v35,
-    basicinc = v38
+    basicinc = v38,
+    diff2large = v32,
   )
 
 
@@ -289,11 +301,11 @@ df_lw <- df[complete.cases(df$incdiff),]
 df_lw <- df_lw[complete.cases(df_lw$jobs),]
 df_lw <- df_lw[complete.cases(df_lw$basicinc),]
 df_lw <- df_lw[complete.cases(df_lw$cntry),]
-
+df_lw <- df_lw[complete.cases(df_lw$diff2large),]
 # Can use str or summary as well
 
-table(df$incdiff) # last two waves: no data
-table(df$jobs)
+table(df$incdiff) 
+table(df$jobs) # last two waves: no data
 table(df$basicinc) # last two waves: no data
 
 
@@ -337,7 +349,7 @@ e1071::skewness(df_lw$basicinc)
 
 # Confirmatory factor analysis - models
 
-mod1 <- ' att =~ incdiff + jobs + basicinc'
+mod1 <- ' att =~ incdiff + diff2large'
 fit1 <- cfa(mod1, data = df_lw) # default setting.
 
 summary(fit1, fit.measures =TRUE, standardized = TRUE)
@@ -354,8 +366,8 @@ inspect(fit2,what="std")$lambda
 
 
 
-mi1 <- measEq.syntax(fit1)
-summary(mi1)
+#mi1 <- measEq.syntax(fit1)
+summary(fit1)
 
 ```
 
