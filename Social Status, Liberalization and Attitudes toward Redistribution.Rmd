@@ -31,13 +31,20 @@ library(pacman)
 pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","expss","htmlTable","magrittr","ltm","questionr","survey","remotes","stargazer","lavaan","ltm", "tidylog", "kableExtra","lm.beta","MplusAutomation","MASS","glm.predict","brant", "semTools")
 
 #remotes::install_github("DiogoFerrari/occupar")
-library(occupar)
+#remotes::install_github("pdparker/isco88conversion")
+library(occupar, isco88conversion)
 
 
 wd <- "C:/data/"
 
 # We don't want to see messages in the final document
 knitr::opts_chunk$set(message = F)
+
+#Column no missing function
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
 
 ```
 
@@ -50,7 +57,7 @@ isspCUM2 <- read_dta(paste(wd, "ZA5891_v1-1-0.dta", sep = ""))
 ```
 ## Data transformation 
 
-```{r dt, include = FALSE}
+```{r dt, include = FALSE, warning=F,message=F}
 ## General variables
 colnames(isspCUM) <- tolower(colnames(isspCUM))
 
@@ -105,9 +112,11 @@ isspCUM$jp_occ <- zap_labels(isspCUM2$JP_OCC99)
 isspCUM$se_occ <- zap_labels(isspCUM2$SE_OCC92)
 
 # Recoding to isco88: Australia
+# Data are in ASCO First Edition, emailed Kelley and Evans 10-Jun-20 to ask for correspondance tables
 
-  
-  
+isspCUM$au_occ2 <- isco88conversion::anzscoToISCO(isspCUM$au_occ)
+
+
 # Recoding to isco88: Italy
 
 
