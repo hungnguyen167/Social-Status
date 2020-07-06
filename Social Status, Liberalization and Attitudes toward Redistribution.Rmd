@@ -53,8 +53,8 @@ completeFun <- function(data, desiredCols) {
 ```{r read data, include = FALSE}
 
 # Inequality Module
-isspCUM <- read_dta(paste(wd, "ZA5890_v1-0-0.dta",sep=""))
-isspCUM2 <- read_dta(paste(wd, "ZA5891_v1-1-0.dta", sep = ""))
+socin <- read_dta(paste(wd, "ZA5890_v1-0-0.dta",sep=""))
+socin2 <- read_dta(paste(wd, "ZA5891_v1-1-0.dta", sep = ""))
 
 # Environment Module 
 # (if we are only going to use the incd variable, we should merge this)
@@ -64,11 +64,11 @@ env10 <- read_dta(paste(wd, "ZA5500_v3-0-0.dta",sep=""))
 ```
 ## Data transformation - Social Inequality 
 
-```{r dt, include = FALSE, warning=F,message=F}
+```{r socin, include = FALSE, warning=F,message=F}
 ## General variables
-colnames(isspCUM) <- tolower(colnames(isspCUM))
+colnames(socin) <- tolower(colnames(socin))
 
-isspCUM <- isspCUM %>% 
+socin <- socin %>% 
   mutate(
      cntry = v5,
      year = v4,
@@ -94,43 +94,58 @@ isspCUM <- isspCUM %>%
        .$educyrs > 25 & .$educyrs < 90 ~ 26, # 26 = 25+ years in school
        .$educyrs %in% c(95,96) ~ NA_real_,
        TRUE ~ as.numeric(as.character(.$educyrs))
-     )
+     ),
      #household income and personal earnings are not comparable: sometimes monthly, sometimes yearly, 
      #in different national currency and not adjusted for inflations
-     
+     child = case_when(
+       hhcycle %in% c(2,3,4,6,7,8,10,11,12,14,16,18,20,22,24,26,28)  ~ 1,
+       hhcycle %in% c(1,5,9,13,15,17,19,21,23,25,27) ~ 0,
+       TRUE ~ NA_real_
+     )
   )
+# integrate hhcycle from socin2 (US92)
+socin2 <- socin2 %>%
+  mutate(
+    child2 = case_when(
+      HCY_US92 %in% c(3,11,13,15,16,18) ~ 1, 
+      HCY_US92 %in% c(1,2,4,5,6,7) ~ 0,
+      TRUE ~ NA_real_
+    )
+  )
+
+socin$hhcycle_us92 <- socin2$child2 
+socin$child <- coalesce(socin$child, socin$hhcycle_us92)
+
 ## Respondents' Household income: scaled, in case we need it
-temp <- select(isspCUM2, AT_RIN87:US_RIN09)
-centered.temp <- as.data.frame(scale(temp, scale = TRUE)) # standardizes
-isspCUM <- cbind(isspCUM,centered.temp)
-isspCUM$incZ = rowMeans(isspCUM[,which(names(isspCUM)=="AT_RIN87"):which(names(isspCUM)=="US_RIN09")], na.rm = T)
-isspCUM$incZ = ifelse(isspCUM$incZ=="NaN",NA,isspCUM$incZ)
+temp <- select(socin2, AT_RIN87:US_RIN09)
+centered.temp <- as.data.frame(scale(temp, center = TRUE, scale = TRUE)) # standardize
+socin <- cbind(socin,centered.temp)
+socin$incZ = rowMeans(socin[,which(names(socin)=="AT_RIN87"):which(names(socin)=="US_RIN09")], na.rm = T)
+socin$incZ = ifelse(socin$incZ=="NaN",NA,socin$incZ)
 
-## 
 
-# Think about ISCED for education (see Schneider's work)
+# Think about ISCED for education (see Schneider's work). #Hung# Two problems: (1) we would have to code each country-year separately; (2) more importantly, many countries don't record degrees higher than bachelor (master and doctoral), which are 7 and 8 in the ISCED 2011 coding scheme. For the mean time, I propose we use the variable degree instead.
 
 
 ## Class scheme re-coding
 ## EGP
-
 #There are a few cases of unspecified occupational coding schemes, including Australia 1987, Italy 1987 & 1992, Great Britain 1987 & 1992, the United States 1987, Bulgaria 1999, France 1999, Japan 1999, and Sweden 1992. We integrated into the main data set. 
 
-isspCUM$au_occ <- isspCUM2$AU_OCC87
-isspCUM$it_occ <- zap_labels(isspCUM2$IT_OCC87)
-isspCUM[which(isspCUM$cntry == 380 & isspCUM$year == 1992),]$it_occ <- isspCUM2[which(isspCUM2$V5 == 380 & isspCUM2$V4 == 1992),]$IT_OCC92
-isspCUM$gbr_occ <- zap_labels(isspCUM2$GB_OCC87)
-isspCUM[which(isspCUM$cntry == 826 & isspCUM$year == 1992),]$gbr_occ <- isspCUM2[which(isspCUM2$V5 == 826 & isspCUM2$V4 == 1992),]$GB_OCC92
-isspCUM$us_occ <- zap_labels(isspCUM2$US_OCC87)
-isspCUM$bg_occ <- zap_labels(isspCUM2$BG_OCC99)
-isspCUM$fr_occ <- zap_labels(isspCUM2$FR_OCC99)
-isspCUM$jp_occ <- zap_labels(isspCUM2$JP_OCC99)
-isspCUM$se_occ <- zap_labels(isspCUM2$SE_OCC92)
+socin$au_occ <- socin2$AU_OCC87
+socin$it_occ <- zap_labels(socin2$IT_OCC87)
+socin[which(socin$cntry == 380 & socin$year == 1992),]$it_occ <- socin2[which(socin2$V5 == 380 & socin2$V4 == 1992),]$IT_OCC92
+socin$gbr_occ <- zap_labels(socin2$GB_OCC87)
+socin[which(socin$cntry == 826 & socin$year == 1992),]$gbr_occ <- socin2[which(socin2$V5 == 826 & socin2$V4 == 1992),]$GB_OCC92
+socin$us_occ <- zap_labels(socin2$US_OCC87)
+socin$bg_occ <- zap_labels(socin2$BG_OCC99)
+socin$fr_occ <- zap_labels(socin2$FR_OCC99)
+socin$jp_occ <- zap_labels(socin2$JP_OCC99)
+socin$se_occ <- zap_labels(socin2$SE_OCC92)
 
 # Recoding to isco88: Australia
 # Data are in ASCO First Edition, emailed Kelley and Evans 10-Jun-20 to ask for correspondance tables
 
-# isspCUM$au_occ2 <- isco88conversion::anzscoToISCO(isspCUM$au_occ)
+# socin$au_occ2 <- isco88conversion::anzscoToISCO(socin$au_occ)
 
 
 # Recoding to isco88: Italy
@@ -145,7 +160,7 @@ isspCUM$se_occ <- zap_labels(isspCUM2$SE_OCC92)
 # Recoding to isco88: U.S
 
 # From US87 to USt
-isspCUM$us_occ <- car::recode(isspCUM$us_occ, recodes = "1=23;2=43;3=64;4=64;5=64;6=44;10=48;11=75;12=55;13=19;14=57;  
+socin$us_occ <- car::recode(socin$us_occ, recodes = "1=23;2=43;3=64;4=64;5=64;6=44;10=48;11=75;12=55;13=19;14=57;  
 15=45;20=46;21=47;22=258;23=26;24=159;25=15;26=159;30=179;31=36;32=164;33=165;34=66;  
 35=68;36=67;42=77;43=74;44=77;45=45;51=75;52=75;53=49;54=76;55=56;56=27;61=89;62=85;  
 63=87;64=96;65=84;71=88;72=86;73=89;74=97;75=95;76=98;80=203;81=204;82=205;83=206;84=446;  
@@ -187,7 +202,7 @@ isspCUM$us_occ <- car::recode(isspCUM$us_occ, recodes = "1=23;2=43;3=64;4=64;5=6
 
 # From Ust to isco88
 
-isspCUM$us_occ <- car::recode(isspCUM$us_occ, recodes = "003=1110;004=1120;005=1120;006=1120;
+socin$us_occ <- car::recode(socin$us_occ, recodes = "003=1110;004=1120;005=1120;006=1120;
 007=1231;008=1232;009=1233;013=1233;014=1229;015=1229;016=5121;017=1226;018=5143;019=1229;
 023=2411;024=3412;025=3410;026=2149;027=2412;  
 028=3416;029=3416;033=3416;034=2419;035=3151;036=3444;037=1229;043=2141;044=2145;045=2147;  
@@ -240,7 +255,7 @@ isspCUM$us_occ <- car::recode(isspCUM$us_occ, recodes = "003=1110;004=1120;005=1
 865=9313;866=9313;867=9311;869=9313;873=9320;875=9161;876=9333;877=9333;878=9321;883=9333;  
 885=7234;887=9142;888=9322;889=9300;905=110;909=110;739=8262")
 
-isspCUM[which(isspCUM$cntry == 840 & isspCUM$year == 1987),]$isco88 <- isspCUM[which(isspCUM$cntry == 840 & isspCUM$year == 1987),]$us_occ
+socin[which(socin$cntry == 840 & socin$year == 1987),]$isco88 <- socin[which(socin$cntry == 840 & socin$year == 1987),]$us_occ
 
 # Recoding to isco88: Bulgaria (not found)
 
@@ -250,11 +265,11 @@ isspCUM[which(isspCUM$cntry == 840 & isspCUM$year == 1987),]$isco88 <- isspCUM[w
 
 
 # Recoding to isco88: Japan
-isspCUM$jp_occ <- car::recode(isspCUM$jp_occ, recodes = "7 = 2265; 8 = 2265; 5 = 9322; 4 = 7233; 3 = 5130; 6 = 4115; 1 = 6130; 2 = 7233; 
+socin$jp_occ <- car::recode(socin$jp_occ, recodes = "7 = 2265; 8 = 2265; 5 = 9322; 4 = 7233; 3 = 5130; 6 = 4115; 1 = 6130; 2 = 7233; 
                               9  = NA; 10= NA; 11 = NA")
-isspCUM[which(isspCUM$cntry == 392 & isspCUM$year == 1999),]$isco88 <- isspCUM[which(isspCUM$cntry == 392 & isspCUM$year == 1999),]$jp_occ
-jp_occ <- isspCUM[which(isspCUM$cntry == 392),]$isco88 
-educyrsjp <- isspCUM[which(isspCUM$cntry == 392),]$educyrs
+socin[which(socin$cntry == 392 & socin$year == 1999),]$isco88 <- socin[which(socin$cntry == 392 & socin$year == 1999),]$jp_occ
+jp_occ <- socin[which(socin$cntry == 392),]$isco88 
+educyrsjp <- socin[which(socin$cntry == 392),]$educyrs
 jp <- as.data.frame(cbind(jp_occ, educyrsjp))
 jp$jp_occ <- if_else(jp$jp_occ == 4115 & jp$educyrsjp < 14, 3416, jp$jp_occ)
 jp$jp_occ <- if_else(jp$jp_occ == 7233 & jp$educyrsjp > 11, 4211, jp$jp_occ)
@@ -262,33 +277,48 @@ jp$jp_occ <- if_else(jp$jp_occ == 6130 & jp$educyrsjp < 12, 9211, jp$jp_occ)
 jp$jp_occ <- if_else(jp$jp_occ == 2265 & jp$educyrsjp < 16, 1229, jp$jp_occ)
 
 
-isspCUM[which(isspCUM$cntry == 392),]$isco88 <- jp$jp_occ
+socin[which(socin$cntry == 392),]$isco88 <- jp$jp_occ
 # Recoding to isco88: Sweden
 
-isspCUM$se_occ <- car::recode(isspCUM$se_occ, recodes = "1 = 2141; 2 = 2143; 3 = 2144; 4 = 2145; 5 = 3116; 6 = 3117; 7 = 2142; 8 = 2148; 9 = 3119; 12 = 3211; 13 = 3211; 14 = 2114; 15 = 2112; 16 = 2113; 19 = 3111; 21 = 2211; 22 = 3213; 23 = 3213; 29 = 2211; 30 = 1210; 31 = 2310; 32 = 2320; 33 = 2331; 34 = 2320; 35 = 2359; 36 = 2320; 37 = 2352; 39 = 2359; 41 = 2460; 49 = 3480; 51 = 2421; 52 = 2429; 53 = 2429; 
+socin$se_occ <- car::recode(socin$se_occ, recodes = "1 = 2141; 2 = 2143; 3 = 2144; 4 = 2145; 5 = 3116; 6 = 3117; 7 = 2142; 8 = 2148; 9 = 3119; 12 = 3211; 13 = 3211; 14 = 2114; 15 = 2112; 16 = 2113; 19 = 3111; 21 = 2211; 22 = 3213; 23 = 3213; 29 = 2211; 30 = 1210; 31 = 2310; 32 = 2320; 33 = 2331; 34 = 2320; 35 = 2359; 36 = 2320; 37 = 2352; 39 = 2359; 41 = 2460; 49 = 3480; 51 = 2421; 52 = 2429; 53 = 2429; 
 54 = 2429; 59 = 2429; 61 = 2451; 62 = 1234; 63 = 1229; 69 = 2451; 71 = 2452; 72 = 3471; 73 = 3471; 74 = 3131; 75 = 3474; 76 = 2453; 77 = 2455; 79 = 2455; 91 = 2432; 92 = 2431; 99 = 2446; 101 = 2221; 102 = 2230; 103 = 3231; 104 = 3232; 105 = 3133; 106 = 5132; 107 = 5132; 109 = 9132; 111 = 3226; 112 = 2229; 119 = 3226; 121 = 2222; 122 = 3225; 123 = 3225; 129 = 3225; 131 = 2224; 139 = 3228; 141 = 2223; 149 = 3227; 151 = 2446; 152 = 1228; 153 = 5131; 154 = 5133; 155 = 1228; 159 = 2446; 161 = 3152; 162 = 3151; 169 = 3152; 191 = 2445; 192 = 3223; 199 = 3460; 201 = 1110; 202 = 3443; 203 = 3444; 209 = 1110; 211 = 2419; 212 = 3431; 219 = 2419; 221 = 2412; 222 = 3423; 229 = 2412; 231 = 2411; 232 = 2411; 239 = 4121; 241 = 4115; 242 = 4111; 249 = 4190; 251 = 2131; 252 = 3122; 259 = 3121; 261 = 2441; 262 = 2122; 269 = 2441; 291 = 4190; 292 = 4122; 293 = 3412; 294 = 3412; 295 = 4221; 296 = 3422; 297 = 1317; 299 = 4190; 311 = 3471; 312 = 3413; 313 = 3419; 319 = 3419; 321 = 3416; 331 = 1314; 332 = 5220; 333 = 5220; 339 = 5220; 399 = 5220; 400 = 1311; 401 = 6112; 402 = 6130; 403 = 6130; 404 = 6130; 405 = 6130; 406 = 6129; 409 = 6112; 411 = 6112; 412 = 6121; 413 = 6112; 414 = 6129; 419 = 6121; 421 = 6154; 431 = 6152; 432 = 6151; 439 = 6152; 441 = 6141; 449 = 6141; 501 = 7111; 509 = 7111; 511 = 8113; 521 = 8121; 531 = 8155; 599 = 7111; 601 = 3142; 602 = 3142; 603 = 3141; 609 = 3142; 611 = 8340; 612 = 8340; 619 = 8340; 621 = 3143; 629 = 3143; 631 = 8311; 640 = 8322; 641 = 8324; 642 = 8322; 643 = 9151; 649 = 8334; 651 = 3144; 652 = 5112; 653 = 5111; 659 = 5112; 661 = 4133; 662 = 3144; 663 = 8312; 664 = 4133; 669 = 4133; 671 = 4142; 673 = 3132; 674 = 3132; 675 = 3132; 679 = 4142; 681 = 4142; 682 = 9151; 689 = 4142; 691 = 4133; 699 = 9330; 701 = 8261; 702 = 7332; 703 = 7432; 705 = 8262; 706 = 7435; 707 = 3152; 709 = 7332; 711 = 7433; 712 = 7434; 713 = 7433; 714 = 7437; 715 = 7435; 716 = 7433; 719 = 7436; 721 = 7442; 722 = 7442; 723 = 8268; 729 = 8269; 731 = 8121; 732 = 8122; 733 = 8122; 735 = 7215; 736 = 7221; 737 = 7211; 739 = 8122; 741 = 7311; 742 = 7311; 743 = 3224; 744 = 3211; 745 = 7313; 746 = 7323; 749 = 7222; 751 = 8211; 752 = 7233; 753 = 7231; 754 = 7213; 755 = 7136; 756 = 7212; 757 = 7214; 758 = 8223; 759 = 7214; 761 = 7241; 762 = 7241; 763 = 8282; 764 = 7244; 765 = 7245; 766 = 3131; 769 = 8282; 771 = 6141; 772 = 8141; 773 = 8240; 775 = 7331; 776 = 7331; 777 = 7423; 779 = 8141; 781 = 7141; 782 = 7132; 783 = 7141; 789 = 7139; 791 = 7122; 793 = 7123; 794 = 7124; 795 = 7134; 796 = 7135; 799 = 7129; 801 = 7341; 802 = 7343; 803 = 8251; 804 = 7345; 805 = 8224; 809 = 8251; 811 = 7322; 812 = 7321; 813 = 8131; 814 = 7323; 819 = 8139; 821 = 8273; 822 = 7412; 823 = 8274; 824 = 8278; 825 = 9320; 826 = 7411; 827 = 8272; 828 = 8279; 829 = 8278; 831 = 8159; 832 = 8151; 833 = 8151; 834 = 8231; 835 = 8232; 839 = 8159; 841 = 8142; 842 = 8143; 843 = 8253; 849 = 8142; 851 = 7129; 852 = 8265; 853 = 7312; 854 = 7113; 859 = 7222; 861 = 8161; 869 = 8161; 871 = 8333; 872 = 8332; 873 = 8334; 879 = 9330; 881 = 9320; 882 = 9330; 889 = 9320; 891 = 9151; 901 = 5161; 902 = 9162; 903 = 5162; 904 = 3441; 905 = 5163; 906 = 5169; 909 = 5169; 911 = 1225; 912 = 5122; 913 = 5123; 914 = 5123; 915 = 4222; 916 = 5111; 919 = 5123; 921 = 5121; 929 = 5121; 931 = 9141; 932 = 9131; 939 = 9141; 941 = 5141; 942 = 5149; 949 = 5141; 951 = 9133; 952 = 9133; 959 = 9133; 961 = 3475; 971 = 5143; 979 = 5149; 981 = 110; 989 = 110")
 
-isspCUM[which(isspCUM$cntry == 752 & isspCUM$year == 1992),]$isco88 <- isspCUM[which(isspCUM$cntry == 752 & isspCUM$year == 1992),]$se_occ
+socin[which(socin$cntry == 752 & socin$year == 1992),]$isco88 <- socin[which(socin$cntry == 752 & socin$year == 1992),]$se_occ
+
+
+
+
 
 
 # Translating from isco88 to egp
-isspCUM$egp <- occupar::isco88toEGP(isco88 = isspCUM$isco88, n.employees = isspCUM$nemploy, self.employed = isspCUM$selfemp)
+socin$egp <- occupar::isco88toEGP(isco88 = socin$isco88, n.employees = socin$nemploy, self.employed = socin$selfemp)
 # EGP6
-isspCUM <- isspCUM %>%
+socin <- socin %>%
   mutate(
     egp6 = car::recode(egp, recodes = '"I     Service class I" = "Service I";"II    Service class II" = "Service II"; "III.a Routine non-manual, higher grade" = "Routine"; "III.b Routine non-manual, lower grade" = "Routine"; "IV.a  Self-employed with employees" = "Self"; "IV.b  Self-employed with no empoyees" = "Self"; "IV.c  Self-employed Farmers etc" = "Self"; "V     Manual supervisors/Lower grade technicians" = "Skilled";"VI    Skilled workers" = "Skilled"; "VII.a Unskilled workers" = "Unskilled"; "VII.b Farm labours" = "Unskilled"')
   )
 
 ## Status using Ganzeboom, De Graaf, and Treiman 1992
 
-isspCUM$isei <- occupar::isco88toISEI92(isco88 = isspCUM$isco88)
-df <- isspCUM
+socin$isei <- occupar::isco88toISEI92(isco88 = socin$isco88)
+df <- socin
+
+## Rename dependent variables 
+df <- df %>%
+  rename(
+    incdiff = v33
+  )
+
+## Select relevant variables 
+df <- select(df, c(cntry, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, incdiff))
+
+
 ```
 
 ## Data transformation - Environment 93
 
 
-```{r env, include = FALSE}
+```{r env93, include = FALSE}
 env93 <- env93 %>%
   mutate(
     cntry = v3,
@@ -320,6 +350,11 @@ env93 <- env93 %>%
        educyrs > 25 & educyrs < 90 ~ 26, 
        educyrs %in% c(95:98) ~ NA_real_,
        TRUE ~ as.numeric(educyrs)
+    ),
+    child = case_when(
+      v330 %in% c(2,3,4,6,7,8,10,12,14,16,18,20,22,24,26,28) ~ 1
+      v330 %in% c(1,5,9,11,13,15,17,19,21,23,25,27) ~ 0,
+      TRUE ~ NA_real_ 
     )
   )
 # ISCO68 to ISCO88
@@ -349,10 +384,33 @@ env93 <- env93 %>%
 # ISEI
 env93$isei <- occupar::isco88toISEI92(isco88 = env93$isco88)
 
+
+## Earnings - grouped by country, then scaled.
+
+env93 <- env93 %>%
+  group_by(cntry) %>%
+  mutate(
+    inc = scale(v231),
+    incdiff = v6
+  )
+
 # Select relevant variables 
+
+env93 <- select(env93,c(cntry, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, incdiff))
+
+```
+
+
+## Data transformation - Environment 2000
+
+```{r env00, include = FALSE}
 
 
 ```
+
+
+## Data transformation - Environment 2010
+
 
 ## Construct the measurement model
 
