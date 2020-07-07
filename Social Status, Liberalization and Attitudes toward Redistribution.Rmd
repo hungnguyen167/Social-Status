@@ -109,7 +109,7 @@ socin <- socin %>%
      ),
      sparent = case_when(   # single parent
        hhcycle %in% c(2,3,4) ~ 1,
-       hhcycle %iN% c(1,5:95) ~ 0,
+       hhcycle %in% c(1,5:95) ~ 0,
        TRUE ~ NA_real_
      )
   )
@@ -127,7 +127,7 @@ socin$hhcycle_us92 <- socin2$child2
 socin$child <- coalesce(socin$child, socin$hhcycle_us92)
 
 ## Respondents' Household income: scaled, in case we need it
-temp <- select(socin2, AT_RIN87:US_RIN09)
+temp <- dplyr::select(socin2, AT_RIN87:US_RIN09)
 centered.temp <- as.data.frame(scale(temp, center = TRUE, scale = TRUE)) # standardize
 socin <- cbind(socin,centered.temp)
 socin$incZ = rowMeans(socin[,which(names(socin)=="AT_RIN87"):which(names(socin)=="US_RIN09")], na.rm = T)
@@ -315,13 +315,15 @@ df <- socin
 
 ## Rename dependent variables 
 df <- df %>%
-  rename(
+  dplyr::rename(
     incdiff = v33
   )
 
 ## Select relevant variables 
-df <- select(df, c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, incdiff))
+df <- dplyr::select(df, c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
 
+
+## add netherlands
 
 ```
 
@@ -379,7 +381,9 @@ env93 <- env93 %>%
       v330 %in% c(2,3,4) ~ 1,
       v330 %in% c(1,5:95) ~ 0,
       TRUE ~ NA_real_
-    )
+    ),
+    wrkhrs = v224,
+    wrkst = v212
   )
 # ISCO68 to ISCO88
 
@@ -419,7 +423,7 @@ env93 <- env93 %>%
 
 # Select relevant variables 
 
-env93 <- select(env93,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, incdiff))
+env93 <- dplyr::select(env93,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
 
 ```
 
@@ -477,7 +481,9 @@ env00 <- env00 %>%
       v273 %in% c(2,3,4) ~ 1,
       v273 %in% c(1, 5:95) ~ 0,
       TRUE ~ NA_real_
-    )
+    ),
+    wrkhrs = v238,
+    wrkst = v231
   )
 # ISCO88 to EGP
 
@@ -504,8 +510,7 @@ env00 <- env00 %>%
   )
 
 # Select relevant variables 
-env00 <- select(env00,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, incdiff)) # single parent is temporarily out
-
+env00 <- dplyr::select(env00,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff)) 
 ```
 
 
@@ -554,9 +559,19 @@ env10 <- env10 %>%
       union %in% c(2,3) ~ 0,
       union == 1 ~ 1,
       TRUE ~ NA_real_
+    ),
+    sparent = case_when(
+      marital %in% c(3:6) & ((hhchildr > 0 & hhchildr < 96) | (hhtodd >0 & hhtodd <96)) ~ 1,
+      marital %in% c(1:2) ~ 0,
+      marital %in% c(3:6) & hhchildr == 0 & hhtodd == 0 ~ 0,
+      TRUE ~ NA_real_
+    ),
+    wrkst = case_when(
+      mainstat == 1 & wrkhrs > 34 ~ 1,
+      mainstat == 1 & (wrkhrs > 14 & wrkhrs < 35) ~ 2,
+      mainstat == 1 & wrkhrs < 15 ~ 3,
+      
     )
-    
-    
   ) 
 
 # ISCO88 to EGP
@@ -576,12 +591,12 @@ env10$isei <- occupar::isco88toISEI92(isco88 = env10$isco88)
 
 ## Respondent's income, scaled.
 
-temp <- select(env10, ar_rinc:za_rinc)
+temp <- dplyr::select(env10, ar_rinc:za_rinc)
 centered.temp <- scale(temp, center = TRUE, scale = TRUE)
 env10$incZ <- coalesce(centered.temp)
 # Select relevant variables 
 
-env10 <- select(env10,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, incdiff))
+env10 <- dplyr::select(env10,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
 ```
 ## Merge environment data sets and social inequality cumulative data set
 
@@ -599,7 +614,8 @@ df <- df %>%
   mutate(
     itype = case_when(
       egp6 == "Routine" & female == 0 ~ 1,
-      (egp6 == "Unskilled" | egp6 == "Routine") & incZ < -1 ~ 2
+      (egp6 == "Unskilled" | egp6 == "Routine") & incZ < -1 ~ 2,
+      
     )
   )
 ```
