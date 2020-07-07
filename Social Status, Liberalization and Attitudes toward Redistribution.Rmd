@@ -28,7 +28,7 @@ rm(list = ls())
 
 library(pacman)
 
-pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","expss","htmlTable","magrittr","ltm","questionr","survey","remotes","stargazer","lavaan","ltm", "tidylog", "kableExtra","lm.beta","MplusAutomation","MASS","glm.predict","brant", "semTools")
+pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","expss","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools")
 
 #remotes::install_github("DiogoFerrari/occupar")
 #remotes::install_github("pdparker/isco88conversion")
@@ -99,7 +99,17 @@ socin <- socin %>%
      #in different national currency and not adjusted for inflations
      child = case_when(
        hhcycle %in% c(2,3,4,6,7,8,10,11,12,14,16,18,20,22,24,26,28)  ~ 1,
-       hhcycle %in% c(1,5,9,13,15,17,19,21,23,25,27) ~ 0,
+       hhcycle %in% c(1,5,9,13,15,17,19,21,23,25,27,95) ~ 0,
+       TRUE ~ NA_real_
+     ),
+     union = case_when( # 1 = member
+       union == 1 ~ 1,
+       union == 2 ~ 0,
+       TRUE ~ NA_real_
+     ),
+     sparent = case_when(   # single parent
+       hhcycle %in% c(2,3,4) ~ 1,
+       hhcycle %iN% c(1,5:95) ~ 0,
        TRUE ~ NA_real_
      )
   )
@@ -310,7 +320,7 @@ df <- df %>%
   )
 
 ## Select relevant variables 
-df <- select(df, c(cntry, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, incdiff))
+df <- select(df, c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, incdiff))
 
 
 ```
@@ -322,9 +332,13 @@ df <- select(df, c(cntry, age, ageC, female, educyrs, degree, child, married, in
 env93 <- env93 %>%
   mutate(
     cntry = v3,
+    cntry = dplyr::recode(cntry, `1` = 36, `2` = 276, `3` = 276, `4` = 826, `5` = 826, `6` = 840, `8` = 348, `9` = 380,
+                          `10` = 372, `11` = 528, `12` = 578, `13` = 203, `14` = 705, `15` = 616, `16` = 100, `17` = 643,
+                          `18` = 554, `19` = 124, `20` = 608, `21` = 376, `22` = 392, `23` = 724),
     year = 1993,
     female = v200 - 1,
     age = v201,
+    incdiff = v6,
     ageC = ifelse(age > 75, 75, age),
     age = case_when(  # trim at 75     
        age %in% c(16,17) ~ 1,
@@ -352,10 +366,20 @@ env93 <- env93 %>%
     ),
     child = case_when(
       v330 %in% c(2,3,4,6,7,8,10,12,14,16,18,20,22,24,26,28) ~ 1,
-      v330 %in% c(1,5,9,11,13,15,17,19,21,23,25,27) ~ 0,
+      v330 %in% c(1,5,9,11,13,15,17,19,21,23,25,27,95) ~ 0,
       TRUE ~ NA_real_ 
     ),
-    degree = v205 ## need to be recoded. But how?
+    degree = v205, ## need to be recoded. But how?
+    union = case_when(
+      v279 == 2 ~ 0,
+      v279 == 1 ~ 1,
+      TRUE ~ NA_real_
+    ),
+    sparent = case_when(
+      v330 %in% c(2,3,4) ~ 1,
+      v330 %in% c(1,5:95) ~ 0,
+      TRUE ~ NA_real_
+    )
   )
 # ISCO68 to ISCO88
 
@@ -391,12 +415,11 @@ env93 <- env93 %>%
   group_by(cntry) %>%
   mutate(
     incZ = scale(v231, center = TRUE, scale = T),
-    incdiff = v6
   )
 
 # Select relevant variables 
 
-env93 <- select(env93,c(cntry, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, incdiff))
+env93 <- select(env93,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, incdiff))
 
 ```
 
@@ -407,9 +430,14 @@ env93 <- select(env93,c(cntry, age, ageC, female, educyrs, degree, child, marrie
 env00 <- env00 %>%
   mutate(
     cntry = v3,
+    cntry = dplyr::recode(cntry, `1` = 36, `2` = 276, `3` = 276, `4` = 826, `5` = 826, `6` = 840, `7` = 40, `8` = 348,
+                          `9` = 380, `10` = 372, `11` = 528, `12` = 578, `13` = 752, `14` = 203, `15` = 705, `16` = 616,
+                          `17` = 100, `18` = 643, `19` = 554, `20` = 124, `21` = 608, `22` = 376, `24` = 392, `25` = 724,
+                          `26` = 428, `30` = 620, `31` = 152, `32` = 208, `33` = 756, `37` = 246, `38` = 484),
     year = 2000,
     female = v200 - 1,
     age = v201,
+    incdiff = v6,
     ageC = ifelse(age > 75, 75, age), # trim at 75  
     age = case_when(     # by categories
        age %in% c(16,17) ~ 1,
@@ -436,10 +464,20 @@ env00 <- env00 %>%
     ),
     child = case_when(
       v273 %in% c(2,3,4,6,7,8,10,12,14,16,18,20,22,24,26,28) ~ 1,
-      v273 %in% c(1,5,9,11,13,15,17,19,21,23,25,27) ~ 0,
+      v273 %in% c(1,5,9,11,13,15,17,19,21,23,25,27,95) ~ 0,
       TRUE ~ NA_real_ 
     ),
-    degree = v205 ## need to be recoded. But how?
+    degree = v205, ## need to be recoded. But how?
+    union = case_when(
+      v245 %in% c(2,3) ~ 0,
+      v245 == 1 ~ 1,
+      TRUE ~ NA_real_
+    ),
+    sparent = case_when(
+      v273 %in% c(2,3,4) ~ 1,
+      v273 %in% c(1, 5:95) ~ 0,
+      TRUE ~ NA_real_
+    )
   )
 # ISCO88 to EGP
 
@@ -462,13 +500,11 @@ env00$isei <- occupar::isco88toISEI92(isco88 = env00$v233)
 env00 <- env00 %>%
   group_by(cntry) %>%
   mutate(
-    incZ = scale(v240, center = TRUE, scale = TRUE),
-    incdiff = v6
+    incZ = scale(v240, center = TRUE, scale = TRUE)
   )
 
 # Select relevant variables 
-
-env00 <- select(env00,c(cntry, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, incdiff))
+env00 <- select(env00,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, incdiff)) # single parent is temporarily out
 
 ```
 
@@ -481,6 +517,7 @@ env10 <- env10 %>%
     cntry = country,
     year = 2010,
     female = sex - 1,
+    incdiff = v8,
     ageC = ifelse(age > 75, 75, age), # trim at 75  
     age = case_when(     # by categories
        age %in% c(16,17) ~ 1,
@@ -504,41 +541,129 @@ env10 <- env10 %>%
        TRUE ~ as.numeric(educyrs)
     ),
     child = case_when(
-      v273 %in% c(2,3,4,6,7,8,10,12,14,16,18,20,22,24,26,28) ~ 1,
-      v273 %in% c(1,5,9,11,13,15,17,19,21,23,25,27) ~ 0,
-      TRUE ~ NA_real_ 
+       hhchildr %in% c(1:9) | hhtodd %in% c(1:9) ~ 1,
+       hhchildr == 0 & hhtodd == 0 ~ 0,
+       TRUE ~ NA_real_
     ),
-    degree = v205 ## need to be recoded. But how?
-  )
+    selfemp = case_when(
+      emprel %in% c(2:4) ~ 1,
+      emprel == 1 ~ 2,
+      TRUE ~ NA_real_
+    ),
+    union = case_when(
+      union %in% c(2,3) ~ 0,
+      union == 1 ~ 1,
+      TRUE ~ NA_real_
+    )
+    
+    
+  ) 
+
 # ISCO88 to EGP
 
 
-
-env00$egp <- occupar::isco88toEGP(isco88 = env00$v233, n.employees = env00$v237, self.employed = env00$v236)
+env10$egp <- occupar::isco88toEGP(isco88 = env10$isco88, n.employees = env10$nemploy, self.employed = env10$selfemp)
 
 # EGP to EGP6
-env00 <- env00 %>%
+env10 <- env10 %>%
   mutate(
     egp6 = car::recode(egp, recodes = '"I     Service class I" = "Service I";"II    Service class II" = "Service II"; "III.a Routine non-manual, higher grade" = "Routine"; "III.b Routine non-manual, lower grade" = "Routine"; "IV.a  Self-employed with employees" = "Self"; "IV.b  Self-employed with no empoyees" = "Self"; "IV.c  Self-employed Farmers etc" = "Self"; "V     Manual supervisors/Lower grade technicians" = "Skilled";"VI    Skilled workers" = "Skilled"; "VII.a Unskilled workers" = "Unskilled"; "VII.b Farm labours" = "Unskilled"')
   )
 
 # ISEI
-env00$isei <- occupar::isco88toISEI92(isco88 = env00$v233)
+env10$isei <- occupar::isco88toISEI92(isco88 = env10$isco88)
 
 
-## Earnings - grouped by country, then scaled.
+## Respondent's income, scaled.
 
-env00 <- env00 %>%
-  group_by(cntry) %>%
-  mutate(
-    incZ = scale(v240, center = TRUE, scale = TRUE),
-    incdiff = v6
-  )
-
+temp <- select(env10, ar_rinc:za_rinc)
+centered.temp <- scale(temp, center = TRUE, scale = TRUE)
+env10$incZ <- coalesce(centered.temp)
 # Select relevant variables 
 
-env00 <- select(env00,c(cntry, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, incdiff))
+env10 <- select(env10,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, incdiff))
 ```
+## Merge environment data sets and social inequality cumulative data set
+
+```{r merge, include = FALSE}
+env <- plyr::rbind.fill(env93,env00)
+env <- plyr::rbind.fill(env,env10)
+
+df <- plyr::rbind.fill(env,df)
+```
+
+## New ideal types 
+
+```{r ideal, include = FALSE}
+df <- df %>%
+  mutate(
+    itype = case_when(
+      egp6 == "Routine" & female == 0 ~ 1,
+      (egp6 == "Unskilled" | egp6 == "Routine") & incZ < -1 ~ 2
+    )
+  )
+```
+
+## Data analysis
+```{r analysis, include = FALSE}
+df <- df %>% 
+  group_by(cntry)
+df$incdiff <- dplyr::recode(df$incdiff, `8` = NA_real_, `9` = NA_real_) # 8 = NA or should be kept?
+
+df_lw <- df[complete.cases(df$incdiff),]
+df_lw <- df_lw[complete.cases(df_lw$cntry),]
+
+
+df_lw$f_incdiff <- as.factor(df_lw$incdiff)
+df_lw$o_incdiff <- as.ordered(df_lw$incdiff)
+
+
+ggplot(df_lw, aes(f_incdiff)) +
+  geom_bar(fill = "gray40") + 
+  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree")) + 
+  ggtitle("Reduce income differences")
+
+
+
+## Ordered logit 
+
+mod1 <- polr(f_incdiff ~ age*age + female + educyrs + degree + child + married + incZ + egp6 + as.factor(cntry), data = df_lw)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## Construct the measurement model
