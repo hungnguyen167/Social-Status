@@ -28,7 +28,7 @@ rm(list = ls())
 
 library(pacman)
 
-pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","expss","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools")
+pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools", "tidylog")
 
 #remotes::install_github("DiogoFerrari/occupar")
 #remotes::install_github("pdparker/isco88conversion")
@@ -40,17 +40,13 @@ wd <- "C:/data/"
 # We don't want to see messages in the final document
 knitr::opts_chunk$set(message = F)
 
-#Column no missing function
-completeFun <- function(data, desiredCols) {
-  completeVec <- complete.cases(data[, desiredCols])
-  return(data[completeVec, ])
-}
+
 
 ```
 
 ## Read data
 
-```{r read data, include = FALSE}
+```{r read data, include = TRUE}
 
 # Inequality Module
 socin <- read_dta(paste(wd, "ZA5890_v1-0-0.dta",sep=""))
@@ -61,15 +57,24 @@ socin2 <- read_dta(paste(wd, "ZA5891_v1-1-0.dta", sep = ""))
 env93 <- read_dta(paste(wd, "ZA2450.dta",sep=""))
 env00 <- read_dta(paste(wd, "ZA3440.dta",sep=""))
 env10 <- read_dta(paste(wd, "ZA5500_v3-0-0.dta",sep=""))
+
+
+# Integrate missing countries: Denmark/Ireland 1999; Netherlands 2009
+
+dk99 <- read_dta(paste(wd, "ZA3562_v1-0-0.dta", sep=""))
+ie99 <- read_dta(paste(wd, "ZA3613_v1-0-0.dta", sep=""))
+nl09 <- read_dta(paste(wd, "ZA5995_v1-0-0.dta", sep=""))
 ```
 ## Data transformation - Social Inequality 
 
-```{r socin, include = FALSE, warning=F,message=F}
+```{r socin, include = TRUE, warning=F,message=F}
+# Cumulative files
 ## General variables
 colnames(socin) <- tolower(colnames(socin))
 
 socin <- socin %>% 
   mutate(
+     incdiff = v33,
      cntry = v5,
      year = v4,
      female = if_else(sex == 2, 1,0), # female = 1
@@ -108,7 +113,7 @@ socin <- socin %>%
        TRUE ~ NA_real_
      ),
      sparent = case_when(   # single parent
-       hhcycle %in% c(2,3,4) ~ 1,
+       hhcycle %in% c(2,3,4) ~ 1, # if one is married but living away from their partner (and raising children), count as single parent?
        hhcycle %in% c(1,5:95) ~ 0,
        TRUE ~ NA_real_
      )
@@ -147,30 +152,32 @@ socin[which(socin$cntry == 380 & socin$year == 1992),]$it_occ <- socin2[which(so
 socin$gbr_occ <- zap_labels(socin2$GB_OCC87)
 socin[which(socin$cntry == 826 & socin$year == 1992),]$gbr_occ <- socin2[which(socin2$V5 == 826 & socin2$V4 == 1992),]$GB_OCC92
 socin$us_occ <- zap_labels(socin2$US_OCC87)
+socin$pl_occ <- zap_labels(socin2$PL_OCC87)
+socin$se_occ <- zap_labels(socin2$SE_OCC92)
 socin$bg_occ <- zap_labels(socin2$BG_OCC99)
 socin$fr_occ <- zap_labels(socin2$FR_OCC99)
 socin$jp_occ <- zap_labels(socin2$JP_OCC99)
-socin$se_occ <- zap_labels(socin2$SE_OCC92)
-
-# Recoding to isco88: Australia
+# Recoding to isco88: Australia 1987
 # Data are in ASCO First Edition, emailed Kelley and Evans 10-Jun-20 to ask for correspondance tables
 
 # socin$au_occ2 <- isco88conversion::anzscoToISCO(socin$au_occ)
 
 
-# Recoding to isco88: Italy
+# Recoding to isco88: Italy 1987/Italy 1992 (not found)
 
 
-# Recoding to isco88: Great Britain
+# Recoding to isco88: Great Britain 1987/1992 (not found)
 
 
-# Recoding to isco88: Poland
+# Recoding to isco88: Poland 1987 (manually code to EGP6?)
 
 
-# Recoding to isco88: U.S
+# Recoding to isco88: U.S 1987
 
 # From US87 to USt
-socin$us_occ <- car::recode(socin$us_occ, recodes = "1=23;2=43;3=64;4=64;5=64;6=44;10=48;11=75;12=55;13=19;14=57;  
+
+# Save the text for later uses
+us87st <- "1=23;2=43;3=64;4=64;5=64;6=44;10=48;11=75;12=55;13=19;14=57;  
 15=45;20=46;21=47;22=258;23=26;24=159;25=15;26=159;30=179;31=36;32=164;33=165;34=66;  
 35=68;36=67;42=77;43=74;44=77;45=45;51=75;52=75;53=49;54=76;55=56;56=27;61=89;62=85;  
 63=87;64=96;65=84;71=88;72=86;73=89;74=97;75=95;76=98;80=203;81=204;82=205;83=206;84=446;  
@@ -207,12 +214,13 @@ socin$us_occ <- car::recode(socin$us_occ, recodes = "1=23;2=43;3=64;4=64;5=64;6=
 911=443;912=433;913=444;914=433;915=433;916=433;921=445;922=446;923=95;924=447;925=207;  
 926=207;931=465;932=469;933=449;934=456;935=456;940=469;941=469;942=456;943=454;944=456;  
 945=457;950=433;952=468;953=464;954=467;960=425;961=6;962=414;963=423;964=6;965=423;980=406;  
-981=404;982=405;983=403;984=407")
+981=404;982=405;983=403;984=407"
 
+
+socin$us_occ <- car::recode(socin$us_occ, recodes = us87st)
 
 # From Ust to isco88
-
-socin$us_occ <- car::recode(socin$us_occ, recodes = "003=1110;004=1120;005=1120;006=1120;
+usst88 <- "003=1110;004=1120;005=1120;006=1120;
 007=1231;008=1232;009=1233;013=1233;014=1229;015=1229;016=5121;017=1226;018=5143;019=1229;
 023=2411;024=3412;025=3410;026=2149;027=2412;  
 028=3416;029=3416;033=3416;034=2419;035=3151;036=3444;037=1229;043=2141;044=2145;045=2147;  
@@ -263,20 +271,21 @@ socin$us_occ <- car::recode(socin$us_occ, recodes = "003=1110;004=1120;005=1120;
 814=9333;823=5112;824=8311;825=8312;826=8310;828=8340;829=8340;833=3141;834=8340;843=7520;  
 844=8330;845=8333;848=8333;849=8333; 853=8332;855=8332;856=8334;859=8330;863=7510;864=7234;  
 865=9313;866=9313;867=9311;869=9313;873=9320;875=9161;876=9333;877=9333;878=9321;883=9333;  
-885=7234;887=9142;888=9322;889=9300;905=110;909=110;739=8262")
+885=7234;887=9142;888=9322;889=9300;905=110;909=110;739=8262"
+socin$us_occ <- car::recode(socin$us_occ, recodes = usst88)
 
 socin[which(socin$cntry == 840 & socin$year == 1987),]$isco88 <- socin[which(socin$cntry == 840 & socin$year == 1987),]$us_occ
 
-# Recoding to isco88: Bulgaria (not found)
+# Recoding to isco88: Bulgaria 1999 (manually code to EGP6)
 
 
 
-# Recoding to isco88: France (not found)
+# Recoding to isco88: France 1999 (not found - need some French knowledge)
 
 
-# Recoding to isco88: Japan
-socin$jp_occ <- car::recode(socin$jp_occ, recodes = "7 = 2265; 8 = 2265; 5 = 9322; 4 = 7233; 3 = 5130; 6 = 4115; 1 = 6130; 2 = 7233; 
-                              9  = NA; 10= NA; 11 = NA")
+# Recoding to isco88: Japan 1999
+socin$jp_occ <- car::recode(socin$jp_occ, recodes = "7 = 2265; 8 = 2265; 5 = 9322; 4 = 7233; 3 = 5130; 6 = 4115; 1 = 6130; 2 = 7233;
+                            9  = NA; 10= NA; 11 = NA")
 socin[which(socin$cntry == 392 & socin$year == 1999),]$isco88 <- socin[which(socin$cntry == 392 & socin$year == 1999),]$jp_occ
 jp_occ <- socin[which(socin$cntry == 392),]$isco88 
 educyrsjp <- socin[which(socin$cntry == 392),]$educyrs
@@ -288,10 +297,11 @@ jp$jp_occ <- if_else(jp$jp_occ == 2265 & jp$educyrsjp < 16, 1229, jp$jp_occ)
 
 
 socin[which(socin$cntry == 392),]$isco88 <- jp$jp_occ
-# Recoding to isco88: Sweden
+# Recoding to isco88: Sweden 1992
+se9288 <- "1 = 2141; 2 = 2143; 3 = 2144; 4 = 2145; 5 = 3116; 6 = 3117; 7 = 2142; 8 = 2148; 9 = 3119; 12 = 3211; 13 = 3211; 14 = 2114; 15 = 2112; 16 = 2113; 19 = 3111; 21 = 2211; 22 = 3213; 23 = 3213; 29 = 2211; 30 = 1210; 31 = 2310; 32 = 2320; 33 = 2331; 34 = 2320; 35 = 2359; 36 = 2320; 37 = 2352; 39 = 2359; 41 = 2460; 49 = 3480; 51 = 2421; 52 = 2429; 53 = 2429; 
+54 = 2429; 59 = 2429; 61 = 2451; 62 = 1234; 63 = 1229; 69 = 2451; 71 = 2452; 72 = 3471; 73 = 3471; 74 = 3131; 75 = 3474; 76 = 2453; 77 = 2455; 79 = 2455; 91 = 2432; 92 = 2431; 99 = 2446; 101 = 2221; 102 = 2230; 103 = 3231; 104 = 3232; 105 = 3133; 106 = 5132; 107 = 5132; 109 = 9132; 111 = 3226; 112 = 2229; 119 = 3226; 121 = 2222; 122 = 3225; 123 = 3225; 129 = 3225; 131 = 2224; 139 = 3228; 141 = 2223; 149 = 3227; 151 = 2446; 152 = 1228; 153 = 5131; 154 = 5133; 155 = 1228; 159 = 2446; 161 = 3152; 162 = 3151; 169 = 3152; 191 = 2445; 192 = 3223; 199 = 3460; 201 = 1110; 202 = 3443; 203 = 3444; 209 = 1110; 211 = 2419; 212 = 3431; 219 = 2419; 221 = 2412; 222 = 3423; 229 = 2412; 231 = 2411; 232 = 2411; 239 = 4121; 241 = 4115; 242 = 4111; 249 = 4190; 251 = 2131; 252 = 3122; 259 = 3121; 261 = 2441; 262 = 2122; 269 = 2441; 291 = 4190; 292 = 4122; 293 = 3412; 294 = 3412; 295 = 4221; 296 = 3422; 297 = 1317; 299 = 4190; 311 = 3471; 312 = 3413; 313 = 3419; 319 = 3419; 321 = 3416; 331 = 1314; 332 = 5220; 333 = 5220; 339 = 5220; 399 = 5220; 400 = 1311; 401 = 6112; 402 = 6130; 403 = 6130; 404 = 6130; 405 = 6130; 406 = 6129; 409 = 6112; 411 = 6112; 412 = 6121; 413 = 6112; 414 = 6129; 419 = 6121; 421 = 6154; 431 = 6152; 432 = 6151; 439 = 6152; 441 = 6141; 449 = 6141; 501 = 7111; 509 = 7111; 511 = 8113; 521 = 8121; 531 = 8155; 599 = 7111; 601 = 3142; 602 = 3142; 603 = 3141; 609 = 3142; 611 = 8340; 612 = 8340; 619 = 8340; 621 = 3143; 629 = 3143; 631 = 8311; 640 = 8322; 641 = 8324; 642 = 8322; 643 = 9151; 649 = 8334; 651 = 3144; 652 = 5112; 653 = 5111; 659 = 5112; 661 = 4133; 662 = 3144; 663 = 8312; 664 = 4133; 669 = 4133; 671 = 4142; 673 = 3132; 674 = 3132; 675 = 3132; 679 = 4142; 681 = 4142; 682 = 9151; 689 = 4142; 691 = 4133; 699 = 9330; 701 = 8261; 702 = 7332; 703 = 7432; 705 = 8262; 706 = 7435; 707 = 3152; 709 = 7332; 711 = 7433; 712 = 7434; 713 = 7433; 714 = 7437; 715 = 7435; 716 = 7433; 719 = 7436; 721 = 7442; 722 = 7442; 723 = 8268; 729 = 8269; 731 = 8121; 732 = 8122; 733 = 8122; 735 = 7215; 736 = 7221; 737 = 7211; 739 = 8122; 741 = 7311; 742 = 7311; 743 = 3224; 744 = 3211; 745 = 7313; 746 = 7323; 749 = 7222; 751 = 8211; 752 = 7233; 753 = 7231; 754 = 7213; 755 = 7136; 756 = 7212; 757 = 7214; 758 = 8223; 759 = 7214; 761 = 7241; 762 = 7241; 763 = 8282; 764 = 7244; 765 = 7245; 766 = 3131; 769 = 8282; 771 = 6141; 772 = 8141; 773 = 8240; 775 = 7331; 776 = 7331; 777 = 7423; 779 = 8141; 781 = 7141; 782 = 7132; 783 = 7141; 789 = 7139; 791 = 7122; 793 = 7123; 794 = 7124; 795 = 7134; 796 = 7135; 799 = 7129; 801 = 7341; 802 = 7343; 803 = 8251; 804 = 7345; 805 = 8224; 809 = 8251; 811 = 7322; 812 = 7321; 813 = 8131; 814 = 7323; 819 = 8139; 821 = 8273; 822 = 7412; 823 = 8274; 824 = 8278; 825 = 9320; 826 = 7411; 827 = 8272; 828 = 8279; 829 = 8278; 831 = 8159; 832 = 8151; 833 = 8151; 834 = 8231; 835 = 8232; 839 = 8159; 841 = 8142; 842 = 8143; 843 = 8253; 849 = 8142; 851 = 7129; 852 = 8265; 853 = 7312; 854 = 7113; 859 = 7222; 861 = 8161; 869 = 8161; 871 = 8333; 872 = 8332; 873 = 8334; 879 = 9330; 881 = 9320; 882 = 9330; 889 = 9320; 891 = 9151; 901 = 5161; 902 = 9162; 903 = 5162; 904 = 3441; 905 = 5163; 906 = 5169; 909 = 5169; 911 = 1225; 912 = 5122; 913 = 5123; 914 = 5123; 915 = 4222; 916 = 5111; 919 = 5123; 921 = 5121; 929 = 5121; 931 = 9141; 932 = 9131; 939 = 9141; 941 = 5141; 942 = 5149; 949 = 5141; 951 = 9133; 952 = 9133; 959 = 9133; 961 = 3475; 971 = 5143; 979 = 5149; 981 = 110; 989 = 110"
 
-socin$se_occ <- car::recode(socin$se_occ, recodes = "1 = 2141; 2 = 2143; 3 = 2144; 4 = 2145; 5 = 3116; 6 = 3117; 7 = 2142; 8 = 2148; 9 = 3119; 12 = 3211; 13 = 3211; 14 = 2114; 15 = 2112; 16 = 2113; 19 = 3111; 21 = 2211; 22 = 3213; 23 = 3213; 29 = 2211; 30 = 1210; 31 = 2310; 32 = 2320; 33 = 2331; 34 = 2320; 35 = 2359; 36 = 2320; 37 = 2352; 39 = 2359; 41 = 2460; 49 = 3480; 51 = 2421; 52 = 2429; 53 = 2429; 
-54 = 2429; 59 = 2429; 61 = 2451; 62 = 1234; 63 = 1229; 69 = 2451; 71 = 2452; 72 = 3471; 73 = 3471; 74 = 3131; 75 = 3474; 76 = 2453; 77 = 2455; 79 = 2455; 91 = 2432; 92 = 2431; 99 = 2446; 101 = 2221; 102 = 2230; 103 = 3231; 104 = 3232; 105 = 3133; 106 = 5132; 107 = 5132; 109 = 9132; 111 = 3226; 112 = 2229; 119 = 3226; 121 = 2222; 122 = 3225; 123 = 3225; 129 = 3225; 131 = 2224; 139 = 3228; 141 = 2223; 149 = 3227; 151 = 2446; 152 = 1228; 153 = 5131; 154 = 5133; 155 = 1228; 159 = 2446; 161 = 3152; 162 = 3151; 169 = 3152; 191 = 2445; 192 = 3223; 199 = 3460; 201 = 1110; 202 = 3443; 203 = 3444; 209 = 1110; 211 = 2419; 212 = 3431; 219 = 2419; 221 = 2412; 222 = 3423; 229 = 2412; 231 = 2411; 232 = 2411; 239 = 4121; 241 = 4115; 242 = 4111; 249 = 4190; 251 = 2131; 252 = 3122; 259 = 3121; 261 = 2441; 262 = 2122; 269 = 2441; 291 = 4190; 292 = 4122; 293 = 3412; 294 = 3412; 295 = 4221; 296 = 3422; 297 = 1317; 299 = 4190; 311 = 3471; 312 = 3413; 313 = 3419; 319 = 3419; 321 = 3416; 331 = 1314; 332 = 5220; 333 = 5220; 339 = 5220; 399 = 5220; 400 = 1311; 401 = 6112; 402 = 6130; 403 = 6130; 404 = 6130; 405 = 6130; 406 = 6129; 409 = 6112; 411 = 6112; 412 = 6121; 413 = 6112; 414 = 6129; 419 = 6121; 421 = 6154; 431 = 6152; 432 = 6151; 439 = 6152; 441 = 6141; 449 = 6141; 501 = 7111; 509 = 7111; 511 = 8113; 521 = 8121; 531 = 8155; 599 = 7111; 601 = 3142; 602 = 3142; 603 = 3141; 609 = 3142; 611 = 8340; 612 = 8340; 619 = 8340; 621 = 3143; 629 = 3143; 631 = 8311; 640 = 8322; 641 = 8324; 642 = 8322; 643 = 9151; 649 = 8334; 651 = 3144; 652 = 5112; 653 = 5111; 659 = 5112; 661 = 4133; 662 = 3144; 663 = 8312; 664 = 4133; 669 = 4133; 671 = 4142; 673 = 3132; 674 = 3132; 675 = 3132; 679 = 4142; 681 = 4142; 682 = 9151; 689 = 4142; 691 = 4133; 699 = 9330; 701 = 8261; 702 = 7332; 703 = 7432; 705 = 8262; 706 = 7435; 707 = 3152; 709 = 7332; 711 = 7433; 712 = 7434; 713 = 7433; 714 = 7437; 715 = 7435; 716 = 7433; 719 = 7436; 721 = 7442; 722 = 7442; 723 = 8268; 729 = 8269; 731 = 8121; 732 = 8122; 733 = 8122; 735 = 7215; 736 = 7221; 737 = 7211; 739 = 8122; 741 = 7311; 742 = 7311; 743 = 3224; 744 = 3211; 745 = 7313; 746 = 7323; 749 = 7222; 751 = 8211; 752 = 7233; 753 = 7231; 754 = 7213; 755 = 7136; 756 = 7212; 757 = 7214; 758 = 8223; 759 = 7214; 761 = 7241; 762 = 7241; 763 = 8282; 764 = 7244; 765 = 7245; 766 = 3131; 769 = 8282; 771 = 6141; 772 = 8141; 773 = 8240; 775 = 7331; 776 = 7331; 777 = 7423; 779 = 8141; 781 = 7141; 782 = 7132; 783 = 7141; 789 = 7139; 791 = 7122; 793 = 7123; 794 = 7124; 795 = 7134; 796 = 7135; 799 = 7129; 801 = 7341; 802 = 7343; 803 = 8251; 804 = 7345; 805 = 8224; 809 = 8251; 811 = 7322; 812 = 7321; 813 = 8131; 814 = 7323; 819 = 8139; 821 = 8273; 822 = 7412; 823 = 8274; 824 = 8278; 825 = 9320; 826 = 7411; 827 = 8272; 828 = 8279; 829 = 8278; 831 = 8159; 832 = 8151; 833 = 8151; 834 = 8231; 835 = 8232; 839 = 8159; 841 = 8142; 842 = 8143; 843 = 8253; 849 = 8142; 851 = 7129; 852 = 8265; 853 = 7312; 854 = 7113; 859 = 7222; 861 = 8161; 869 = 8161; 871 = 8333; 872 = 8332; 873 = 8334; 879 = 9330; 881 = 9320; 882 = 9330; 889 = 9320; 891 = 9151; 901 = 5161; 902 = 9162; 903 = 5162; 904 = 3441; 905 = 5163; 906 = 5169; 909 = 5169; 911 = 1225; 912 = 5122; 913 = 5123; 914 = 5123; 915 = 4222; 916 = 5111; 919 = 5123; 921 = 5121; 929 = 5121; 931 = 9141; 932 = 9131; 939 = 9141; 941 = 5141; 942 = 5149; 949 = 5141; 951 = 9133; 952 = 9133; 959 = 9133; 961 = 3475; 971 = 5143; 979 = 5149; 981 = 110; 989 = 110")
+socin$se_occ <- car::recode(socin$se_occ, recodes = se9288)
 
 socin[which(socin$cntry == 752 & socin$year == 1992),]$isco88 <- socin[which(socin$cntry == 752 & socin$year == 1992),]$se_occ
 
@@ -303,37 +313,321 @@ socin[which(socin$cntry == 752 & socin$year == 1992),]$isco88 <- socin[which(soc
 # Translating from isco88 to egp
 socin$egp <- occupar::isco88toEGP(isco88 = socin$isco88, n.employees = socin$nemploy, self.employed = socin$selfemp)
 # EGP6
+egp6 <- '"I     Service class I" = "Service I";"II    Service class II" = "Service II"; "III.a Routine non-manual, higher grade" = "Routine"; "III.b Routine non-manual, lower grade" = "Routine"; "IV.a  Self-employed with employees" = "Self"; "IV.b  Self-employed with no employees" = "Self"; "IV.c  Self-employed Farmers etc" = "Self"; "V     Manual supervisors/Lower grade technicians" = "Skilled";"VI    Skilled workers" = "Skilled"; "VII.a Unskilled workers" = "Unskilled"; "VII.b Farm labours" = "Unskilled"'
+
+# EGP6_2, When selfemp is not available 
+egp6_2 <- '"I     Service class I" = "Service I";"II    Service class II" = "Service II"; "III.a Routine non-manual, higher grade" = "Routine"; "III.b Routine non-manual, lower grade" = "Routine"; "V     Manual supervisors/Lower grade technicians" = "Skilled";"VI    Skilled workers" = "Skilled"; "VII.a Unskilled workers" = "Unskilled"; "VII.b Farm labours" = "Unskilled"'
+
+
 socin <- socin %>%
   mutate(
-    egp6 = car::recode(egp, recodes = '"I     Service class I" = "Service I";"II    Service class II" = "Service II"; "III.a Routine non-manual, higher grade" = "Routine"; "III.b Routine non-manual, lower grade" = "Routine"; "IV.a  Self-employed with employees" = "Self"; "IV.b  Self-employed with no empoyees" = "Self"; "IV.c  Self-employed Farmers etc" = "Self"; "V     Manual supervisors/Lower grade technicians" = "Skilled";"VI    Skilled workers" = "Skilled"; "VII.a Unskilled workers" = "Unskilled"; "VII.b Farm labours" = "Unskilled"')
+    egp6 = car::recode(egp, recodes = egp6)
   )
 
 ## Status using Ganzeboom, De Graaf, and Treiman 1992
 
 socin$isei <- occupar::isco88toISEI92(isco88 = socin$isco88)
-df <- socin
 
-## Rename dependent variables 
-df <- df %>%
-  dplyr::rename(
-    incdiff = v33
+## Father's occupation 
+
+# ------- #
+# Australia 1987 (waiting for response)
+# Poland 1987 (manually code to EGP6?)
+
+
+# Italy 1992 (not found)
+# Philippines 1992 (not found)
+# Slovenia 1992 (not found)
+# France 1999 (not found)
+# Philippines 1999 (not found)
+# Ireland 1999 (not found)
+# ------- #
+socin <- socin %>%
+  mutate(
+    fisco88 = v70,
+    f_jtype = v71
   )
 
-## Select relevant variables 
-df <- dplyr::select(df, c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
+# Us 1987 
+socin$us_foc <- zap_labels(socin2$US_FOC87)
+socin$us_foc <- car::recode(socin$us_foc, recodes = us87st)
+socin$us_foc <- car::recode(socin$us_foc, recodes = usst88)
+
+socin[which(socin$cntry == 840 & socin$year == 1987),]$fisco88 <- socin[which(socin$cntry == 840 & socin$year == 1987),]$us_foc
+
+# Sweden 1992
+socin$se_foc <- zap_labels(socin2$SE_FOC92)
+socin$se_foc <- car::recode(socin$se_foc, recodes = se9288)
+
+socin[which(socin$cntry == 752 & socin$year == 1992),]$fisco88 <- socin[which(socin$cntry == 752 & socin$year == 1992),]$se_foc
 
 
-## add netherlands
+# Japan 1999 (can't code without father's education years)
+
+
+
+## Mother's occupation 
+
+# Israel 1999
+
+# Slovenia 1992
+
+socin$misco88 <- socin$v72
+## FIsCO88/MISCO88 to EGP/EGP6 and ISEI 
+
+socin <- socin %>%
+  mutate(
+    f_egp = occupar::isco88toEGP(fisco88, n.employees = NULL, self.employed = v68),
+    f_egp6 = car::recode(f_egp, recodes = egp6),
+    f_isei = occupar::isco88toISEI92(isco88 = fisco88),
+    m_egp = occupar::isco88toEGP(misco88, n.employees = NULL, self.employed = NULL),
+    m_egp6 = car::recode(m_egp, recodes = egp6_2),
+    m_isei = occupar::isco88toISEI92(isco88 = misco88),
+  )
+
+
+
+# Select relevant variables
+
+socin <- dplyr::select(socin, cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+
+```
+
+
+
+## Add missing countries and merge
+
+
+
+```{r m&m, include = TRUE}
+## Add missing countries
+# Denmark 1999
+
+# dklab <- lapply(dk99, attr, "label")
+# View(dklab)
+
+dk99 <- dk99 %>%
+  mutate(
+    cntry = 208,
+    year = 1999,
+    incdiff = v57,
+    ageC = ifelse(age > 75, 75, age),
+    age = case_when(  # trim at 75     
+       age %in% c(16,17) ~ 1,
+       age %in% c(18:24) ~ 2,
+       age %in% c(25:34) ~ 3,
+       age %in% c(35:44) ~ 4,
+       age %in% c(45:54) ~ 5,
+       age %in% c(55:64) ~ 6,
+       age %in% c(65:74) ~ 7,
+       age >= 75 & age < 99 ~ 8,
+       TRUE ~ NA_real_
+     ), 
+    female = sex - 1,
+    educyrs = case_when(   
+       educyrs > 25 & educyrs < 90 ~ 26, 
+       educyrs %in% c(95:98) ~ NA_real_,
+       TRUE ~ as.numeric(educyrs)
+    ),
+    child = case_when(
+      hhcycle %in% c(2,3,4,6,7,8,10,12,14,30) ~ 1,
+      hhcycle %in% c(1,5,9,11,13,29,95) ~ 0,
+      TRUE ~ NA_real_ 
+    ), 
+    married = case_when( 
+       marital %in% c(1:2) ~ 1, # widowed = married
+       marital %in% c(3:5) ~ 0, # divorced, separated = not married
+       TRUE ~ NA_real_
+    ),
+    union = case_when(
+      union == 2 ~ 0,
+      union == 1 ~ 1,
+      TRUE ~ NA_real_
+    ),
+    sparent = case_when(
+      hhcycle %in% c(2,3,4) ~ 1,
+      hhcycle %in% c(1,5:95) ~ 0,
+      TRUE ~ NA_real_
+    ),
+    incZ = scale(rincome, scale = TRUE, center = TRUE),
+    egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
+    egp6 = car::recode(egp, recodes = egp6),
+    isei = occupar::isco88toISEI92(isco88),
+    fisco88 = v142,
+    f_selfemp = case_when(
+      v501 == 0 ~ 0,
+      v501 == 3 ~ 1,
+      v501 %in% c(1,2) ~ 2,
+      TRUE ~ NA_real_
+    ),
+    f_egp = occupar::isco88toEGP(fisco88, n.employees = NULL, self.employed = f_selfemp), # nemploy missing
+    f_egp6 = car::recode(f_egp,recodes = egp6),
+    f_isei = occupar::isco88toISEI92(fisco88),
+    misco88 = NA_real_,# No mother's occupation information available for Denmark 
+    m_egp = NA_real_,
+    m_egp6 = NA_real_, 
+    m_isei = NA_real_
+  )  
+
+
+dk99 <- dplyr::select(dk99, cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+
+# Ireland 1999
+
+# ielab <- lapply(ie99, attr, "label") 
+# View(ielab)
+
+ie99 <- ie99 %>%
+  mutate(
+    cntry = 372,
+    year = 1999,
+    incdiff = v35,
+    ageC = ifelse(age > 75, 75, age),
+    age = case_when(  # trim at 75     
+       age %in% c(16,17) ~ 1,
+       age %in% c(18:24) ~ 2,
+       age %in% c(25:34) ~ 3,
+       age %in% c(35:44) ~ 4,
+       age %in% c(45:54) ~ 5,
+       age %in% c(55:64) ~ 6,
+       age %in% c(65:74) ~ 7,
+       age >= 75 & age < 99 ~ 8,
+       TRUE ~ NA_real_
+     ), 
+    female = sex - 1,
+    educyrs = case_when(   
+       educyrs > 25 & educyrs < 90 ~ 26, 
+       educyrs %in% c(95:98) ~ NA_real_,
+       TRUE ~ as.numeric(educyrs)
+    ),
+    child = case_when(
+      hhcycle %in% c(2,3,4,6,7,8,10,12,14,16,18,20,22,24) ~ 1,
+      hhcycle %in% c(1,5,9,11,13,15,17,19,21,23,25) ~ 0,
+      TRUE ~ NA_real_ 
+    ), 
+    married = case_when( 
+       marital %in% c(1:2) ~ 1, # widowed = married
+       marital %in% c(3:5) ~ 0, # divorced, separated = not married
+       TRUE ~ NA_real_
+    ),
+    union = case_when(
+      union == 2 ~ 0,
+      union == 1 ~ 1,
+      TRUE ~ NA_real_
+    ),
+    sparent = case_when(
+      hhcycle %in% c(2,3,4) ~ 1, 
+      hhcycle %in% c(1,5:95) ~ 0,
+      TRUE ~ NA_real_
+    ),
+    incZ = scale(rincome, scale = TRUE, center = TRUE),
+    egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
+    egp6 = car::recode(egp, recodes = egp6),
+    isei = occupar::isco88toISEI92(isco88),
+    fisco88 = v62,
+    f_egp = occupar::isco88toEGP(fisco88, n.employees = NULL, self.employed = NULL), # nemploy and selfemp missing (labels unkown) - some might be incorrectly coded.
+    f_egp6 = car::recode(f_egp,recodes = egp6_2),
+    f_isei = occupar::isco88toISEI92(fisco88),
+    misco88 = NA_real_,
+    m_egp = NA_real_,
+    m_egp6 = NA_real_, 
+    m_isei = NA_real_
+  )
+
+
+ie99 <- dplyr::select(ie99, cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+
+# Netherlands 
+# nelab <- lapply(nl09, attr, "label") 
+colnames(nl09) <- tolower(colnames(nl09))
+nl09 <- nl09 %>%
+  mutate(
+    cntry = 528,
+    year = 2009,
+    incdiff = v33,
+    ageC = ifelse(age > 75, 75, age),
+    age = case_when(  # trim at 75     
+       age %in% c(16,17) ~ 1,
+       age %in% c(18:24) ~ 2,
+       age %in% c(25:34) ~ 3,
+       age %in% c(35:44) ~ 4,
+       age %in% c(45:54) ~ 5,
+       age %in% c(55:64) ~ 6,
+       age %in% c(65:74) ~ 7,
+       age >= 75 & age < 99 ~ 8,
+       TRUE ~ NA_real_
+     ), 
+    female = sex - 1,
+    educyrs = case_when(   
+       educyrs > 25 & educyrs < 90 ~ 26, 
+       educyrs %in% c(95:98) ~ NA_real_,
+       TRUE ~ as.numeric(educyrs)
+    ),
+    child = case_when(
+      hhcycle %in% c(2,3,4,6,7,8,10,12,14,16,18,20,22,24,26,28) ~ 1,
+      hhcycle %in% c(1,5,9,11,13,15,17,19,21,23,25,27,95) ~ 0,
+      TRUE ~ NA_real_ 
+    ), 
+    married = case_when( 
+       marital %in% c(1:2) ~ 1, # widowed = married
+       marital %in% c(3:5) ~ 0, # divorced, separated = not married
+       TRUE ~ NA_real_
+    ),
+    union = case_when(
+      union %in% c(2,3) ~ 0,
+      union == 1 ~ 1,
+      TRUE ~ NA_real_
+    ),
+    sparent = case_when(
+      hhcycle %in% c(2,3,4) ~ 1, 
+      hhcycle %in% c(1,5:95) ~ 0,
+      TRUE ~ NA_real_
+    ),
+    selfemp = case_when(
+      emprel %in% c(2,3,4) ~ 1,
+      emprel == 1 ~ 2,
+      TRUE ~ NA_real_
+    ),
+    incZ = scale(nl_rinc, scale = TRUE, center = TRUE),
+    egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
+    egp6 = car::recode(egp, recodes = egp6),
+    isei = occupar::isco88toISEI92(isco88),
+    fisco88 = v57,
+    f_egp = occupar::isco88toEGP(fisco88, n.employees = NULL, self.employed = NULL), # nemploy and selfemp missing (labels unkown) - some might be incorrectly coded.
+    f_egp6 = car::recode(f_egp,recodes = egp6_2),
+    f_isei = occupar::isco88toISEI92(fisco88),
+    misco88 = v60,
+    m_egp = occupar::isco88toEGP(misco88, n.employees = NULL, self.employed = NULL), # nemploy and selfemp missing (labels unkown) - some might be incorrectly coded.
+    m_egp6 = car::recode(m_egp,recodes = egp6_2),
+    m_isei = occupar::isco88toISEI92(misco88),
+  )
+
+nl09 <- dplyr::select(nl09, cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+
+
+## Merge data sets  
+
+
+mer1 <- plyr::rbind.fill(dk99,ie99)
+mer2 <- plyr::rbind.fill(mer1,nl09)
+mer2$incZ <- as.vector(mer2$incZ)
+
+df <- plyr::rbind.fill(mer2,socin)
+
+df <- df %>%
+  group_by(cntry, year)
+
 
 ```
 
 ## Data transformation - Environment 93
 
 
-```{r env93, include = FALSE}
+```{r env93, include = TRUE}
+
 env93 <- env93 %>%
   mutate(
-    cntry = v3,
+    cntry = zap_labels(v3),
     cntry = dplyr::recode(cntry, `1` = 36, `2` = 276, `3` = 276, `4` = 826, `5` = 826, `6` = 840, `8` = 348, `9` = 380,
                           `10` = 372, `11` = 528, `12` = 578, `13` = 203, `14` = 705, `15` = 616, `16` = 100, `17` = 643,
                           `18` = 554, `19` = 124, `20` = 608, `21` = 376, `22` = 392, `23` = 724),
@@ -406,7 +700,7 @@ env93$egp <- occupar::isco88toEGP(isco88 = env93$isco88, n.employees = env93$v22
 # EGP to EGP6
 env93 <- env93 %>%
   mutate(
-    egp6 = car::recode(egp, recodes = '"I     Service class I" = "Service I";"II    Service class II" = "Service II"; "III.a Routine non-manual, higher grade" = "Routine"; "III.b Routine non-manual, lower grade" = "Routine"; "IV.a  Self-employed with employees" = "Self"; "IV.b  Self-employed with no empoyees" = "Self"; "IV.c  Self-employed Farmers etc" = "Self"; "V     Manual supervisors/Lower grade technicians" = "Skilled";"VI    Skilled workers" = "Skilled"; "VII.a Unskilled workers" = "Unskilled"; "VII.b Farm labours" = "Unskilled"')
+    egp6 = car::recode(egp, recodes = egp6)
   )
 
 # ISEI
@@ -421,19 +715,33 @@ env93 <- env93 %>%
     incZ = scale(v231, center = TRUE, scale = T),
   )
 
+## Father's occupation + Mother's occupation
+
+env93 <- env93 %>%
+  mutate(
+    fisco88 = v219, 
+    misco88 = v218,
+    f_egp = occupar::isco88toEGP(fisco88, NULL, NULL),
+    f_egp6 = car::recode(f_egp, recodes = egp6_2),
+    f_isei = occupar::isco88toISEI92(fisco88),
+    m_egp = occupar::isco88toEGP(misco88, NULL, NULL),
+    m_egp6 = car::recode(m_egp, recodes = egp6_2),
+    m_isei = occupar::isco88toISEI92(misco88),
+  )
+
 # Select relevant variables 
 
-env93 <- dplyr::select(env93,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
+env93 <- dplyr::select(env93,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff))
 
 ```
 
 
 ## Data transformation - Environment 2000
 
-```{r env00, include = FALSE}
+```{r env00, include = TRUE}
 env00 <- env00 %>%
   mutate(
-    cntry = v3,
+    cntry = zap_labels(v3),
     cntry = dplyr::recode(cntry, `1` = 36, `2` = 276, `3` = 276, `4` = 826, `5` = 826, `6` = 840, `7` = 40, `8` = 348,
                           `9` = 380, `10` = 372, `11` = 528, `12` = 578, `13` = 752, `14` = 203, `15` = 705, `16` = 616,
                           `17` = 100, `18` = 643, `19` = 554, `20` = 124, `21` = 608, `22` = 376, `24` = 392, `25` = 724,
@@ -508,14 +816,26 @@ env00 <- env00 %>%
   mutate(
     incZ = scale(v240, center = TRUE, scale = TRUE)
   )
+## Father's occupation + Mother's occupation - Not available
+
+env00 <- env00 %>%
+  mutate(
+    f_egp = NA_real_,
+    f_egp6 = NA_real_,
+    f_isei = NA_real_,
+    m_egp = NA_real_,
+    m_egp6 = NA_real_,
+    m_isei = NA_real_,
+  )
+
 
 # Select relevant variables 
-env00 <- dplyr::select(env00,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff)) 
+env00 <- dplyr::select(env00,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)) 
 ```
 
 
 ## Data transformation - Environment 2010
-```{r env10, include = FALSE}
+```{r env10, include = TRUE}
 colnames(env10) <- tolower(colnames(env10))
 env10 <- env10 %>%
   mutate(
@@ -566,11 +886,28 @@ env10 <- env10 %>%
       marital %in% c(3:6) & hhchildr == 0 & hhtodd == 0 ~ 0,
       TRUE ~ NA_real_
     ),
+    spwork = case_when(
+      spwork == 1 ~ 1,
+      spwork %in% c(2,3,5) ~ 0,
+      TRUE ~ NA_real_
+    ),
+    work = case_when(
+      work == 1 ~ 1,
+      work %in% c(2,3) ~ 0,
+      TRUE ~ NA_real_
+    ),
     wrkst = case_when(
       mainstat == 1 & wrkhrs > 34 ~ 1,
       mainstat == 1 & (wrkhrs > 14 & wrkhrs < 35) ~ 2,
       mainstat == 1 & wrkhrs < 15 ~ 3,
-      
+      mainstat == 7 & work == 1 ~ 4, # helping a family member 
+      mainstat == 2 ~ 5,
+      mainstat %in% c(3,4) ~ 6,
+      mainstat == 6 ~ 7,
+      mainstat == 7 & (work != 1 | (married == 1 & spwork == 1)) ~ 8, # housewife/houseman
+      mainstat == 5 ~ 9,
+      mainstat %in% c(8,9) ~ 10,
+      TRUE ~ NA_real_
     )
   ) 
 
@@ -594,22 +931,44 @@ env10$isei <- occupar::isco88toISEI92(isco88 = env10$isco88)
 temp <- dplyr::select(env10, ar_rinc:za_rinc)
 centered.temp <- scale(temp, center = TRUE, scale = TRUE)
 env10$incZ <- coalesce(centered.temp)
+
+## Father's occupation + Mother's occupation - Not available
+
+env10 <- env10 %>%
+  mutate(
+    f_egp = NA_real_,
+    f_egp6 = NA_real_,
+    f_isei = NA_real_,
+    m_egp = NA_real_,
+    m_egp6 = NA_real_,
+    m_isei = NA_real_,
+  )
+
+
 # Select relevant variables 
+env10 <- dplyr::select(env10,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)) 
 
-env10 <- dplyr::select(env10,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
 ```
-## Merge environment data sets and social inequality cumulative data set
+## Merge environment data sets and social inequality cumulative data set and save 
 
-```{r merge, include = FALSE}
+```{r mergesave, include = TRUE}
 env <- plyr::rbind.fill(env93,env00)
 env <- plyr::rbind.fill(env,env10)
-
+env$incZ <- as.vector(env$incZ)
 df <- plyr::rbind.fill(env,df)
+
+save(df, file = "df.Rda")
+
 ```
+
+
+
+
+
 
 ## New ideal types 
 
-```{r ideal, include = FALSE}
+```{r ideal, include = TRUE}
 df <- df %>%
   mutate(
     itype = case_when(
@@ -621,7 +980,7 @@ df <- df %>%
 ```
 
 ## Data analysis
-```{r analysis, include = FALSE}
+```{r analysis, include = TRUE}
 df <- df %>% 
   group_by(cntry)
 df$incdiff <- dplyr::recode(df$incdiff, `8` = NA_real_, `9` = NA_real_) # 8 = NA or should be kept?
@@ -678,98 +1037,4 @@ mod1 <- polr(f_incdiff ~ age*age + female + educyrs + degree + child + married +
 
 
 
-
-
-
-
-## Construct the measurement model
-
-```{r mm, include = FALSE}
-## Data preparations
-# New variables with unique names
-df <- df %>%
-  mutate(
-    incd = v33, 
-    jobs = v35,
-    basicinc = v38,
-    diff2large = v32,
-  )
-
-
-# Listwise deletion
-
-
-df_lw <- df[complete.cases(df$incd),]
-df_lw <- df_lw[complete.cases(df_lw$jobs),]
-df_lw <- df_lw[complete.cases(df_lw$basicinc),]
-df_lw <- df_lw[complete.cases(df_lw$cntry),]
-df_lw <- df_lw[complete.cases(df_lw$diff2large),]
-# Can use str or summary as well
-
-table(df$incd) 
-table(df$jobs) # last two waves: no data
-table(df$basicinc) # last two waves: no data
-
-
-# Creating factor variables & ordered variables
-df_lw$f_incd <- as.factor(df_lw$incd)
-df_lw$f_jobs <- as.factor(df_lw$jobs)
-df_lw$f_basicinc <- as.factor(df_lw$basicinc)
-
-df_lw$o_incd <- as.ordered(df_lw$incd)
-df_lw$o_jobs <- as.ordered(df_lw$jobs)
-df_lw$o_basicinc <- as.ordered(df_lw$basicinc)
-
-# Plots: checking the normality of questions. ALl three are skewed.
-
-
-
-ggplot(df_lw, aes(f_incd)) +
-  geom_bar(fill = "gray40") + 
-  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
-  ggtitle("Provide Jobs for Everyone who Wants One")
-
-ggplot(df_lw, aes(f_jobs)) +
-  geom_bar(fill = "gray40") + 
-  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
-  ggtitle("Provide Jobs for Everyone who Wants One")
-
-ggplot(df_lw, aes(f_basicinc)) +
-  geom_bar(fill = "gray40") + 
-  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
-  ggtitle("Provide Jobs for Everyone who Wants One")
-
-#More normality tests (package e1071)
-
-e1071::skewness(df_lw$incd)
-e1071::skewness(df_lw$jobs)
-e1071::skewness(df_lw$basicinc)
-
-# ks.test(df_lw$incd, y='pnorm',alternative='two.sided')
-
-## Constructing the latent variable with lavaan
-
-# Confirmatory factor analysis - models
-
-mod1 <- ' att =~ incd + diff2large'
-fit1 <- cfa(mod1, data = df_lw) # default setting.
-
-summary(fit1, fit.measures =TRUE, standardized = TRUE)
-inspect(fit1,what="std")$lambda
-
-mod2 <- ' att =~ 1*incd + 1*jobs + 1*basicinc'
-fit2 <- cfa(mod2, data = df_lw) # fixed at 1, Figure 2B Schoot, Lugtig & Hox 2012
-
-summary(fit2)
-inspect(fit2,what="std")$lambda
-
-
-# Testing measurement invariance across social groups 
-
-
-
-#mi1 <- measEq.syntax(fit1)
-summary(fit1)
-
-```
 
