@@ -17,6 +17,11 @@ _____________________________________________________________________________
 $~$
 $~$
 
+Working paper available here: https://docs.google.com/document/d/1mST25rKYZ5wChRj5WyhxH_65RUa9MNR2OsO5B4-qcwY/edit#
+
+
+
+
 ## SETUP
 
 ```{r, include = F}
@@ -126,12 +131,31 @@ socin2 <- socin2 %>%
 socin$hhcycle_us92 <- socin2$child2 
 socin$child <- coalesce(socin$child, socin$hhcycle_us92)
 
-## Respondents' Household income: scaled, in case we need it
+
+## Income.
+### Without comparable categories in the surveys across countries
+### we take each country-specific earnings measure and standardize it 
+### within countries
+
+# Respondent income
 temp <- dplyr::select(socin2, AT_RIN87:US_RIN09)
 centered.temp <- as.data.frame(scale(temp, center = TRUE, scale = TRUE)) # standardize
 socin <- cbind(socin,centered.temp)
-socin$incZ = rowMeans(socin[,which(names(socin)=="AT_RIN87"):which(names(socin)=="US_RIN09")], na.rm = T)
-socin$incZ = ifelse(socin$incZ=="NaN",NA,socin$incZ)
+socin$rincZ = rowMeans(socin[,which(names(socin)=="AT_RIN87"):which(names(socin)=="US_RIN09")], na.rm = T)
+socin$rincZ = ifelse(socin$rincZ=="NaN",NA,socin$rincZ)
+
+# trim extreme values
+socin$rincZ = ifelse(socin$rincZ > 10, 10, socin$rincZ)
+
+# Household income
+temp <- dplyr::select(socin2, AT_INC87:US_INC09)
+centered.temp <- as.data.frame(scale(temp, center = TRUE, scale = TRUE)) # standardize
+socin <- cbind(socin,centered.temp)
+socin$hincZ = rowMeans(socin[,which(names(socin)=="AT_INC87"):which(names(socin)=="US_INC09")], na.rm = T)
+socin$hincZ = ifelse(socin$hincZ=="NaN",NA,socin$hincZ)
+
+# trim extreme values
+socin$hincZ = ifelse(socin$hincZ > 10, 10, socin$hincZ)
 
 
 # Think about ISCED for education (see Schneider's work). #Hung# Two problems: (1) we would have to code each country-year separately; (2) more importantly, many countries don't record degrees higher than bachelor (master and doctoral), which are 7 and 8 in the ISCED 2011 coding scheme. For the mean time, I propose we use the variable degree instead.
@@ -320,14 +344,15 @@ df <- df %>%
   )
 
 ## Select relevant variables 
-df <- dplyr::select(df, c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
+df <- dplyr::select(df, c(cntry, year, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
 
 
 ## add netherlands
 
 ```
 
-## Data transformation - Environment 93
+
+## Data transformation - Environment 1993
 
 
 ```{r env93, include = FALSE}
@@ -413,17 +438,32 @@ env93 <- env93 %>%
 env93$isei <- occupar::isco88toISEI92(isco88 = env93$isco88)
 
 
-## Earnings - grouped by country, then scaled.
+## Income.
+### Without comparable categories in the surveys across countries
+### we take each country-specific earnings measure and standardize it 
+### within countries
 
+### Respondent
 env93 <- env93 %>%
   group_by(cntry) %>%
   mutate(
-    incZ = scale(v231, center = TRUE, scale = T),
-  )
+    v231 = ifelse(v231 > 200000, 200000, v231), # trim extreme values
+    rincZ = scale(v231, center = TRUE, scale = T),
+  ) %>%
+  ungroup()
+
+### Family income
+env93 <- env93 %>%
+  group_by(cntry) %>%
+  mutate(
+    v253 = ifelse(v253 > 300000, 300000, v253), # trim extreme values
+    hincZ = scale(v253, center = TRUE, scale = T),
+  ) %>%
+  ungroup()
 
 # Select relevant variables 
 
-env93 <- dplyr::select(env93,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
+env93 <- dplyr::select(env93,c(cntry, year, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
 
 ```
 
@@ -501,16 +541,29 @@ env00 <- env00 %>%
 env00$isei <- occupar::isco88toISEI92(isco88 = env00$v233)
 
 
-## Earnings - grouped by country, then scaled.
+## Income.
+### Without comparable categories in the surveys across countries
+### we take each country-specific earnings measure and standardize it 
+### within countries
 
+#### Respondent Income
 env00 <- env00 %>%
   group_by(cntry) %>%
   mutate(
-    incZ = scale(v240, center = TRUE, scale = TRUE)
-  )
+    rincZ = scale(v240, center = TRUE, scale = TRUE)
+  ) %>%
+  ungroup()
+
+#### Houshold Income
+env00 <- env00 %>%
+  group_by(cntry) %>%
+  mutate(
+    hincZ = scale(v241, center = TRUE, scale = TRUE)
+  ) %>%
+  ungroup()
 
 # Select relevant variables 
-env00 <- dplyr::select(env00,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff)) 
+env00 <- dplyr::select(env00,c(cntry, year, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff)) 
 ```
 
 
@@ -542,7 +595,9 @@ env10 <- env10 %>%
      ),
     educyrs = case_when(  # how to deal with 95 and 96?
        educyrs > 25 & educyrs < 90 ~ 26, 
-       educyrs %in% c(95:98) ~ NA_real_,
+       educyrs == 95 ~ 8,
+       educyrs == 96 ~ 14,
+       educyrs %in% c(97:98) ~ NA_real_,
        TRUE ~ as.numeric(educyrs)
     ),
     child = case_when(
@@ -589,22 +644,48 @@ env10 <- env10 %>%
 env10$isei <- occupar::isco88toISEI92(isco88 = env10$isco88)
 
 
-## Respondent's income, scaled.
+# income
+### Without comparable categories in the surveys across countries
+### we take each ordered scale and standardized it by country
+### in this dataset, missings are not recoded
+### missing >= 999990
 
+# R income
 temp <- dplyr::select(env10, ar_rinc:za_rinc)
-centered.temp <- scale(temp, center = TRUE, scale = TRUE)
-env10$incZ <- coalesce(centered.temp)
+temp[temp >= 999990] <- NA
+centered.temp <- as.data.frame(scale(temp, center = TRUE, scale = TRUE))
+#dimension problems arose here, had to alter the code
+centered.temp$rincZ <- rowMeans(centered.temp, na.rm=T)
+centered.temp$rincZ <- ifelse(centered.temp$rincZ=="NaN",NA,centered.temp$rincZ)
+centered.temp <- dplyr::select(centered.temp, rincZ)
+# trim extremes
+centered.temp$rincZ <- ifelse(centered.temp$rincZ > 10, 10, centered.temp$rincZ)
+env10 <- cbind(env10,centered.temp)
+
+# Houshold income
+temp <- dplyr::select(env10, ar_inc:za_inc)
+temp[temp >= 999990] <- NA
+centered.temp <- as.data.frame(scale(temp, center = TRUE, scale = TRUE))
+#dimension problems arose here, had to alter the code
+centered.temp$hincZ <- rowMeans(centered.temp, na.rm=T)
+centered.temp$hincZ <- ifelse(centered.temp$hincZ=="NaN",NA,centered.temp$hincZ)
+centered.temp <- dplyr::select(centered.temp, hincZ)
+# trim extremes
+centered.temp$hincZ <- ifelse(centered.temp$hincZ > 10, 10, centered.temp$hincZ)
+env10 <- cbind(env10,centered.temp)
+
+
 # Select relevant variables 
 
-env10 <- dplyr::select(env10,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
+env10 <- dplyr::select(env10,c(cntry, year, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
 ```
 ## Merge environment data sets and social inequality cumulative data set
 
 ```{r merge, include = FALSE}
 env <- plyr::rbind.fill(env93,env00)
-env <- plyr::rbind.fill(env,env10)
-
-df <- plyr::rbind.fill(env,df)
+# I had to change these to a normal 'rbind' command because rbind.fill gave "dim" error
+env <- rbind(env,env10)
+df <- rbind(env,df)
 ```
 
 ## New ideal types 
