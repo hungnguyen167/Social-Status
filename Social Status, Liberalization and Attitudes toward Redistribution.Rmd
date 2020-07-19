@@ -19,21 +19,32 @@ $~$
 
 Working paper available here: https://docs.google.com/document/d/1mST25rKYZ5wChRj5WyhxH_65RUa9MNR2OsO5B4-qcwY/edit#
 
+Notes for Hung:
+
+1. Variable 'child' is not working
+2. Can you please add the following countries using the single-country files and merging them in? 
+  a. Social Inequality 1992 - add Spain manually
+  b. Social Inequality 1999 - add Denmark and Brazil manually
+  c. Social Inequality 2009 - add Netherlands manually
+3. I had to change yoru dplyr recode commands, they didn't run on my machine, so they are now 'car::recode' for the variable country
+4. I added a variable 'wave' which indicates the year associated with the survey
+5. I changed the variable 'year' to reflect the actual year when the survey was fielded in each country - sometimes it is not the same as 'wave', but having the year accurate as possible makes it better for merging in macro data
+6. Made a variable 'reduce' that is = to 'incdiff' but has 9 recoded into NA and has 8 recoded into neutral, also reversed the coding so that higher values = more agreement
 
 
-
-## SETUP
+# Data Cleaning
 
 ```{r, include = F}
 rm(list = ls())
 ```
 
+## Setup
 
 ```{r setup, include=FALSE}
 
 library(pacman)
 
-pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","expss","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools")
+pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","expss","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools", "countrycode")
 
 #remotes::install_github("DiogoFerrari/occupar")
 #remotes::install_github("pdparker/isco88conversion")
@@ -75,19 +86,18 @@ colnames(socin) <- tolower(colnames(socin))
 
 socin <- socin %>% 
   mutate(
-     cntry = v5,
+     cntry = v5, #already in ISC alpha-3 coding
      year = v4,
      female = if_else(sex == 2, 1,0), # female = 1
      ageC = ifelse(age > 75, 75, age), # also a continuous measure
      age = case_when(                 # trim at 75     
-       age %in% c(16,17) ~ 1,
-       age %in% c(18:24) ~ 2,
-       age %in% c(25:34) ~ 3,
-       age %in% c(35:44) ~ 4,
-       age %in% c(45:54) ~ 5,
-       age %in% c(55:64) ~ 6,
-       age %in% c(65:74) ~ 7,
-       age >= 75 ~ 8,
+       age %in% c(16:24) ~ 1, # Changed to 7 categories
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       age >= 75 ~ 7,
        TRUE ~ NA_real_
      ),
      married = case_when( # married = 1. Note: using if_else will confound NA with not married (0), make sure life partners are coded as married
@@ -95,13 +105,12 @@ socin <- socin %>%
        marital %in% c(3:5) ~ 0, # divorced, separated = not married
        TRUE ~ NA_real_
      ),
+     married = ifelse(cohab == 2, 1, married), # recode any life-partner to married
      educyrs = case_when(                 # years in school, trim at 25 years
        .$educyrs > 25 & .$educyrs < 90 ~ 26, # 26 = 25+ years in school
        .$educyrs %in% c(95,96) ~ NA_real_,
        TRUE ~ as.numeric(as.character(.$educyrs))
      ),
-     #household income and personal earnings are not comparable: sometimes monthly, sometimes yearly, 
-     #in different national currency and not adjusted for inflations
      child = case_when(
        hhcycle %in% c(2,3,4,6,7,8,10,11,12,14,16,18,20,22,24,26,28)  ~ 1,
        hhcycle %in% c(1,5,9,13,15,17,19,21,23,25,27,95) ~ 0,
@@ -358,24 +367,21 @@ df <- dplyr::select(df, c(cntry, year, age, ageC, female, educyrs, degree, child
 ```{r env93, include = FALSE}
 env93 <- env93 %>%
   mutate(
-    cntry = v3,
-    cntry = dplyr::recode(cntry, `1` = 36, `2` = 276, `3` = 276, `4` = 826, `5` = 826, `6` = 840, `8` = 348, `9` = 380,
-                          `10` = 372, `11` = 528, `12` = 578, `13` = 203, `14` = 705, `15` = 616, `16` = 100, `17` = 643,
-                          `18` = 554, `19` = 124, `20` = 608, `21` = 376, `22` = 392, `23` = 724),
+    # cntry = dplyr::recode(cntry, `1` = 36, `2` = 276, `3` = 276, `4` = 826, `5` = 826, `6` = 840, `8` = 348, `9` = 380,`10` = 372, `11` = 528, `12` = 578, `13` = 203, `14` = 705, `15` = 616, `16` = 100, `17` = 643, `18` = 554, `19` = 124, `20` = 608, `21` = 376, `22` = 392, `23` = 724), # Nate runs this and it does not recode
+    cntry = car::recode(v3, recodes = '"1" = 36; "2" = 276; "3" = 276; "4" = 826; "5" = 826; "6" = 840; "8" = 348; "9" = 380;"10" = 372; "11" = 528; "12" = 578; "13" = 203; "14" = 705; "15" = 616; "16" = 100; "17" = 643; "18" = 554; "19" = 124; "20" = 608; "21" = 376; "22" = 392; "23" = 724'),
     year = 1993,
     female = v200 - 1,
     age = v201,
     incdiff = v6,
     ageC = ifelse(age > 75, 75, age),
     age = case_when(  # trim at 75     
-       age %in% c(16,17) ~ 1,
-       age %in% c(18:24) ~ 2,
-       age %in% c(25:34) ~ 3,
-       age %in% c(35:44) ~ 4,
-       age %in% c(45:54) ~ 5,
-       age %in% c(55:64) ~ 6,
-       age %in% c(65:74) ~ 7,
-       age >= 75 & age < 99 ~ 8,
+       age %in% c(16:24) ~ 1,
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       age >= 75 & age < 99 ~ 7,
        TRUE ~ NA_real_
      ),
     marital = v202,
@@ -473,25 +479,20 @@ env93 <- dplyr::select(env93,c(cntry, year, age, ageC, female, educyrs, degree, 
 ```{r env00, include = FALSE}
 env00 <- env00 %>%
   mutate(
-    cntry = v3,
-    cntry = dplyr::recode(cntry, `1` = 36, `2` = 276, `3` = 276, `4` = 826, `5` = 826, `6` = 840, `7` = 40, `8` = 348,
-                          `9` = 380, `10` = 372, `11` = 528, `12` = 578, `13` = 752, `14` = 203, `15` = 705, `16` = 616,
-                          `17` = 100, `18` = 643, `19` = 554, `20` = 124, `21` = 608, `22` = 376, `24` = 392, `25` = 724,
-                          `26` = 428, `30` = 620, `31` = 152, `32` = 208, `33` = 756, `37` = 246, `38` = 484),
+    cntry = car::recode(v3, recodes = '"1" = 36; "2" = 276; "3" = 276; "4" = 826; "5" = 826; "6" = 840; "7" = 40; "8" = 348; "9" = 380; "10" = 372; "11" = 528; "12" = 578; "13" = 752; "14" = 203; "15" = 705; "16" = 616; "17" = 100; "18" = 643; "19" = 554; "20" = 124; "21" = 608; "22" = 376; "24" = 392; "25" = 724; "26" = 428; "30" = 620; "31" = 152; "32" = 208; "33" = 756; "37" = 246; "38" = 484'),
     year = 2000,
     female = v200 - 1,
     age = v201,
     incdiff = v6,
     ageC = ifelse(age > 75, 75, age), # trim at 75  
     age = case_when(     # by categories
-       age %in% c(16,17) ~ 1,
-       age %in% c(18:24) ~ 2,
-       age %in% c(25:34) ~ 3,
-       age %in% c(35:44) ~ 4,
-       age %in% c(45:54) ~ 5,
-       age %in% c(55:64) ~ 6,
-       age %in% c(65:74) ~ 7,
-       age >= 75 & age < 99  ~ 8,
+       age %in% c(16:24) ~ 1,
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       age >= 75 & age < 99  ~ 7,
        TRUE ~ NA_real_
      ),
     marital = v202,
@@ -578,14 +579,13 @@ env10 <- env10 %>%
     incdiff = v8,
     ageC = ifelse(age > 75, 75, age), # trim at 75  
     age = case_when(     # by categories
-       age %in% c(16,17) ~ 1,
-       age %in% c(18:24) ~ 2,
-       age %in% c(25:34) ~ 3,
-       age %in% c(35:44) ~ 4,
-       age %in% c(45:54) ~ 5,
-       age %in% c(55:64) ~ 6,
-       age %in% c(65:74) ~ 7,
-       age >= 75 & age < 100  ~ 8,
+       age %in% c(16:24) ~ 1,
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       age >= 75 & age < 100  ~ 7,
        TRUE ~ NA_real_
      ),
     married = case_when( # married = 1. widowed and civil partnership = married 
@@ -679,14 +679,105 @@ env10 <- cbind(env10,centered.temp)
 
 env10 <- dplyr::select(env10,c(cntry, year, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, incdiff))
 ```
+
+
 ## Merge environment data sets and social inequality cumulative data set
+
 
 ```{r merge, include = FALSE}
 env <- plyr::rbind.fill(env93,env00)
 # I had to change these to a normal 'rbind' command because rbind.fill gave "dim" error
 env <- rbind(env,env10)
 df <- rbind(env,df)
+
+# Make a year of survey variable
+
+df <- df %>%
+  mutate(wave = year,
+         year = ifelse(wave == 1987 & cntry == 40, 1988, 
+                       ifelse((wave == 1992 & cntry == 36) | (wave == 1992 & cntry == 40) | (wave == 1992 & cntry == 100), 1993, 
+                              ifelse(wave == 1992 & cntry == 752, 1991, 
+                                     ifelse((wave == 1999 & cntry == 40) |(wave == 1999 & cntry == 152) | (wave == 1999 & cntry == 276) | (wave == 1999 & cntry == 840), 2000, 
+                                            ifelse((wave == 1999 & cntry == 348) | (wave == 1999 & cntry == 705), 1998, 
+                                                   ifelse((wave == 1999 & cntry == 372) | (wave == 1999 & cntry == 703), 1998, 
+                                                          ifelse((wave == 2009 & cntry == 156) | (wave == 2009 & cntry == 203), 2008, 
+                                                                 ifelse((wave == 2009 & cntry == 32) | (wave == 2009 & cntry == 36) | (wave == 2009 & cntry == 40) | (wave == 2009 & cntry == 233) | (wave == 2009 & cntry == 233) | (wave == 2009 & cntry == 276) | (wave == 2009 & cntry == 352) | (wave == 2009 & cntry == 616) | (wave == 2009 & cntry == 840) | (wave == 2009 & cntry == 862), 2010, 
+                                                                        ifelse((wave == 2009 & cntry == 380) | (wave == 2009 & cntry == 440), 2011, 
+                                                                               ifelse(wave == 2009 & cntry == 528, 2013, 
+                                                                                      ifelse((wave == 1993 & cntry == 100) | (wave == 1993 & cntry == 724), 1994, 
+                                                                                             ifelse(wave == 1993 & cntry == 392, 1992, 
+                                                                                                    ifelse((wave == 2000 & cntry == 40) | (wave == 2000 & cntry == 124) | (wave == 2000 & cntry == 208) | (wave == 2000 & cntry == 372) | (wave == 2000 & cntry == 484) | (wave == 2000 & cntry == 752) | (wave == 2000 & cntry == 756), 2001, 
+                                                                                                           ifelse((wave == 2010 & cntry == 100) | (wave == 2010 & cntry == 124) | (wave == 2010 & cntry == 191) | (wave == 2010 & cntry == 376) | (wave == 2010 & cntry == 428) | (wave == 2010 & cntry == 484) | (wave == 2010 & cntry == 528) | (wave == 2010 & cntry == 578) | (wave == 2010 & cntry == 705) | (wave == 2010 & cntry == 756), 2011, 
+                                                                                                                  ifelse((wave == 2010 & cntry == 352) | (wave == 2010 & cntry == 36) | (wave == 2010 & cntry == 608), 2012, 
+                                                                                                                         ifelse((wave == 2010 & cntry == 608) | (wave == 2010 & cntry == 703), 2009, year))))))))))))))))
+  )
+
+# Make a country-year variable
+
+df$cyear <- (df$cntry*10000)+df$year
+
+df <- dplyr::select(df, cntry, year, wave, cyear, everything())
+
+# Country names
+
+df$country <- countrycode(df$cntry, "iso3n", "country.name")
+
+# Recode IncDiff
+
+df$incdiff <- ifelse(df$incdiff == 9, NA, df$incdiff)
+df$reduce <- car::recode(df$incdiff, '1 = 5; 2 = 4; 3 = 3; 8 = 3; 4 = 2; 5 = 1')
+# made 'i don't know' into 'neutral' for now
+
+# Cross-tab years and countries
+
+options(knitr.NA = '')
+
+tab1 <- df %>%
+  dplyr::group_by(country, wave) %>%
+  dplyr::summarize(n=n()) %>%
+  spread(wave, n) %>%
+  kable(., col.names = c("Country", "SI_1987", "SI_1992", "EN_1993", "SI_1999", "EN_2000", "SI_2009", "EN_2010"), caption = "Country Sample Size by Wave, ISSP 'Social Inequality (SI) & Environment (EN)", format.args = list(big.mark = ","))
+
+
+kable_styling(tab1)
+
+
+
 ```
+
+
+
+
+
+# Descriptives / Coding-Validation
+
+
+## Descriptive
+
+## Correlation
+
+```{r corrs}
+df_cor <- dplyr::select(df, reduce, ageC, female, educyrs, married, rincZ, hincZ, isei, union, sparent, wrkhrs, wrkst)
+
+cor1 <- cor(df_cor, use = "pairwise.complete.obs")
+cor1k <- kable(cor1, digits = 2)
+kable_styling(cor1k)
+
+# check that correlations look 'right'
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## New ideal types 
 
