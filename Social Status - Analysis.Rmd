@@ -1,0 +1,350 @@
+---
+title: "Social Status, Liberalization and Attitudes toward Redistribution"
+output: html_notebook
+---
+
+"Social Status, Liberalization and Attitudes toward Redistribution"
+
+## ISSP, Social Inequality, Cumulation (1987, 1992, 1999 & 2009)
+## ISSP, Environment, 1993, 2000 & 2010
+$~$
+$~$
+
+#### **Nate Breznau, Lisa Heukamp & Hung H.V. Nguyen**
+#### **University of Bremen**
+
+_____________________________________________________________________________
+
+$~$
+$~$
+
+Working paper available here: https://docs.google.com/document/d/1mST25rKYZ5wChRj5WyhxH_65RUa9MNR2OsO5B4-qcwY/edit#
+
+The data cleaning is done in the file "Social Status, Liberalization and Attitudes toward Redistribution.Rmd"
+
+# Setup
+
+
+```{r, include = F}
+rm(list = ls())
+```
+
+
+```{r setup, include=FALSE}
+
+library(pacman)
+
+pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","expss","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools", "countrycode")
+
+#remotes::install_github("DiogoFerrari/occupar")
+#remotes::install_github("pdparker/isco88conversion")
+library(occupar, isco88conversion)
+
+
+wd <- "C:/data/"
+
+# We don't want to see messages in the final document
+knitr::opts_chunk$set(message = F)
+
+#Column no missing function
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+```
+
+Load Data
+```{r}
+load(paste0(wd,"socstat.Rdata"))
+```
+
+
+# Descriptives
+
+## Table 1. Cases by Country-Wave
+
+```{r tbl1, include = T, echo = T}
+# Cross-tab years and countries
+
+options(knitr.kable.NA = '')
+
+tab1 <- df %>%
+  dplyr::group_by(country, wave) %>%
+  dplyr::summarize(n=n()) %>%
+  spread(wave, n) %>%
+  kable(., col.names = c("Country", "SI_1987", "SI_1992", "EN_1993", "SI_1999", "EN_2000", "SI_2009", "EN_2010"), caption = "Country Sample Size by Wave, ISSP 'Social Inequality (SI) & Environment (EN)", format.args = list(big.mark = ","))
+
+
+kable_styling(tab1)
+
+
+
+```
+
+
+
+## Table 2. Descriptive Statistics
+
+Final coding of variable 'wrkst'
+1 Employed, full-time
+2 Employed, part-time
+3 Employed, less than part-time
+5 Unemployed
+6 Student, school, vocational training
+7 Retired
+8 Housewife,-man, home duties or Helping family member
+9 Permanently disabled
+10 Other, not in labour force, or refused, don't know, no answer
+
+
+```{r tbl2, echo = T}
+tab2 <- dplyr::as.tbl(dplyr::select(df, year, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, reduce))
+
+# make categories out of categorical variables
+tab2 <- tab2 %>%
+  mutate(egp_un = as.numeric(egp6 == "Unskilled"),
+         egp_skl = as.numeric(egp6 == "Skilled"),
+         egp_othr = as.numeric(egp6 == "Self"),
+         egp_rou = as.numeric(egp6 == "Routine"),
+         egp_svc2 = as.numeric(egp6 == "Service II"),
+         egp_svc1 = as.numeric(egp6 == "Service I"),
+         wk_full = as.numeric(wrkst == 1),
+         wk_part = as.numeric(wrkst == 2),
+         wk_lesspart = as.numeric(wrkst == 3),
+         wk_unemp = as.numeric(wrkst == 5),
+         wk_school = as.numeric(wrkst == 6),
+         wk_retired = as.numeric(wrkst == 7),
+         wk_home = as.numeric(wrkst == 8),
+         wk_disab = as.numeric(wrkst == 9),
+         wk_other = as.numeric(wrkst == 10))
+
+tab2 <- dplyr::select(tab2, year, ageC, female, educyrs, child, married, rincZ, hincZ, isei, egp_un, egp_skl, egp_othr, egp_rou, egp_svc2, egp_svc1, wk_full:wk_other, wrkhrs, union, sparent, reduce)
+
+# Get summary stats
+tab2_1 <- summarise_all(tab2, list(mean), na.rm = T)
+tab2_1.1 <- summarise_all(tab2, list(sd), na.rm = T)
+tab2_2 <- summarise_all(tab2, list(min), na.rm = T)
+tab2_3 <- summarise_all(tab2, list(max), na.rm = T)
+tab2_4 <- summarise_all(tab2, funs(sum(!is.na(.))))
+
+# Transpose into columns
+tab2_1 <- as.data.frame(t(round(tab2_1, 2)))
+tab2_1.1 <- as.data.frame(t(round(tab2_1.1, 2)))
+tab2_2 <- as.data.frame(t(round(tab2_2, 0)))
+tab2_3 <- as.data.frame(t(tab2_3))
+tab2_4 <- as.data.frame(t(tab2_4))
+tab2_0 <- as.data.frame(c("Year","Age, in years", "Female", "Education, in years", "Children", "Married", "Indiv. Earnings, country-Z", "Household Earnings, country-Z", "Occ. Status, ISEI", "EGP - Unskilled", "EGP - Skilled", "EGP - Self/Other", "EGP - Routine", "EGP - Service II", "EGP - Service I", "Work - Full-time", "Work - Part-Time", "Work - Less-part-time", "Work - Unemployed", "Work - School/Training", "Work - Retired", "Work - Homecare/Family help", "Work - Disabled", "Work - Other/NA", "Hours Worked", "Union", "Parent", "DV - Support Redistribution"))
+
+
+# Bind into table
+
+tab2f <- cbind(tab2_0,tab2_1,tab2_1.1,tab2_2,tab2_3,tab2_4)
+colnames(tab2f) <- c("Variable","Mean","SD","Min","Max","N")
+
+tab2f <- kable(tab2f)
+
+kable_styling(tab2f)
+
+rm(tab2_0, tab2_1, tab2_1.1, tab2_2, tab2_3, tab2_4)
+
+```
+
+## Fig 1. Scatterplot of Preferences for Redistribution
+
+```{r fig1, echo = T}
+
+```
+
+
+## Table 3. Correlations, Pooled
+
+```{r corrs}
+tab2 <- dplyr::select(tab2, reduce, everything())
+cor1 <- cor(tab2, use = "pairwise.complete.obs")
+cor1k <- kable(cor1, digits = 2)
+kable_styling(cor1k)
+
+# check that correlations look 'right'
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## New ideal types 
+
+```{r ideal, include = FALSE}
+df <- df %>%
+  mutate(
+    itype = case_when(
+      egp6 == "Routine" & female == 0 ~ 1,
+      (egp6 == "Unskilled" | egp6 == "Routine") & incZ < -1 ~ 2,
+      
+    )
+  )
+```
+
+## Data analysis
+```{r analysis, include = FALSE}
+df <- df %>% 
+  group_by(cntry)
+df$incdiff <- dplyr::recode(df$incdiff, `8` = NA_real_, `9` = NA_real_) # 8 = NA or should be kept?
+
+df_lw <- df[complete.cases(df$incdiff),]
+df_lw <- df_lw[complete.cases(df_lw$cntry),]
+
+
+df_lw$f_incdiff <- as.factor(df_lw$incdiff)
+df_lw$o_incdiff <- as.ordered(df_lw$incdiff)
+
+
+ggplot(df_lw, aes(f_incdiff)) +
+  geom_bar(fill = "gray40") + 
+  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree")) + 
+  ggtitle("Reduce income differences")
+
+
+
+## Ordered logit 
+
+mod1 <- polr(f_incdiff ~ age*age + female + educyrs + degree + child + married + incZ + egp6 + as.factor(cntry), data = df_lw)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Construct the measurement model
+
+```{r mm, include = FALSE}
+## Data preparations
+# New variables with unique names
+df <- df %>%
+  mutate(
+    incd = v33, 
+    jobs = v35,
+    basicinc = v38,
+    diff2large = v32,
+  )
+
+
+# Listwise deletion
+
+
+df_lw <- df[complete.cases(df$incd),]
+df_lw <- df_lw[complete.cases(df_lw$jobs),]
+df_lw <- df_lw[complete.cases(df_lw$basicinc),]
+df_lw <- df_lw[complete.cases(df_lw$cntry),]
+df_lw <- df_lw[complete.cases(df_lw$diff2large),]
+# Can use str or summary as well
+
+table(df$incd) 
+table(df$jobs) # last two waves: no data
+table(df$basicinc) # last two waves: no data
+
+
+# Creating factor variables & ordered variables
+df_lw$f_incd <- as.factor(df_lw$incd)
+df_lw$f_jobs <- as.factor(df_lw$jobs)
+df_lw$f_basicinc <- as.factor(df_lw$basicinc)
+
+df_lw$o_incd <- as.ordered(df_lw$incd)
+df_lw$o_jobs <- as.ordered(df_lw$jobs)
+df_lw$o_basicinc <- as.ordered(df_lw$basicinc)
+
+# Plots: checking the normality of questions. ALl three are skewed.
+
+
+
+ggplot(df_lw, aes(f_incd)) +
+  geom_bar(fill = "gray40") + 
+  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
+  ggtitle("Provide Jobs for Everyone who Wants One")
+
+ggplot(df_lw, aes(f_jobs)) +
+  geom_bar(fill = "gray40") + 
+  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
+  ggtitle("Provide Jobs for Everyone who Wants One")
+
+ggplot(df_lw, aes(f_basicinc)) +
+  geom_bar(fill = "gray40") + 
+  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
+  ggtitle("Provide Jobs for Everyone who Wants One")
+
+#More normality tests (package e1071)
+
+e1071::skewness(df_lw$incd)
+e1071::skewness(df_lw$jobs)
+e1071::skewness(df_lw$basicinc)
+
+# ks.test(df_lw$incd, y='pnorm',alternative='two.sided')
+
+## Constructing the latent variable with lavaan
+
+# Confirmatory factor analysis - models
+
+mod1 <- ' att =~ incd + diff2large'
+fit1 <- cfa(mod1, data = df_lw) # default setting.
+
+summary(fit1, fit.measures =TRUE, standardized = TRUE)
+inspect(fit1,what="std")$lambda
+
+mod2 <- ' att =~ 1*incd + 1*jobs + 1*basicinc'
+fit2 <- cfa(mod2, data = df_lw) # fixed at 1, Figure 2B Schoot, Lugtig & Hox 2012
+
+summary(fit2)
+inspect(fit2,what="std")$lambda
+
+
+# Testing measurement invariance across social groups 
+
+
+
+#mi1 <- measEq.syntax(fit1)
+summary(fit1)
+
+```
+
+
