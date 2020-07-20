@@ -6,6 +6,7 @@ output: html_notebook
 "Social Status, Liberalization and Attitudes toward Redistribution"
 
 ## ISSP, Social Inequality, Cumulation (1987, 1992, 1999 & 2009)
+## ISSP, Environment, 1993, 2000 & 2010
 $~$
 $~$
 
@@ -21,15 +22,22 @@ Working paper available here: https://docs.google.com/document/d/1mST25rKYZ5wChR
 
 Notes for Hung:
 
-1. Variable 'child' is not working
+1. Variable 'child' has too many NA, do you know why? Can you fix it? It should have none, or almost none.
+
 2. Can you please add the following countries using the single-country files and merging them in? 
   a. Social Inequality 1992 - add Spain manually
   b. Social Inequality 1999 - add Denmark and Brazil manually
   c. Social Inequality 2009 - add Netherlands manually
-3. I had to change yoru dplyr recode commands, they didn't run on my machine, so they are now 'car::recode' for the variable country
+  
+3. I had to change your dplyr recode commands, they didn't run on my machine, so they are now 'car::recode' instead for the variable country
+
 4. I added a variable 'wave' which indicates the year associated with the survey
+
 5. I changed the variable 'year' to reflect the actual year when the survey was fielded in each country - sometimes it is not the same as 'wave', but having the year accurate as possible makes it better for merging in macro data
+
 6. Made a variable 'reduce' that is = to 'incdiff' but has 9 recoded into NA and has 8 recoded into neutral, also reversed the coding so that higher values = more agreement
+
+7. Recoded 'wrkst' so that they matched across all surveys (not just full-time, part-time, less than part time). Env00 uses a slightly different list than the others
 
 
 # Data Cleaning
@@ -108,7 +116,8 @@ socin <- socin %>%
      married = ifelse(cohab == 2, 1, married), # recode any life-partner to married
      educyrs = case_when(                 # years in school, trim at 25 years
        .$educyrs > 25 & .$educyrs < 90 ~ 26, # 26 = 25+ years in school
-       .$educyrs %in% c(95,96) ~ NA_real_,
+       .$educyrs == 95 ~ 8, # adjust for still in school
+       .$educyrs == 96 ~ 13,
        TRUE ~ as.numeric(as.character(.$educyrs))
      ),
      child = case_when(
@@ -125,7 +134,8 @@ socin <- socin %>%
        hhcycle %in% c(2,3,4) ~ 1,
        hhcycle %in% c(1,5:95) ~ 0,
        TRUE ~ NA_real_
-     )
+     ),
+     wrkst = ifelse(wrkst == 4, 8, wrkst) # recode helping fam member into housework category to make compatible with environment category 
   )
 # integrate hhcycle from socin2 (US92)
 socin2 <- socin2 %>%
@@ -394,7 +404,9 @@ env93 <- env93 %>%
 # It's a little problematic here because in GB or AUS, they cut at 14 and 20     
     educyrs = case_when(
        educyrs > 25 & educyrs < 90 ~ 26, 
-       educyrs %in% c(95:98) ~ NA_real_,
+       educyrs == 95 ~ 8,
+       educyrs == 96 ~ 13,
+       educyrs %in% c(97:98) ~ NA_real_,
        TRUE ~ as.numeric(educyrs)
     ),
     child = case_when(
@@ -416,6 +428,11 @@ env93 <- env93 %>%
     wrkhrs = v224,
     wrkst = v212
   )
+
+# fix to match env10 module
+env93$wrkst <- ifelse(env93$wrkst == 4, 8, ifelse(env93$wrkst == 99 | is.na(env93$wrkst), 10, env93$wrkst))
+
+
 # ISCO68 to ISCO88
 
 env93 <- env93 %>%
@@ -504,7 +521,9 @@ env00 <- env00 %>%
     educyrs = v204,
     educyrs = case_when(
        educyrs > 25 & educyrs < 90 ~ 26, 
-       educyrs %in% c(95:98) ~ NA_real_,
+       educyrs == 95 ~ 8, # still in school
+       educyrs == 96 ~ 13,
+       educyrs %in% c(97:98) ~ NA_real_,
        TRUE ~ as.numeric(educyrs)
     ),
     child = case_when(
@@ -526,6 +545,11 @@ env00 <- env00 %>%
     wrkhrs = v238,
     wrkst = v231
   )
+
+# fix to match env10 module
+env00$wrkst <- ifelse(env00$wrkst == 4, 8, ifelse(env00$wrkst == 99 | is.na(env00$wrkst), 10, env00$wrkst))
+
+
 # ISCO88 to EGP
 
 
@@ -571,6 +595,7 @@ env00 <- dplyr::select(env00,c(cntry, year, age, ageC, female, educyrs, degree, 
 ## Data transformation - Environment 2010
 ```{r env10, include = FALSE}
 colnames(env10) <- tolower(colnames(env10))
+
 env10 <- env10 %>%
   mutate(
     cntry = country,
@@ -622,12 +647,20 @@ env10 <- env10 %>%
       TRUE ~ NA_real_
     ),
     wrkst = case_when(
-      mainstat == 1 & wrkhrs > 34 ~ 1,
-      mainstat == 1 & (wrkhrs > 14 & wrkhrs < 35) ~ 2,
-      mainstat == 1 & wrkhrs < 15 ~ 3,
-      
-    )
+      mainstat == 1 & wrkhrs > 34 ~ 1, # full
+      mainstat == 1 & (wrkhrs > 14 & wrkhrs < 35) ~ 2, # part
+      mainstat == 1 & wrkhrs < 15 ~ 3, # less than part
+      mainstat == 3 ~ 6, # education
+      mainstat == 4 ~ 6, # apprentice/trainee
+      mainstat == 5 ~ 9, # perm sick/disabled
+      mainstat == 6 ~ 7, # retired
+      mainstat == 7 ~ 8, # housework & helping family member
+      mainstat == 8 | is.na(mainstat) ~ 10) # other
   ) 
+
+
+
+
 
 # ISCO88 to EGP
 
@@ -684,7 +717,7 @@ env10 <- dplyr::select(env10,c(cntry, year, age, ageC, female, educyrs, degree, 
 ## Merge environment data sets and social inequality cumulative data set
 
 
-```{r merge, include = FALSE}
+```{r merge, include = F}
 env <- plyr::rbind.fill(env93,env00)
 # I had to change these to a normal 'rbind' command because rbind.fill gave "dim" error
 env <- rbind(env,env10)
@@ -728,42 +761,12 @@ df$incdiff <- ifelse(df$incdiff == 9, NA, df$incdiff)
 df$reduce <- car::recode(df$incdiff, '1 = 5; 2 = 4; 3 = 3; 8 = 3; 4 = 2; 5 = 1')
 # made 'i don't know' into 'neutral' for now
 
-# Cross-tab years and countries
+# clean up
+rm(centered.temp, jp, socin2, temp)
 
-options(knitr.NA = '')
+# save
 
-tab1 <- df %>%
-  dplyr::group_by(country, wave) %>%
-  dplyr::summarize(n=n()) %>%
-  spread(wave, n) %>%
-  kable(., col.names = c("Country", "SI_1987", "SI_1992", "EN_1993", "SI_1999", "EN_2000", "SI_2009", "EN_2010"), caption = "Country Sample Size by Wave, ISSP 'Social Inequality (SI) & Environment (EN)", format.args = list(big.mark = ","))
-
-
-kable_styling(tab1)
-
-
-
-```
-
-
-
-
-
-# Descriptives / Coding-Validation
-
-
-## Descriptive
-
-## Correlation
-
-```{r corrs}
-df_cor <- dplyr::select(df, reduce, ageC, female, educyrs, married, rincZ, hincZ, isei, union, sparent, wrkhrs, wrkst)
-
-cor1 <- cor(df_cor, use = "pairwise.complete.obs")
-cor1k <- kable(cor1, digits = 2)
-kable_styling(cor1k)
-
-# check that correlations look 'right'
+save.image(file = paste0(wd,"socstat.Rdata"))
 ```
 
 
@@ -772,176 +775,4 @@ kable_styling(cor1k)
 
 
 
-
-
-
-
-
-
-
-## New ideal types 
-
-```{r ideal, include = FALSE}
-df <- df %>%
-  mutate(
-    itype = case_when(
-      egp6 == "Routine" & female == 0 ~ 1,
-      (egp6 == "Unskilled" | egp6 == "Routine") & incZ < -1 ~ 2,
-      
-    )
-  )
-```
-
-## Data analysis
-```{r analysis, include = FALSE}
-df <- df %>% 
-  group_by(cntry)
-df$incdiff <- dplyr::recode(df$incdiff, `8` = NA_real_, `9` = NA_real_) # 8 = NA or should be kept?
-
-df_lw <- df[complete.cases(df$incdiff),]
-df_lw <- df_lw[complete.cases(df_lw$cntry),]
-
-
-df_lw$f_incdiff <- as.factor(df_lw$incdiff)
-df_lw$o_incdiff <- as.ordered(df_lw$incdiff)
-
-
-ggplot(df_lw, aes(f_incdiff)) +
-  geom_bar(fill = "gray40") + 
-  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree")) + 
-  ggtitle("Reduce income differences")
-
-
-
-## Ordered logit 
-
-mod1 <- polr(f_incdiff ~ age*age + female + educyrs + degree + child + married + incZ + egp6 + as.factor(cntry), data = df_lw)
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Construct the measurement model
-
-```{r mm, include = FALSE}
-## Data preparations
-# New variables with unique names
-df <- df %>%
-  mutate(
-    incd = v33, 
-    jobs = v35,
-    basicinc = v38,
-    diff2large = v32,
-  )
-
-
-# Listwise deletion
-
-
-df_lw <- df[complete.cases(df$incd),]
-df_lw <- df_lw[complete.cases(df_lw$jobs),]
-df_lw <- df_lw[complete.cases(df_lw$basicinc),]
-df_lw <- df_lw[complete.cases(df_lw$cntry),]
-df_lw <- df_lw[complete.cases(df_lw$diff2large),]
-# Can use str or summary as well
-
-table(df$incd) 
-table(df$jobs) # last two waves: no data
-table(df$basicinc) # last two waves: no data
-
-
-# Creating factor variables & ordered variables
-df_lw$f_incd <- as.factor(df_lw$incd)
-df_lw$f_jobs <- as.factor(df_lw$jobs)
-df_lw$f_basicinc <- as.factor(df_lw$basicinc)
-
-df_lw$o_incd <- as.ordered(df_lw$incd)
-df_lw$o_jobs <- as.ordered(df_lw$jobs)
-df_lw$o_basicinc <- as.ordered(df_lw$basicinc)
-
-# Plots: checking the normality of questions. ALl three are skewed.
-
-
-
-ggplot(df_lw, aes(f_incd)) +
-  geom_bar(fill = "gray40") + 
-  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
-  ggtitle("Provide Jobs for Everyone who Wants One")
-
-ggplot(df_lw, aes(f_jobs)) +
-  geom_bar(fill = "gray40") + 
-  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
-  ggtitle("Provide Jobs for Everyone who Wants One")
-
-ggplot(df_lw, aes(f_basicinc)) +
-  geom_bar(fill = "gray40") + 
-  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree","Can't choose")) + 
-  ggtitle("Provide Jobs for Everyone who Wants One")
-
-#More normality tests (package e1071)
-
-e1071::skewness(df_lw$incd)
-e1071::skewness(df_lw$jobs)
-e1071::skewness(df_lw$basicinc)
-
-# ks.test(df_lw$incd, y='pnorm',alternative='two.sided')
-
-## Constructing the latent variable with lavaan
-
-# Confirmatory factor analysis - models
-
-mod1 <- ' att =~ incd + diff2large'
-fit1 <- cfa(mod1, data = df_lw) # default setting.
-
-summary(fit1, fit.measures =TRUE, standardized = TRUE)
-inspect(fit1,what="std")$lambda
-
-mod2 <- ' att =~ 1*incd + 1*jobs + 1*basicinc'
-fit2 <- cfa(mod2, data = df_lw) # fixed at 1, Figure 2B Schoot, Lugtig & Hox 2012
-
-summary(fit2)
-inspect(fit2,what="std")$lambda
-
-
-# Testing measurement invariance across social groups 
-
-
-
-#mi1 <- measEq.syntax(fit1)
-summary(fit1)
-
-```
 
