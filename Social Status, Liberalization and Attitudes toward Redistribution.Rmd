@@ -17,6 +17,38 @@ _____________________________________________________________________________
 $~$
 $~$
 
+
+Working paper available here: https://docs.google.com/document/d/1mST25rKYZ5wChRj5WyhxH_65RUa9MNR2OsO5B4-qcwY/edit#
+
+Notes for Hung:
+
+1. Variable 'child' has too many NA, do you know why? Can you fix it? It should have none, or almost none. 
+
+-> Hung: Because the variable hhcycle has many NAs (almost half) and child is coded based on hhcycle
+
+2. Can you please add the following countries using the single-country files and merging them in? 
+  a. Social Inequality 1992 - add Spain manually. 
+  Hung: Only 4 demographic variables available -> not added.
+  b. Social Inequality 1999 - add Denmark and Brazil manually 
+  Hung: Brazil has methodological problems, not added, same for Switzerland. I added Denmark and Ireland instead.
+  c. Social Inequality 2009 - add Netherlands manually. Done.
+  
+3. I had to change your dplyr recode commands, they didn't run on my machine, so they are now 'car::recode' instead for the variable country. 
+
+Hung: Fixed, added zap_labels
+
+4. I added a variable 'wave' which indicates the year associated with the survey. Done
+
+5. I changed the variable 'year' to reflect the actual year when the survey was fielded in each country - sometimes it is not the same as 'wave', but having the year accurate as possible makes it better for merging in macro data. 
+
+6. Made a variable 'reduce' that is = to 'incdiff' but has 9 recoded into NA and has 8 recoded into neutral, also reversed the coding so that higher values = more agreement
+
+7. Recoded 'wrkst' so that they matched across all surveys (not just full-time, part-time, less than part time). Env00 uses a slightly different list than the others. 
+
+
+Hung: Now wrkst doesn't have value "4". Consider recoding
+
+
 ## SETUP
 
 ```{r, include = F}
@@ -28,7 +60,7 @@ rm(list = ls())
 
 library(pacman)
 
-pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools", "tidylog")
+pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools", "tidylog", "countrycode", "Hmisc")
 
 #remotes::install_github("DiogoFerrari/occupar")
 #remotes::install_github("pdparker/isco88conversion")
@@ -77,17 +109,17 @@ socin <- socin %>%
      incdiff = v33,
      cntry = v5,
      year = v4,
+     wave = v4,
      female = if_else(sex == 2, 1,0), # female = 1
      ageC = ifelse(age > 75, 75, age), # also a continuous measure
      age = case_when(                 # trim at 75     
-       age %in% c(16,17) ~ 1,
-       age %in% c(18:24) ~ 2,
-       age %in% c(25:34) ~ 3,
-       age %in% c(35:44) ~ 4,
-       age %in% c(45:54) ~ 5,
-       age %in% c(55:64) ~ 6,
-       age %in% c(65:74) ~ 7,
-       age >= 75 ~ 8,
+       age %in% c(16:24) ~ 1,        # Changed to 7 categories
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       age >= 75 ~ 7,
        TRUE ~ NA_real_
      ),
      married = case_when( # married = 1. Note: using if_else will confound NA with not married (0), make sure life partners are coded as married
@@ -116,7 +148,8 @@ socin <- socin %>%
        hhcycle %in% c(2,3,4) ~ 1, # if one is married but living away from their partner (and raising children), count as single parent?
        hhcycle %in% c(1,5:95) ~ 0,
        TRUE ~ NA_real_
-     )
+     ),
+     wrkst = ifelse(wrkst == 4, 8, wrkst) # recode helping fam member into housework category to make compatible with environment category 
   )
 # integrate hhcycle from socin2 (US92)
 socin2 <- socin2 %>%
@@ -131,12 +164,25 @@ socin2 <- socin2 %>%
 socin$hhcycle_us92 <- socin2$child2 
 socin$child <- coalesce(socin$child, socin$hhcycle_us92)
 
-## Respondents' Household income: scaled, in case we need it
+## Respondent income
 temp <- dplyr::select(socin2, AT_RIN87:US_RIN09)
 centered.temp <- as.data.frame(scale(temp, center = TRUE, scale = TRUE)) # standardize
 socin <- cbind(socin,centered.temp)
 socin$incZ = rowMeans(socin[,which(names(socin)=="AT_RIN87"):which(names(socin)=="US_RIN09")], na.rm = T)
 socin$incZ = ifelse(socin$incZ=="NaN",NA,socin$incZ)
+
+
+## Household income
+
+temp <- dplyr::select(socin2, AT_INC87:US_INC09)
+centered.temp <- as.data.frame(scale(temp, center = TRUE, scale = TRUE)) # standardize
+socin <- cbind(socin,centered.temp)
+socin$hincZ = rowMeans(socin[,which(names(socin)=="AT_INC87"):which(names(socin)=="US_INC09")], na.rm = T)
+socin$hincZ = ifelse(socin$hincZ=="NaN",NA,socin$hincZ)
+
+
+# trim extreme values
+socin$hincZ = ifelse(socin$hincZ > 10, 10, socin$hincZ)
 
 
 # Think about ISCED for education (see Schneider's work). #Hung# Two problems: (1) we would have to code each country-year separately; (2) more importantly, many countries don't record degrees higher than bachelor (master and doctoral), which are 7 and 8 in the ISCED 2011 coding scheme. For the mean time, I propose we use the variable degree instead.
@@ -297,6 +343,8 @@ jp$jp_occ <- if_else(jp$jp_occ == 2265 & jp$educyrsjp < 16, 1229, jp$jp_occ)
 
 
 socin[which(socin$cntry == 392),]$isco88 <- jp$jp_occ
+
+
 # Recoding to isco88: Sweden 1992
 se9288 <- "1 = 2141; 2 = 2143; 3 = 2144; 4 = 2145; 5 = 3116; 6 = 3117; 7 = 2142; 8 = 2148; 9 = 3119; 12 = 3211; 13 = 3211; 14 = 2114; 15 = 2112; 16 = 2113; 19 = 3111; 21 = 2211; 22 = 3213; 23 = 3213; 29 = 2211; 30 = 1210; 31 = 2310; 32 = 2320; 33 = 2331; 34 = 2320; 35 = 2359; 36 = 2320; 37 = 2352; 39 = 2359; 41 = 2460; 49 = 3480; 51 = 2421; 52 = 2429; 53 = 2429; 
 54 = 2429; 59 = 2429; 61 = 2451; 62 = 1234; 63 = 1229; 69 = 2451; 71 = 2452; 72 = 3471; 73 = 3471; 74 = 3131; 75 = 3474; 76 = 2453; 77 = 2455; 79 = 2455; 91 = 2432; 92 = 2431; 99 = 2446; 101 = 2221; 102 = 2230; 103 = 3231; 104 = 3232; 105 = 3133; 106 = 5132; 107 = 5132; 109 = 9132; 111 = 3226; 112 = 2229; 119 = 3226; 121 = 2222; 122 = 3225; 123 = 3225; 129 = 3225; 131 = 2224; 139 = 3228; 141 = 2223; 149 = 3227; 151 = 2446; 152 = 1228; 153 = 5131; 154 = 5133; 155 = 1228; 159 = 2446; 161 = 3152; 162 = 3151; 169 = 3152; 191 = 2445; 192 = 3223; 199 = 3460; 201 = 1110; 202 = 3443; 203 = 3444; 209 = 1110; 211 = 2419; 212 = 3431; 219 = 2419; 221 = 2412; 222 = 3423; 229 = 2412; 231 = 2411; 232 = 2411; 239 = 4121; 241 = 4115; 242 = 4111; 249 = 4190; 251 = 2131; 252 = 3122; 259 = 3121; 261 = 2441; 262 = 2122; 269 = 2441; 291 = 4190; 292 = 4122; 293 = 3412; 294 = 3412; 295 = 4221; 296 = 3422; 297 = 1317; 299 = 4190; 311 = 3471; 312 = 3413; 313 = 3419; 319 = 3419; 321 = 3416; 331 = 1314; 332 = 5220; 333 = 5220; 339 = 5220; 399 = 5220; 400 = 1311; 401 = 6112; 402 = 6130; 403 = 6130; 404 = 6130; 405 = 6130; 406 = 6129; 409 = 6112; 411 = 6112; 412 = 6121; 413 = 6112; 414 = 6129; 419 = 6121; 421 = 6154; 431 = 6152; 432 = 6151; 439 = 6152; 441 = 6141; 449 = 6141; 501 = 7111; 509 = 7111; 511 = 8113; 521 = 8121; 531 = 8155; 599 = 7111; 601 = 3142; 602 = 3142; 603 = 3141; 609 = 3142; 611 = 8340; 612 = 8340; 619 = 8340; 621 = 3143; 629 = 3143; 631 = 8311; 640 = 8322; 641 = 8324; 642 = 8322; 643 = 9151; 649 = 8334; 651 = 3144; 652 = 5112; 653 = 5111; 659 = 5112; 661 = 4133; 662 = 3144; 663 = 8312; 664 = 4133; 669 = 4133; 671 = 4142; 673 = 3132; 674 = 3132; 675 = 3132; 679 = 4142; 681 = 4142; 682 = 9151; 689 = 4142; 691 = 4133; 699 = 9330; 701 = 8261; 702 = 7332; 703 = 7432; 705 = 8262; 706 = 7435; 707 = 3152; 709 = 7332; 711 = 7433; 712 = 7434; 713 = 7433; 714 = 7437; 715 = 7435; 716 = 7433; 719 = 7436; 721 = 7442; 722 = 7442; 723 = 8268; 729 = 8269; 731 = 8121; 732 = 8122; 733 = 8122; 735 = 7215; 736 = 7221; 737 = 7211; 739 = 8122; 741 = 7311; 742 = 7311; 743 = 3224; 744 = 3211; 745 = 7313; 746 = 7323; 749 = 7222; 751 = 8211; 752 = 7233; 753 = 7231; 754 = 7213; 755 = 7136; 756 = 7212; 757 = 7214; 758 = 8223; 759 = 7214; 761 = 7241; 762 = 7241; 763 = 8282; 764 = 7244; 765 = 7245; 766 = 3131; 769 = 8282; 771 = 6141; 772 = 8141; 773 = 8240; 775 = 7331; 776 = 7331; 777 = 7423; 779 = 8141; 781 = 7141; 782 = 7132; 783 = 7141; 789 = 7139; 791 = 7122; 793 = 7123; 794 = 7124; 795 = 7134; 796 = 7135; 799 = 7129; 801 = 7341; 802 = 7343; 803 = 8251; 804 = 7345; 805 = 8224; 809 = 8251; 811 = 7322; 812 = 7321; 813 = 8131; 814 = 7323; 819 = 8139; 821 = 8273; 822 = 7412; 823 = 8274; 824 = 8278; 825 = 9320; 826 = 7411; 827 = 8272; 828 = 8279; 829 = 8278; 831 = 8159; 832 = 8151; 833 = 8151; 834 = 8231; 835 = 8232; 839 = 8159; 841 = 8142; 842 = 8143; 843 = 8253; 849 = 8142; 851 = 7129; 852 = 8265; 853 = 7312; 854 = 7113; 859 = 7222; 861 = 8161; 869 = 8161; 871 = 8333; 872 = 8332; 873 = 8334; 879 = 9330; 881 = 9320; 882 = 9330; 889 = 9320; 891 = 9151; 901 = 5161; 902 = 9162; 903 = 5162; 904 = 3441; 905 = 5163; 906 = 5169; 909 = 5169; 911 = 1225; 912 = 5122; 913 = 5123; 914 = 5123; 915 = 4222; 916 = 5111; 919 = 5123; 921 = 5121; 929 = 5121; 931 = 9141; 932 = 9131; 939 = 9141; 941 = 5141; 942 = 5149; 949 = 5141; 951 = 9133; 952 = 9133; 959 = 9133; 961 = 3475; 971 = 5143; 979 = 5149; 981 = 110; 989 = 110"
@@ -331,7 +379,7 @@ socin$isei <- occupar::isco88toISEI92(isco88 = socin$isco88)
 ## Father's occupation 
 
 # ------- #
-# Australia 1987 (waiting for response)
+# Australia 1987 (ASCO)
 # Poland 1987 (manually code to EGP6?)
 
 
@@ -373,6 +421,8 @@ socin[which(socin$cntry == 752 & socin$year == 1992),]$fisco88 <- socin[which(so
 # Slovenia 1992
 
 socin$misco88 <- socin$v72
+
+
 ## FIsCO88/MISCO88 to EGP/EGP6 and ISEI 
 
 socin <- socin %>%
@@ -389,7 +439,7 @@ socin <- socin %>%
 
 # Select relevant variables
 
-socin <- dplyr::select(socin, cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, incZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
 
 ```
 
@@ -399,7 +449,7 @@ socin <- dplyr::select(socin, cntry, year, age, ageC, female, educyrs, degree, c
 
 
 
-```{r m&m, include = TRUE}
+```{r m&m, include = TRUE, warning=F,message=F}
 ## Add missing countries
 # Denmark 1999
 
@@ -409,20 +459,20 @@ socin <- dplyr::select(socin, cntry, year, age, ageC, female, educyrs, degree, c
 dk99 <- dk99 %>%
   mutate(
     cntry = 208,
-    year = 1999,
+    year = 2000,
+    wave = 1999,
     incdiff = v57,
     ageC = ifelse(age > 75, 75, age),
-    age = case_when(  # trim at 75     
-       age %in% c(16,17) ~ 1,
-       age %in% c(18:24) ~ 2,
-       age %in% c(25:34) ~ 3,
-       age %in% c(35:44) ~ 4,
-       age %in% c(45:54) ~ 5,
-       age %in% c(55:64) ~ 6,
-       age %in% c(65:74) ~ 7,
-       age >= 75 & age < 99 ~ 8,
+    age = case_when(                 # trim at 75     
+       age %in% c(16:24) ~ 1,        # Changed to 7 categories
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       age >= 75 ~ 7,
        TRUE ~ NA_real_
-     ), 
+     ),
     female = sex - 1,
     educyrs = case_when(   
        educyrs > 25 & educyrs < 90 ~ 26, 
@@ -450,6 +500,8 @@ dk99 <- dk99 %>%
       TRUE ~ NA_real_
     ),
     incZ = scale(rincome, scale = TRUE, center = TRUE),
+    hincZ = scale(income, scale = TRUE, center = TRUE),
+    wrkst = ifelse(wrkst == 4, 8, wrkst),
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
     egp6 = car::recode(egp, recodes = egp6),
     isei = occupar::isco88toISEI92(isco88),
@@ -470,7 +522,7 @@ dk99 <- dk99 %>%
   )  
 
 
-dk99 <- dplyr::select(dk99, cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+dk99 <- dplyr::select(dk99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, incZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
 
 # Ireland 1999
 
@@ -480,20 +532,20 @@ dk99 <- dplyr::select(dk99, cntry, year, age, ageC, female, educyrs, degree, chi
 ie99 <- ie99 %>%
   mutate(
     cntry = 372,
-    year = 1999,
+    year = 2001,
+    wave = 1999,
     incdiff = v35,
     ageC = ifelse(age > 75, 75, age),
-    age = case_when(  # trim at 75     
-       age %in% c(16,17) ~ 1,
-       age %in% c(18:24) ~ 2,
-       age %in% c(25:34) ~ 3,
-       age %in% c(35:44) ~ 4,
-       age %in% c(45:54) ~ 5,
-       age %in% c(55:64) ~ 6,
-       age %in% c(65:74) ~ 7,
-       age >= 75 & age < 99 ~ 8,
+    age = case_when(                 # trim at 75     
+       age %in% c(16:24) ~ 1,        # Changed to 7 categories
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       age >= 75 ~ 7,
        TRUE ~ NA_real_
-     ), 
+     ),
     female = sex - 1,
     educyrs = case_when(   
        educyrs > 25 & educyrs < 90 ~ 26, 
@@ -521,6 +573,8 @@ ie99 <- ie99 %>%
       TRUE ~ NA_real_
     ),
     incZ = scale(rincome, scale = TRUE, center = TRUE),
+    hincZ = scale(income, scale = TRUE, center = TRUE),
+    wrkst = ifelse(wrkst == 4, 8, wrkst),
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
     egp6 = car::recode(egp, recodes = egp6),
     isei = occupar::isco88toISEI92(isco88),
@@ -535,7 +589,7 @@ ie99 <- ie99 %>%
   )
 
 
-ie99 <- dplyr::select(ie99, cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, incZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
 
 # Netherlands 
 # nelab <- lapply(nl09, attr, "label") 
@@ -543,20 +597,20 @@ colnames(nl09) <- tolower(colnames(nl09))
 nl09 <- nl09 %>%
   mutate(
     cntry = 528,
-    year = 2009,
+    year = 2013,
+    wave = 2009,
     incdiff = v33,
     ageC = ifelse(age > 75, 75, age),
-    age = case_when(  # trim at 75     
-       age %in% c(16,17) ~ 1,
-       age %in% c(18:24) ~ 2,
-       age %in% c(25:34) ~ 3,
-       age %in% c(35:44) ~ 4,
-       age %in% c(45:54) ~ 5,
-       age %in% c(55:64) ~ 6,
-       age %in% c(65:74) ~ 7,
-       age >= 75 & age < 99 ~ 8,
+    age = case_when(                 # trim at 75     
+       age %in% c(16:24) ~ 1,        # Changed to 7 categories
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       age >= 75 ~ 7,
        TRUE ~ NA_real_
-     ), 
+     ),
     female = sex - 1,
     educyrs = case_when(   
        educyrs > 25 & educyrs < 90 ~ 26, 
@@ -589,6 +643,8 @@ nl09 <- nl09 %>%
       TRUE ~ NA_real_
     ),
     incZ = scale(nl_rinc, scale = TRUE, center = TRUE),
+    hincZ = scale(nl_inc, scale = TRUE, center = TRUE),
+    wrkst = ifelse(wrkst == 4, 8, wrkst),
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
     egp6 = car::recode(egp, recodes = egp6),
     isei = occupar::isco88toISEI92(isco88),
@@ -602,7 +658,7 @@ nl09 <- nl09 %>%
     m_isei = occupar::isco88toISEI92(misco88),
   )
 
-nl09 <- dplyr::select(nl09, cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+nl09 <- dplyr::select(nl09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, incZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
 
 
 ## Merge data sets  
@@ -611,7 +667,7 @@ nl09 <- dplyr::select(nl09, cntry, year, age, ageC, female, educyrs, degree, chi
 mer1 <- plyr::rbind.fill(dk99,ie99)
 mer2 <- plyr::rbind.fill(mer1,nl09)
 mer2$incZ <- as.vector(mer2$incZ)
-
+mer2$hincZ <- as.vector(mer2$hincZ)
 df <- plyr::rbind.fill(mer2,socin)
 
 df <- df %>%
@@ -623,7 +679,7 @@ df <- df %>%
 ## Data transformation - Environment 93
 
 
-```{r env93, include = TRUE}
+```{r env93, include = TRUE, warning=F,message=F}
 
 env93 <- env93 %>%
   mutate(
@@ -632,19 +688,19 @@ env93 <- env93 %>%
                           `10` = 372, `11` = 528, `12` = 578, `13` = 203, `14` = 705, `15` = 616, `16` = 100, `17` = 643,
                           `18` = 554, `19` = 124, `20` = 608, `21` = 376, `22` = 392, `23` = 724),
     year = 1993,
+    wave = 1993,
     female = v200 - 1,
     age = v201,
     incdiff = v6,
     ageC = ifelse(age > 75, 75, age),
-    age = case_when(  # trim at 75     
-       age %in% c(16,17) ~ 1,
-       age %in% c(18:24) ~ 2,
-       age %in% c(25:34) ~ 3,
-       age %in% c(35:44) ~ 4,
-       age %in% c(45:54) ~ 5,
-       age %in% c(55:64) ~ 6,
-       age %in% c(65:74) ~ 7,
-       age >= 75 & age < 99 ~ 8,
+    age = case_when(                 # trim at 75     
+       age %in% c(16:24) ~ 1,        # Changed to 7 categories
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       age >= 75 ~ 7,
        TRUE ~ NA_real_
      ),
     marital = v202,
@@ -677,34 +733,121 @@ env93 <- env93 %>%
       TRUE ~ NA_real_
     ),
     wrkhrs = v224,
-    wrkst = v212
+    wrkst = ifelse(v212 == 4, 8, v212)
   )
-# ISCO68 to ISCO88
+# Occupation codes
 
 env93 <- env93 %>%
   mutate(
     isco68 = as.numeric(v214),
-    isco88 = as.numeric(v214)
+    isco88_2 = as.numeric(v214),
+    fisco68 = as.numeric(v219),
+    fisco88_2 = as.numeric(v219),
+    misco68 = as.numeric(v218),
+    misco88_2 = as.numeric(v218)
   )
-env93$isco68 <- occupar::isco68to88(isco68 = env93$isco68,display.nas = TRUE)
-env93[which(env93$cntry %in% c(1, 10, 14, 15, 17)),]$isco68 <- NA
-env93[which(!(env93$cntry %in% c(1, 10, 14, 15, 17))),]$isco88 <- NA
+env93$isco88 <- occupar::isco68to88(isco68 = env93$isco68, display.nas = T)
+env93$fisco88 <- occupar::isco68to88(isco68 = env93$fisco68, display.nas = T)
+env93$misco88 <- occupar::isco68to88(isco68 = env93$misco68, display.nas = T)
+
+# Australia: ASCO
+
+# Japan 
+
+# Slovenia
+
+# Philippines
+
+# Netherlands 
+
+# Israel
+
+# Japan  - Self 
+env93$jp_occ <- env93$isco68
+env93$jp_occ <- car::recode(env93$jp_occ, recodes = "7 = 2265; 8 = 2265; 5 = 9322; 4 = 7233; 3 = 5130; 6 = 4115; 1 = 6130; 2 = 7233;
+                            9  = NA; 10= NA; 11 = NA")
+env93[which(env93$cntry == 392),]$isco88 <- env93[which(env93$cntry == 392),]$jp_occ
+jp_occ <- env93[which(env93$cntry == 392),]$isco88 
+educyrsjp <- env93[which(env93$cntry == 392),]$educyrs
+jp <- as.data.frame(cbind(jp_occ, educyrsjp))
+jp$jp_occ <- if_else(jp$jp_occ == 4115 & jp$educyrsjp < 14, 3416, jp$jp_occ)
+jp$jp_occ <- if_else(jp$jp_occ == 7233 & jp$educyrsjp > 11, 4211, jp$jp_occ)
+jp$jp_occ <- if_else(jp$jp_occ == 6130 & jp$educyrsjp < 12, 9211, jp$jp_occ)
+jp$jp_occ <- if_else(jp$jp_occ == 2265 & jp$educyrsjp < 16, 1229, jp$jp_occ)
+env93[which(env93$cntry == 392),]$isco88 <- jp$jp_occ
+
+# Japan - Father 
+
+env93$jp_focc <- env93$fisco68
+env93$jp_focc <- car::recode(env93$jp_focc, recodes = "7 = 2265; 8 = 2265; 5 = 9322; 4 = 7233; 3 = 5130; 6 = 4115; 1 = 6130; 2 = 7233;
+                            9  = NA; 10= NA; 11 = NA")
+env93[which(env93$cntry == 392),]$fisco88 <- env93[which(env93$cntry == 392),]$jp_focc
+jp_focc <- env93[which(env93$cntry == 392),]$fisco88 
+feducyrsjp <- env93[which(env93$cntry == 392),]$v210
+jp <- as.data.frame(cbind(jp_focc, feducyrsjp))
+jp$jp_focc <- if_else(jp$jp_focc == 4115 & jp$feducyrsjp < 14, 3416, jp$jp_focc)
+jp$jp_focc <- if_else(jp$jp_focc == 7233 & jp$feducyrsjp > 11, 4211, jp$jp_focc)
+jp$jp_focc <- if_else(jp$jp_focc == 6130 & jp$feducyrsjp < 12, 9211, jp$jp_focc)
+jp$jp_focc <- if_else(jp$jp_focc == 2265 & jp$feducyrsjp < 16, 1229, jp$jp_focc)
+env93[which(env93$cntry == 392),]$fisco88 <- jp$jp_focc
 
 
-env93$isco88 <- coalesce(env93$isco68,env93$isco88)
+# Japan - Mother 
 
-# ISCO88 to EGP
+env93$jp_mocc <- env93$misco68
+env93$jp_mocc <- car::recode(env93$jp_mocc, recodes = "7 = 2265; 8 = 2265; 5 = 9322; 4 = 7233; 3 = 5130; 6 = 4115; 1 = 6130; 2 = 7233;
+                            9  = NA; 10= NA; 11 = NA")
+env93[which(env93$cntry == 392),]$misco88 <- env93[which(env93$cntry == 392),]$jp_mocc
+jp_mocc <- env93[which(env93$cntry == 392),]$misco88 
+meducyrsjp <- env93[which(env93$cntry == 392),]$v208
+jp <- as.data.frame(cbind(jp_mocc, meducyrsjp))
+jp$jp_mocc <- if_else(jp$jp_mocc == 4115 & jp$meducyrsjp < 14, 3416, jp$jp_mocc)
+jp$jp_mocc <- if_else(jp$jp_mocc == 7233 & jp$meducyrsjp > 11, 4211, jp$jp_mocc)
+jp$jp_mocc <- if_else(jp$jp_mocc == 6130 & jp$meducyrsjp < 12, 9211, jp$jp_mocc)
+jp$jp_mocc <- if_else(jp$jp_mocc == 2265 & jp$meducyrsjp < 16, 1229, jp$jp_mocc)
+env93[which(env93$cntry == 392),]$misco88 <- jp$jp_mocc
 
-env93$egp <- occupar::isco88toEGP(isco88 = env93$isco88, n.employees = env93$v221, self.employed = env93$v222)
 
-# EGP to EGP6
+# Italy
+
+# Norway: Nordic Standard Classification of Occupation
+
+# Great Britain: Standard Occupational Classification
+
+# Slovenia - Father + Mother
+
+# Australia, (Slovenia), Poland, Russia
+env93[which(env93$cntry %in% c(36,705,616,643)),]$isco88 <- NA 
+env93[which(env93$cntry %nin% c(36,705,616,643)),]$isco88_2 <- NA 
+
+env93[which(env93$cntry %in% c(36,616,643)),]$fisco88 <- NA 
+env93[which(env93$cntry %nin% c(36,616,643)),]$fisco88_2 <- NA 
+
+env93[which(env93$cntry %in% c(36,616,643)),]$misco88 <- NA 
+env93[which(env93$cntry %nin% c(36,616,643)),]$misco88_2 <- NA 
+
+
+# coalesce
+env93$isco88 <- coalesce(env93$isco88,env93$isco88_2)
+env93$fisco88 <- coalesce(env93$fisco88,env93$fisco88_2)
+env93$misco88 <- coalesce(env93$misco88,env93$misco88_2)
+
+# ISCO88 to EGP/EGP6 and ISEI
+
 env93 <- env93 %>%
   mutate(
-    egp6 = car::recode(egp, recodes = egp6)
+    egp  = occupar::isco88toEGP(isco88 = isco88, n.employees = v221, self.employed = v222),
+    egp6 = car::recode(egp, recodes = egp6),
+    isei = occupar::isco88toISEI92(isco88 = isco88),
+    f_egp = occupar::isco88toEGP(fisco88, NULL, NULL),
+    f_egp6 = car::recode(f_egp, recodes = egp6_2),
+    f_isei = occupar::isco88toISEI92(fisco88),
+    m_egp = occupar::isco88toEGP(misco88, NULL, NULL),
+    m_egp6 = car::recode(m_egp, recodes = egp6_2),
+    m_isei = occupar::isco88toISEI92(misco88)
   )
 
-# ISEI
-env93$isei <- occupar::isco88toISEI92(isco88 = env93$isco88)
+
 
 
 ## Earnings - grouped by country, then scaled.
@@ -712,33 +855,21 @@ env93$isei <- occupar::isco88toISEI92(isco88 = env93$isco88)
 env93 <- env93 %>%
   group_by(cntry) %>%
   mutate(
-    incZ = scale(v231, center = TRUE, scale = T),
+    incZ = scale(v231, center = TRUE, scale = TRUE),
+    hincZ = scale(v253, center = TRUE, scale = TRUE)
   )
 
-## Father's occupation + Mother's occupation
-
-env93 <- env93 %>%
-  mutate(
-    fisco88 = v219, 
-    misco88 = v218,
-    f_egp = occupar::isco88toEGP(fisco88, NULL, NULL),
-    f_egp6 = car::recode(f_egp, recodes = egp6_2),
-    f_isei = occupar::isco88toISEI92(fisco88),
-    m_egp = occupar::isco88toEGP(misco88, NULL, NULL),
-    m_egp6 = car::recode(m_egp, recodes = egp6_2),
-    m_isei = occupar::isco88toISEI92(misco88),
-  )
 
 # Select relevant variables 
 
-env93 <- dplyr::select(env93,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff))
+env93 <- dplyr::select(env93,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, incZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff))
 
 ```
 
 
 ## Data transformation - Environment 2000
 
-```{r env00, include = TRUE}
+```{r env00, include = TRUE, warning=F,message=F}
 env00 <- env00 %>%
   mutate(
     cntry = zap_labels(v3),
@@ -747,19 +878,19 @@ env00 <- env00 %>%
                           `17` = 100, `18` = 643, `19` = 554, `20` = 124, `21` = 608, `22` = 376, `24` = 392, `25` = 724,
                           `26` = 428, `30` = 620, `31` = 152, `32` = 208, `33` = 756, `37` = 246, `38` = 484),
     year = 2000,
+    wave = 2000,
     female = v200 - 1,
     age = v201,
-    incdiff = v6,
+    incdiff = v5,
     ageC = ifelse(age > 75, 75, age), # trim at 75  
-    age = case_when(     # by categories
-       age %in% c(16,17) ~ 1,
-       age %in% c(18:24) ~ 2,
-       age %in% c(25:34) ~ 3,
-       age %in% c(35:44) ~ 4,
-       age %in% c(45:54) ~ 5,
-       age %in% c(55:64) ~ 6,
-       age %in% c(65:74) ~ 7,
-       age >= 75 & age < 99  ~ 8,
+    age = case_when(                 # trim at 75     
+       age %in% c(16:24) ~ 1,         # Changed to 7 categories
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       age >= 75 ~ 7,
        TRUE ~ NA_real_
      ),
     marital = v202,
@@ -791,7 +922,7 @@ env00 <- env00 %>%
       TRUE ~ NA_real_
     ),
     wrkhrs = v238,
-    wrkst = v231
+    wrkst = ifelse(v231 == 4, 8, v231)
   )
 # ISCO88 to EGP
 
@@ -814,7 +945,8 @@ env00$isei <- occupar::isco88toISEI92(isco88 = env00$v233)
 env00 <- env00 %>%
   group_by(cntry) %>%
   mutate(
-    incZ = scale(v240, center = TRUE, scale = TRUE)
+    incZ = scale(v240, center = TRUE, scale = TRUE),
+    hincZ = scale(v241, center = TRUE, scale = TRUE)
   )
 ## Father's occupation + Mother's occupation - Not available
 
@@ -830,29 +962,29 @@ env00 <- env00 %>%
 
 
 # Select relevant variables 
-env00 <- dplyr::select(env00,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)) 
+env00 <- dplyr::select(env00,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, incZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)) 
 ```
 
 
 ## Data transformation - Environment 2010
-```{r env10, include = TRUE}
+```{r env10, include = TRUE, warning=F,message=F}
 colnames(env10) <- tolower(colnames(env10))
 env10 <- env10 %>%
   mutate(
     cntry = country,
     year = 2010,
+    wave = 2010,
     female = sex - 1,
     incdiff = v8,
     ageC = ifelse(age > 75, 75, age), # trim at 75  
-    age = case_when(     # by categories
-       age %in% c(16,17) ~ 1,
-       age %in% c(18:24) ~ 2,
-       age %in% c(25:34) ~ 3,
-       age %in% c(35:44) ~ 4,
-       age %in% c(45:54) ~ 5,
-       age %in% c(55:64) ~ 6,
-       age %in% c(65:74) ~ 7,
-       age >= 75 & age < 100  ~ 8,
+    age = case_when(                 # trim at 75     
+       age %in% c(16:24) ~ 1,         # Changed to 7 categories
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       age >= 75 ~ 7,
        TRUE ~ NA_real_
      ),
     married = case_when( # married = 1. widowed and civil partnership = married 
@@ -900,11 +1032,10 @@ env10 <- env10 %>%
       mainstat == 1 & wrkhrs > 34 ~ 1,
       mainstat == 1 & (wrkhrs > 14 & wrkhrs < 35) ~ 2,
       mainstat == 1 & wrkhrs < 15 ~ 3,
-      mainstat == 7 & work == 1 ~ 4, # helping a family member 
       mainstat == 2 ~ 5,
       mainstat %in% c(3,4) ~ 6,
       mainstat == 6 ~ 7,
-      mainstat == 7 & (work != 1 | (married == 1 & spwork == 1)) ~ 8, # housewife/houseman
+      mainstat == 7  ~ 8, 
       mainstat == 5 ~ 9,
       mainstat %in% c(8,9) ~ 10,
       TRUE ~ NA_real_
@@ -932,6 +1063,12 @@ temp <- dplyr::select(env10, ar_rinc:za_rinc)
 centered.temp <- scale(temp, center = TRUE, scale = TRUE)
 env10$incZ <- coalesce(centered.temp)
 
+## Household income, scaled.
+
+temp <- dplyr::select(env10, ar_inc:za_inc)
+centered.temp <- scale(temp, center = TRUE, scale = TRUE)
+env10$hincZ <- coalesce(centered.temp)
+
 ## Father's occupation + Mother's occupation - Not available
 
 env10 <- env10 %>%
@@ -946,65 +1083,63 @@ env10 <- env10 %>%
 
 
 # Select relevant variables 
-env10 <- dplyr::select(env10,c(cntry, year, age, ageC, female, educyrs, degree, child, married, incZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)) 
+env10 <- dplyr::select(env10,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, incZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)) 
 
 ```
 ## Merge environment data sets and social inequality cumulative data set and save 
 
-```{r mergesave, include = TRUE}
+```{r mergesave, include = TRUE, warning=F,message=F}
+## Merge
+
 env <- plyr::rbind.fill(env93,env00)
 env <- plyr::rbind.fill(env,env10)
 env$incZ <- as.vector(env$incZ)
+env$hincZ <- as.vector(env$hincZ)
 df <- plyr::rbind.fill(env,df)
 
-save(df, file = "df.Rda")
 
-```
+## Add and modify a few more variables 
 
-
-
-
-
-
-## New ideal types 
-
-```{r ideal, include = TRUE}
 df <- df %>%
   mutate(
-    itype = case_when(
-      egp6 == "Routine" & female == 0 ~ 1,
-      (egp6 == "Unskilled" | egp6 == "Routine") & incZ < -1 ~ 2,
-      
-    )
+         year = ifelse(wave == 1987 & cntry == 40, 1988, 
+                       ifelse((wave == 1992 & cntry == 36) | (wave == 1992 & cntry == 40) | (wave == 1992 & cntry == 100), 1993, 
+                              ifelse(wave == 1992 & cntry == 752, 1991, 
+                                     ifelse((wave == 1999 & cntry == 40) |(wave == 1999 & cntry == 152) | (wave == 1999 & cntry == 276) | (wave == 1999 & cntry == 840), 2000, 
+                                            ifelse((wave == 1999 & cntry == 348) | (wave == 1999 & cntry == 705), 1998, 
+                                                   ifelse((wave == 1999 & cntry == 372) | (wave == 1999 & cntry == 703), 1998, 
+                                                          ifelse((wave == 2009 & cntry == 156) | (wave == 2009 & cntry == 203), 2008, 
+                                                                 ifelse((wave == 2009 & cntry == 32) | (wave == 2009 & cntry == 36) | (wave == 2009 & cntry == 40) | (wave == 2009 & cntry == 233) | (wave == 2009 & cntry == 233) | (wave == 2009 & cntry == 276) | (wave == 2009 & cntry == 352) | (wave == 2009 & cntry == 616) | (wave == 2009 & cntry == 840) | (wave == 2009 & cntry == 862), 2010, 
+                                                                        ifelse((wave == 2009 & cntry == 380) | (wave == 2009 & cntry == 440), 2011, 
+                                                                               ifelse(wave == 2009 & cntry == 528, 2013, 
+                                                                                      ifelse((wave == 1993 & cntry == 100) | (wave == 1993 & cntry == 724), 1994, 
+                                                                                             ifelse(wave == 1993 & cntry == 392, 1992, 
+                                                                                                    ifelse((wave == 2000 & cntry == 40) | (wave == 2000 & cntry == 124) | (wave == 2000 & cntry == 208) | (wave == 2000 & cntry == 372) | (wave == 2000 & cntry == 484) | (wave == 2000 & cntry == 752) | (wave == 2000 & cntry == 756), 2001, 
+                                                                                                           ifelse((wave == 2010 & cntry == 100) | (wave == 2010 & cntry == 124) | (wave == 2010 & cntry == 191) | (wave == 2010 & cntry == 376) | (wave == 2010 & cntry == 428) | (wave == 2010 & cntry == 484) | (wave == 2010 & cntry == 528) | (wave == 2010 & cntry == 578) | (wave == 2010 & cntry == 705) | (wave == 2010 & cntry == 756), 2011, 
+                                                                                                                  ifelse((wave == 2010 & cntry == 352) | (wave == 2010 & cntry == 36) | (wave == 2010 & cntry == 608), 2012, 
+                                                                                                                         ifelse((wave == 2010 & cntry == 608) | (wave == 2010 & cntry == 703), 2009, year))))))))))))))))
   )
-```
-
-## Data analysis
-```{r analysis, include = TRUE}
-df <- df %>% 
-  group_by(cntry)
-df$incdiff <- dplyr::recode(df$incdiff, `8` = NA_real_, `9` = NA_real_) # 8 = NA or should be kept?
-
-df_lw <- df[complete.cases(df$incdiff),]
-df_lw <- df_lw[complete.cases(df_lw$cntry),]
 
 
-df_lw$f_incdiff <- as.factor(df_lw$incdiff)
-df_lw$o_incdiff <- as.ordered(df_lw$incdiff)
+# Make a country-year variable
+df$cyear <- (df$cntry*10000)+df$year
+# Country names
+df$country <- countrycode(df$cntry, "iso3n", "country.name")
+# Recode IncDiff
+df$incdiff <- ifelse(df$incdiff == 9, NA, df$incdiff)
+df$reduce <- car::recode(df$incdiff, recodes = '1 = 5; 2 = 4; 3 = 3; 8 = 3; 4 = 2; 5 = 1')
 
 
-ggplot(df_lw, aes(f_incdiff)) +
-  geom_bar(fill = "gray40") + 
-  scale_x_discrete("Original Response Choices (non-response omitted)", labels = c("Strongly disagree","Disagree","Neutral","Agree" ,"Strongly agree")) + 
-  ggtitle("Reduce income differences")
-
-
-
-## Ordered logit 
-
-mod1 <- polr(f_incdiff ~ age*age + female + educyrs + degree + child + married + incZ + egp6 + as.factor(cntry), data = df_lw)
+## Save df
+save(df, file = paste0(wd,"socstat.Rda"))
 
 ```
+
+
+
+
+
+
 
 
 
