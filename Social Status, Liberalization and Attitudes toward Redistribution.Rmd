@@ -46,6 +46,7 @@ NEW:
 A. Changed educyrs to a maximum of 23
 B. educyrs 95 = 8, 96 = 13
 C. replaced some of my rincZ coding as it needed to be trimmed and cleaned. This made me discover a different problem: the coding is very different across countries and surveys. I opted for recoding all income into **deciles**. 
+D. Can you create a variable that indicates East and West Germany?
 
 OLD: 
 
