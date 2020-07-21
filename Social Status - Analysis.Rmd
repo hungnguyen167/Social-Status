@@ -1,12 +1,14 @@
 ---
 title: "Social Status, Liberalization and Attitudes toward Redistribution"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 "Social Status, Liberalization and Attitudes toward Redistribution"
 
-## ISSP, Social Inequality, Cumulation (1987, 1992, 1999 & 2009)
-## ISSP, Environment, 1993, 2000 & 2010
+##### ISSP, Social Inequality, Cumulation (1987, 1992, 1999 & 2009)
+##### ISSP, Environment, 1993, 2000 & 2010
 $~$
 $~$
 
@@ -20,20 +22,20 @@ $~$
 
 Working paper available here: https://docs.google.com/document/d/1mST25rKYZ5wChRj5WyhxH_65RUa9MNR2OsO5B4-qcwY/edit#
 
-The data cleaning is done in the file "Social Status, Liberalization and Attitudes toward Redistribution.Rmd"
+Github repo: https://github.com/hungnguyen167/Social-Status
 
-# Setup
 
 
 ```{r, include = F}
 rm(list = ls())
 ```
 
-## Setup
+
 ```{r setup, include=FALSE}
 library(pacman)
-pacman::p_load("tidyverse","knitr","car","expss","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools")
+pacman::p_load("tidyverse","knitr","car","expss","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools","ggplot2","countrycode")
 
+knitr::opts_chunk$set(message = F, warning = F)
 
 wd <- "C:/data/"
 
@@ -42,6 +44,9 @@ wd <- "C:/data/"
 
 
 ## Load Data
+
+The data cleaning is done in the file "Social Status, Liberalization and Attitudes toward Redistribution.Rmd"
+
 ```{r}
 load(paste0(wd,"socstat.Rda"))
 ```
@@ -122,6 +127,37 @@ rm(tab2_0, tab2_1, tab2_1.1, tab2_2, tab2_3, tab2_4)
 ## Fig 1. Scatterplot of Preferences for Redistribution
 
 ```{r fig1, echo = T}
+
+# make a label variable
+df$lab <- countrycode(df$cntry, "iso3n", "iso2c")
+df$lab <- paste0(df$lab,df$year)
+
+fig1 <- df %>%
+  group_by(cyear) %>%
+  mutate(reduceM = mean(reduce, na.rm = T),
+         reduceSE = (sd(reduce, na.rm = T)/sqrt(length(which(!is.na(reduce))))))
+
+
+fig1 <- dplyr::select(fig1, year, cyear, lab, reduceM, reduceSE, wave, cntry)
+
+fig1 <- aggregate(fig1,  by=list(fig1$lab), FUN=mean, na.rm=T)
+colnames(fig1) <- c("lab","year","cyear","skip","reduceM","reduceSE","wave","cntry")
+
+fig1$country <- countrycode(fig1$cntry, "iso3n", "country.name")
+
+# only label countries that are in the survey often)
+cntry2 <- as.list(unique(fig1$cntry[fig1$year < 1992]))
+fig1$country <- ifelse(fig1$cntry  %in% cntry2, fig1$country, NA)
+
+# drop NA countries
+fig1a <- subset(fig1, !is.na(country))
+ggplot(fig1a, aes(x=year, y=reduceM, color=country)) + 
+    geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
+    geom_point(size=2) +
+    geom_line() +
+    labs(title = "Support for Redistribution Over Time") +
+    ylab(label = "Mean Support")
+
 ```
 
 
@@ -136,4 +172,76 @@ kable_styling(cor1k)
 ```
 
 
+## Group Comparisons
 
+Take some basic social groups just for show. (coded above to make easier) 
+
+Group1. Impoverished, Struggling = ISEI < 60, less-part-time or unemp or disabled/sick
+Group2. Full-time workers = ISEI < 45, full-time
+Group3. High status = ISEI > 72
+
+### Fig 2. Germany
+
+This is problematic. Should be split by East and West Germany
+
+```{r grouptest}
+# make a grouping variable 
+df <- df %>%
+  mutate(groups = ifelse((isei < 60 & wrkst == 3) | (isei < 60 & wrkst == 5) | (isei < 60 & wrkst == 9), 1, ifelse(isei < 45 & wrkst == 1, 2, ifelse(isei > 72, 3, 4))),
+         groups = ifelse(is.na(groups), 4, groups))
+
+fig2 <- df %>%
+  group_by(cyear, groups) %>%
+    mutate(reduceM = mean(reduce, na.rm = T),
+           reduceSE = (sd(reduce, na.rm = T)/sqrt(length(which(!is.na(reduce))))))
+
+fig2 <- dplyr::select(fig2, year, cyear, lab, reduceM, reduceSE, wave, cntry, groups)
+
+fig2 <- aggregate(fig2,  by=list(fig2$cyear,fig2$groups), FUN=mean, na.rm=T)
+
+fig2de <- subset(fig2, cntry == 276)
+fig2de$groups <- as.factor(fig2de$groups)
+
+ggplot(fig2de, aes(x=year, y=reduceM, color=groups)) + 
+    geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
+    geom_point(size=2) +
+    geom_line() +
+    labs(title = "Support for Redistribution Over Time, Germany") +
+    ylab(label = "Mean Support") +
+    scale_color_hue(labels = c("Marginal", "Blue-collar", "High Status", "other"))
+
+```
+
+
+### Fig 3. Great Britain
+
+```{r fig3}
+fig2gb <- subset(fig2, cntry == 826)
+fig2gb$groups <- as.factor(fig2gb$groups)
+
+ggplot(fig2gb, aes(x=year, y=reduceM, color=groups)) + 
+    geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
+    geom_point(size=2) +
+    geom_line() +
+    labs(title = "Support for Redistribution Over Time, Great Britain") +
+    ylab(label = "Mean Support") +
+    scale_color_hue(labels = c("Marginal", "Blue-collar", "High Status", "other"))
+```
+
+
+### Fig 4. United States
+
+This graph indicates there is a problem with our conversion. there are no ISEI scores below 45...
+
+```{r fig4}
+fig2us <- subset(fig2, cntry == 840)
+fig2us$groups <- as.factor(fig2us$groups)
+
+ggplot(fig2us, aes(x=year, y=reduceM, color=groups)) + 
+    geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
+    geom_point(size=2) +
+    geom_line() +
+    labs(title = "Support for Redistribution Over Time, United States") +
+    ylab(label = "Mean Support") +
+    scale_color_hue(labels = c("Marginal", "Blue-collar", "High Status", "other"))
+```
