@@ -108,7 +108,7 @@ tab2_4 <- summarise_all(tab2, funs(sum(!is.na(.))))
 tab2_1 <- as.data.frame(t(round(tab2_1, 2)))
 tab2_1.1 <- as.data.frame(t(round(tab2_1.1, 2)))
 tab2_2 <- as.data.frame(t(round(tab2_2, 0)))
-tab2_3 <- as.data.frame(t(tab2_3))
+tab2_3 <- as.data.frame(t(round(tab2_3, 0)))
 tab2_4 <- as.data.frame(t(tab2_4))
 tab2_0 <- as.data.frame(c("Year","Age, in years", "Female", "Education, in years", "Children", "Married", "Indiv. Earnings, country-Z", "Household Earnings, country-Z", "Occ. Status, ISEI", "EGP - Unskilled", "EGP - Skilled", "EGP - Self/Other", "EGP - Routine", "EGP - Service II", "EGP - Service I", "Work - Full-time", "Work - Part-Time", "Work - Less-part-time", "Work - Unemployed", "Work - School/Training", "Work - Retired", "Work - Homecare/Family help", "Work - Disabled", "Work - Other/NA", "Hours Worked", "Union", "Parent", "DV - Support Redistribution"))
 # Bind into table
