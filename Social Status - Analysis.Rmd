@@ -79,7 +79,7 @@ Final coding of variable 'wrkst'
 
 
 ```{r tbl2, echo = T}
-tab2 <- dplyr::as.tbl(dplyr::select(df, year, ageC, female, educyrs, degree, child, married, incZ, hincZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, reduce))
+tab2 <- dplyr::as.tbl(dplyr::select(df, year, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, reduce))
 # make categories out of categorical variables
 tab2 <- tab2 %>%
   mutate(egp_un = as.numeric(egp6 == "Unskilled"),
@@ -97,7 +97,7 @@ tab2 <- tab2 %>%
          wk_home = as.numeric(wrkst == 8),
          wk_disab = as.numeric(wrkst == 9),
          wk_other = as.numeric(wrkst == 10))
-tab2 <- dplyr::select(tab2, year, ageC, female, educyrs, child, married, incZ, hincZ, isei, egp_un, egp_skl, egp_othr, egp_rou, egp_svc2, egp_svc1, wk_full:wk_other, wrkhrs, union, sparent, reduce)
+tab2 <- dplyr::select(tab2, year, ageC, female, educyrs, child, married, rincZ, hincZ, isei, egp_un, egp_skl, egp_othr, egp_rou, egp_svc2, egp_svc1, wk_full:wk_other, wrkhrs, union, sparent, reduce)
 # Get summary stats
 tab2_1 <- summarise_all(tab2, list(mean), na.rm = T)
 tab2_1.1 <- summarise_all(tab2, list(sd), na.rm = T)
