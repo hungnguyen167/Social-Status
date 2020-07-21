@@ -182,11 +182,16 @@ socin$hhcycle_us92 <- socin2$child2
 socin$child <- coalesce(socin$child, socin$hhcycle_us92)
 
 ## Respondent income
+# Respondent income
 temp <- dplyr::select(socin2, AT_RIN87:US_RIN09)
 centered.temp <- as.data.frame(scale(temp, center = TRUE, scale = TRUE)) # standardize
 socin <- cbind(socin,centered.temp)
-socin$incZ = rowMeans(socin[,which(names(socin)=="AT_RIN87"):which(names(socin)=="US_RIN09")], na.rm = T)
-socin$incZ = ifelse(socin$incZ=="NaN",NA,socin$incZ)
+socin$rincZ = rowMeans(socin[,which(names(socin)=="AT_RIN87"):which(names(socin)=="US_RIN09")], na.rm = T)
+socin$rincZ = ifelse(socin$rincZ=="NaN",NA,socin$rincZ)
+
+# trim extreme values
+socin$rincZ = ifelse(socin$rincZ > 10, 10, socin$rincZ)
+
 
 
 ## Household income
@@ -405,7 +410,7 @@ socin <- socin %>%
 
 # Select relevant variables
 
-socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, incZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
 
 ```
 
