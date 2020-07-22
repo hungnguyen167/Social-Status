@@ -314,7 +314,7 @@ linearHypothesis(m1, c(paste0("groups2 =", reduce_test)))
 ```{r m1_wald2}
 
 # test that both poverty and blue-collar group are significantly dif from sample mean
-linearHypothesis(m1, c(paste0("groups2 =", reduce_test), paste0("groups4 =", reduce_test)))
+linearHypothesis(m1, c(paste0("groups1 =", reduce_test), paste0("groups2 =", reduce_test)))
 
 ```
 
@@ -366,7 +366,7 @@ Here the 'a' is the name we give to a parameter to make groups equal. As we want
 ```{r m3_sem}
 
 
-m3 <- 'reduce ~ a*group1 + a*group2 + a*group3'
+m3 <- 'reduce ~ a*group1 + 0.239*group2 + a*group3'
 
 m3 <- sem(m3, data = de10)
 
