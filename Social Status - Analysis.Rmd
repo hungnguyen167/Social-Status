@@ -39,6 +39,7 @@ knitr::opts_chunk$set(message = F, warning = F)
 
 wd <- "C:/data/"
 
+
 ```
 
 
@@ -172,7 +173,9 @@ kable_styling(cor1k)
 ```
 
 
-## Group Comparisons
+# Group Comparisons
+
+## 'Playing' Around with Groups/Visualizations
 
 Take some basic social groups just for show. (coded above to make easier) 
 
@@ -213,6 +216,7 @@ ggplot(fig2de, aes(x=year, y=reduceM, color=groups)) +
 ```
 
 
+
 ### Fig 3. Great Britain
 
 ```{r fig3}
@@ -245,3 +249,163 @@ ggplot(fig2us, aes(x=year, y=reduceM, color=groups)) +
     ylab(label = "Mean Support") +
     scale_color_hue(labels = c("Marginal", "Blue-collar", "High Status", "other"))
 ```
+
+
+## Different Approaches to Group Comparison
+
+Three types of comparison:
+1. Null Hypothesis - Least Squared - Line of best fit
+2. Testing an Assumption - two groups are equal
+3. Bayesian Estimation - posterior probability/distribution
+
+
+### 1. NHST - Null Hypothesis Significance Testing
+
+We want to investigate if two groups are different. The null hypothesis is that they are not different. We have a linear model like such:
+
+$Y_{gincdiff} = a_{intercept (reference-category)} + X_{1.poverty} + X_{2.blue-collar} + X_{4.others} + e$
+
+In this example the 'line-of-best-fit' will explain the average level of support for redistribution in each group. The null hypothesis is that the three $X$ groups are not different from the omitted category $X_{3.high-status}$
+
+The error term $e$ is the difference between the predicted values and the observed values in the data.
+
+Here we look at the case of Germany 2010.
+
+```{r nhst}
+
+de10 <- subset(df, year == 2010 & cntry == 276)
+
+# remove all missing values for now
+
+de10 <- completeFun(de10, "reduce")
+de10$groups <- as.factor(de10$groups)
+
+# estimate means across groups ('lines-of-best-fit') - OLS
+
+de10$groups <- relevel(de10$groups, ref = 3)
+
+m1 <- lm(reduce ~ groups, data = de10)
+
+summary(m1)
+
+
+```
+
+
+### Alternative Hypothesis Testing - Wald Tests
+
+We can also compare the groups to a pre-specified value, like the sample mean. These are known as Likelihood Ratio and Wald tests
+
+```{r m1_wald}
+
+# get sample mean
+
+reduceM <- mean(de10$reduce)
+
+# calculate test statistic, it will be the sample mean minus the intercept from m1
+
+reduce_test <- reduceM - m1$coefficients[[1]]
+
+# test that poverty group is sign different from sample mean
+linearHypothesis(m1, c(paste0("groups2 =", reduce_test)))
+
+```
+
+```{r m1_wald2}
+
+# test that both poverty and blue-collar group are significantly dif from sample mean
+linearHypothesis(m1, c(paste0("groups2 =", reduce_test), paste0("groups4 =", reduce_test)))
+
+```
+
+```{r m1_wald2}
+
+# test that all three groups are different from sample mean 
+linearHypothesis(m1, c(paste0("groups1 =", reduceM), paste0("groups2 =", reduce_test), paste0("groups4 =", reduce_test)))
+
+```
+
+
+### Constraints - Structural Equation Modeling
+
+
+#### M2. Baseline 'free' model.
+
+Maximum likelihood (ML) estimation as opposed to OLS. They are similar when residuals are normally distributed. However, in the presence of heteroskedasticity (when error variance differs markedly across levels fo predictor variables) they diverge. ML often becomes prefereable in these cases. ML uses the variance of the sample. If it is skewed (leading to skewed residuals that is) then ML iterates (its guesses) until it finds a distribution that is most likely the source of the data-generating process that led to observation of these values. (some reading on ML https://towardsdatascience.com/probability-concepts-explained-maximum-likelihood-estimation-c7b4342fdbb1_)
+
+In our simple example this just doesn't matter much, but as we add more variables it probably does.
+
+
+```{r m2_sem}
+# lavaan does not accept factor variables so we have to recode manually
+
+de10 <- de10 %>%
+  mutate(group1 = ifelse(groups == 1, 1, 0),
+         group2 = ifelse(groups == 2, 1, 0),
+         group3 = ifelse(groups == 3, 1, 0),
+         group4 = ifelse(groups == 4, 1, 0)
+  )
+
+# run a simple linear model
+
+m2 <- 'reduce ~ group1 + group2 + group4'
+
+m2 <- sem(m2, data = de10)
+
+summary(m2)
+
+# notice that there are 'iterations' taking place until the ML estimate is maximized.
+```
+
+#### M3. Equality Constraints Across Groups
+
+In SEM we can design models that force groups to be equal (i.e. make a hypothesis that in the real world, the people from whom we sampled these data have the same (distribution of) attitudes toward redistribution (i.e., same mean (and if we want, variance)))
+
+Here the 'a' is the name we give to a parameter to make groups equal. As we want these three groups to be equal and do not care about the group 'other' we now put these three groups into the model as variables. Doing this does not change anything about the fit of the model, but if we were to omit group3 as we have so far, we would be allowing group3 to be different form groups 1,2 & 4 which is not what we want. 
+
+```{r m3_sem}
+
+
+m3 <- 'reduce ~ a*group1 + a*group2 + a*group3'
+
+m3 <- sem(m3, data = de10)
+
+summary(m3)
+
+# notice all groups now have identical coefficients
+```
+
+
+By constraining the coefficients we are certain to get predicted values that are not quite as good at maximizing fit as if we let each group be freely estimated. The question now becomes how do these predicted values now look when the equality constraints are applied. We can check this in several ways.  When we apply the equality constraints, we are forcing the correlation matrix to change (sometimes only slightly and other times quite a lot). If we have to change the matrix dramatically we are probably not producing an accurate data-generating model. 
+
+#### Looking at Observed versus Implied Correlations
+
+
+##### Observed Covariances - in the data
+```{r m3_ocov}
+
+# first extract only those variables we want to see
+de10s <- dplyr::select(de10, reduce, group1, group2, group3, group4)
+m3cov <- round(cov(de10s, use = "pairwise.complete.obs"), 3)
+
+```
+
+
+##### Implied Covariances - as a result of our equality constraints
+
+```{r m3_cov}
+m3covI <- as.matrix(fitted(m3))
+
+tab_m3 <- rbind(m3cov, unlist(m3covI))
+
+kable(tab_m3)
+
+```
+
+
+#### Testing Whether the two covariance matrixes are significantly different
+
+```{r m3_chitest}
+compareFit(m2, m3)
+```
+
