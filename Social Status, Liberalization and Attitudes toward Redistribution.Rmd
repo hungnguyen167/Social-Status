@@ -1,6 +1,8 @@
 ---
 title: "Social Status, Liberalization and Attitudes toward Redistribution"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 "Social Status, Liberalization and Attitudes toward Redistribution"
@@ -40,30 +42,19 @@ Netherlands 2009 added manually "ZA5995_v1-0-0.dta"
 
 
 
-Notes for Hung:
-NEW:
+Notes:
 
-A. Changed educyrs to a maximum of 23
-B. educyrs 95 = 8, 96 = 13
-C. replaced some of my rincZ coding as it needed to be trimmed and cleaned. This made me discover a different problem: the coding is very different across countries and surveys. I opted for recoding all income into **deciles**. 
-D. Can you create a variable that indicates East and West Germany?
+A. ISCO in env93 is coded in mixed ways. I have listed them at the top of the code chunk (copied from the code book). First, the standard isco68 countries are in *3-digit ISCO* so they need to be multiplied by 10 before converting to isco88. Meanwhile some other countries are already in isco88 so they need to be directly transfered to the isco88 variable without transformation.
 
-OLD: 
+B. Need to use the supplementary file to divide East and West Germany at some point
 
-1. Variable 'child' has too many NA, do you know why? Can you fix it? It should have none, or almost none. 
+C. We should see if there is any way to remove the NA from child, maybe they can safely be recoded to zero? 
 
--> Hung: Because the variable hhcycle has many NAs (almost half) and child is coded based on hhcycle
+D. I changed the variable 'year' to reflect the actual year when the survey was fielded in each country - sometimes it is not the same as 'wave', but having the year accurate as possible makes it better for merging in macro data. 
 
+E. Made a variable 'reduce' that is = to 'incdiff' but has 9 recoded into NA and has 8 recoded into neutral, also reversed the coding so that higher values = more agreement
 
-
-5. I changed the variable 'year' to reflect the actual year when the survey was fielded in each country - sometimes it is not the same as 'wave', but having the year accurate as possible makes it better for merging in macro data. 
-
-6. Made a variable 'reduce' that is = to 'incdiff' but has 9 recoded into NA and has 8 recoded into neutral, also reversed the coding so that higher values = more agreement
-
-7. Recoded 'wrkst' so that they matched across all surveys (not just full-time, part-time, less than part time). Env00 uses a slightly different list than the others. 
-
-
-Hung: Now wrkst doesn't have value "4". Consider recoding
+F. Recoded 'wrkst' so that they matched across all surveys (not just full-time, part-time, less than part time). Env00 uses a slightly different list than the others. Now wrkst doesn't have value "4". 
 
 
 ## SETUP
@@ -114,6 +105,8 @@ dk99 <- read_dta(paste(wd, "ZA3562_v1-0-0.dta", sep=""))
 ie99 <- read_dta(paste(wd, "ZA3613_v1-0-0.dta", sep=""))
 nl09 <- read_dta(paste(wd, "ZA5995_v1-0-0.dta", sep=""))
 ```
+
+
 ## Data transformation - Social Inequality 
 
 ```{r socin, include = TRUE, warning=F,message=F}
@@ -168,7 +161,8 @@ socin <- socin %>%
        hhcycle %in% c(1,5:95) ~ 0,
        TRUE ~ NA_real_
      ),
-     wrkst = ifelse(wrkst == 4, 8, wrkst) # recode helping fam member into housework category to make compatible with environment category 
+     wrkst = ifelse(wrkst == 4, 8, wrkst), # recode helping fam member into housework category to make compatible with environment category
+     wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs) # trim workhrs
   )
 # integrate hhcycle from socin2 (US92)
 socin2 <- socin2 %>%
@@ -379,7 +373,7 @@ socin <- socin %>%
 
 # Select relevant variables
 
-socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88)
 
 ```
 
@@ -444,6 +438,7 @@ dk99 <- dk99 %>%
     rincZ = ntile(rincome, 10), # deciles
     hincZ = ntile(income, 10),
     wrkst = ifelse(wrkst == 4, 8, wrkst),
+    wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
     egp6 = car::recode(egp, recodes = egp6),
     isei = occupar::isco88toISEI92(isco88),
@@ -464,7 +459,7 @@ dk99 <- dk99 %>%
   )  
 
 
-dk99 <- dplyr::select(dk99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+dk99 <- dplyr::select(dk99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88)
 
 # Ireland 1999
 
@@ -519,6 +514,7 @@ ie99 <- ie99 %>%
     rincZ = ntile(rincome, 10),
     hincZ = ntile(income, 10),
     wrkst = ifelse(wrkst == 4, 8, wrkst),
+    wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
     egp6 = car::recode(egp, recodes = egp6),
     isei = occupar::isco88toISEI92(isco88),
@@ -533,7 +529,7 @@ ie99 <- ie99 %>%
   )
 
 
-ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88)
 
 # Netherlands 
 # nelab <- lapply(nl09, attr, "label") 
@@ -557,7 +553,7 @@ nl09 <- nl09 %>%
      ),
     female = sex - 1,
     educyrs = case_when(   
-       educyrs > 22 & educyrs < 94 ~ 23, 
+       educyrs > 22 & educyrs < 95 ~ 23, 
        educyrs == 95 ~ 8,
        educyrs == 96 ~ 13,
        educyrs %in% c(97:99) ~ NA_real_,
@@ -591,6 +587,7 @@ nl09 <- nl09 %>%
     rincZ = ntile(nl_rinc, 10),
     hincZ = ntile(nl_inc, 10),
     wrkst = ifelse(wrkst == 4, 8, wrkst),
+    wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
     egp6 = car::recode(egp, recodes = egp6),
     isei = occupar::isco88toISEI92(isco88),
@@ -604,7 +601,7 @@ nl09 <- nl09 %>%
     m_isei = occupar::isco88toISEI92(misco88),
   )
 
-nl09 <- dplyr::select(nl09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)
+nl09 <- dplyr::select(nl09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88)
 
 
 ## Merge data sets  
@@ -623,6 +620,23 @@ df <- df %>%
 ```
 
 ## Data transformation - Environment 93
+
+Occupation codes are mixed:
+
+Respondent's Occupation: ILO/ ISCO - International Code 1968
+
+CDN,IL,E,NZ: Present job - ILO/ISCO 1968
+D,N,BG,CZ: Present or last job - ILO/ISCO 1968
+USA,H: Present or last job - 4-digit ILO/ISCO 1968
+AUS,IRL,SLO,PL:Present or last occupation - *ISCO 1988*
+RUS: Present main job - *ISCO 1988*
+
+# Missing
+99997. Refused
+99998. Not classifiable; inadequately described, DK
+99999. NA
+00000. NAP (not in labour force, never had a job)
+Not available
 
 
 ```{r env93, include = TRUE, warning=F,message=F}
@@ -658,7 +672,7 @@ env93 <- env93 %>%
     educyrs = v204,
 # It's a little problematic here because in GB or AUS, they cut at 14 and 20     
     educyrs = case_when(
-       educyrs > 22 & educyrs < 94 ~ 23, 
+       educyrs > 22 & educyrs < 95 ~ 23, 
        educyrs == 95 ~ 8,
        educyrs == 96 ~ 13,
        educyrs %in% c(97:99) ~ NA_real_,
@@ -680,7 +694,8 @@ env93 <- env93 %>%
       v330 %in% c(1,5:95) ~ 0,
       TRUE ~ NA_real_
     ),
-    wrkhrs = v224,
+    wrkhrs = v224, 
+    wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
     wrkst = ifelse(v212 == 4, 8, v212)
   )
 # Occupation codes
@@ -698,6 +713,12 @@ env93$isco88 <- occupar::isco68to88(isco68 = env93$isco68, display.nas = T)
 env93$fisco88 <- occupar::isco68to88(isco68 = env93$fisco68, display.nas = T)
 env93$misco88 <- occupar::isco68to88(isco68 = env93$misco68, display.nas = T)
 
+# ISCO68 problems
+
+
+# In Germany, Bulgaria, isco68 appears to be 3-digit, multiply by 10 but check this in the GESIS documentation some day
+
+env93$isco68 <- ifelse(env93$cntry == 276 | env93$cntry == 100 | env93$cntry == 124 | env93$cntry == 376 | env93$cntry == 554 | env93$cntry == 578 | env93$cntry == 705 | env93$cntry == 724, env93$isco68 * 10, env93$isco68)
 # Australia: ASCO
 
 # Japan 
@@ -811,7 +832,7 @@ env93 <- env93 %>%
 
 # Select relevant variables 
 
-env93 <- dplyr::select(env93,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, v231, v253))
+env93 <- dplyr::select(env93,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, v231, v253, isco88))
 
 ```
 
@@ -850,7 +871,7 @@ env00 <- env00 %>%
      ),
     educyrs = v204,
     educyrs = case_when(
-       educyrs > 22 & educyrs < 94 ~ 23, 
+       educyrs > 22 & educyrs < 95 ~ 23, 
        educyrs == 95 ~ 8,
        educyrs == 96 ~ 13,
        educyrs %in% c(97:99) ~ NA_real_,
@@ -873,7 +894,9 @@ env00 <- env00 %>%
       TRUE ~ NA_real_
     ),
     wrkhrs = v238,
-    wrkst = ifelse(v231 == 4, 8, v231)
+    wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
+    wrkst = ifelse(v231 == 4, 8, v231),
+    isco88 = v233,
   )
 # ISCO88 to EGP
 
@@ -914,7 +937,7 @@ env00 <- env00 %>%
 
 
 # Select relevant variables 
-env00 <- dplyr::select(env00,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff)) 
+env00 <- dplyr::select(env00,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88)) 
 ```
 
 
@@ -945,7 +968,7 @@ env10 <- env10 %>%
        TRUE ~ NA_real_
      ),
     educyrs = case_when(  
-       educyrs > 22 & educyrs < 94 ~ 23, 
+       educyrs > 22 & educyrs < 95 ~ 23, 
        educyrs == 95 ~ 8,
        educyrs == 96 ~ 13,
        educyrs %in% c(97:99) ~ NA_real_,
@@ -993,7 +1016,8 @@ env10 <- env10 %>%
       mainstat == 5 ~ 9,
       mainstat %in% c(8,9) ~ 10,
       TRUE ~ NA_real_
-    )
+    ),
+    wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
   ) 
 
 # ISCO88 to EGP
@@ -1041,7 +1065,7 @@ env10 <- env10 %>%
 
 
 # Select relevant variables 
-env10 <- dplyr::select(env10,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff))
+env10 <- dplyr::select(env10,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88))
 
 ```
 ## Merge environment data sets and social inequality cumulative data set and save 
@@ -1085,17 +1109,86 @@ df$country <- countrycode(df$cntry, "iso3n", "country.name")
 df$incdiff <- ifelse(df$incdiff == 9, NA, df$incdiff)
 df$reduce <- car::recode(df$incdiff, recodes = '1 = 5; 2 = 4; 3 = 3; 8 = 3; 4 = 2; 5 = 1')
 
-# clean up variables
 
-## Save df
-save(df, file = paste0(wd,"socstat.Rda"))
+```
+
+### Social Groups
+
+Recodes from
+
+Schwander, Hanna, and Silja Häusermann. 2013. “Who Is in and Who Is out? A Risk-Based Conceptualization of Insiders and Outsiders:” Journal of European Social Policy 23(8):248–69.
+
+Stata code here: http://www.schwander-hanna.ch/Data.html
+
+They recode ISCO 4-digit into 2-digit.
+
+Then they create these 'classes' based on 
+
+Oesch, D. (2006) Redrawing the Class Map: Stratification and Institutions in Germany, Britain, Sweden and Switzerland. London: Palgrave Macmillan
+
+1 "Capital accumulators" 
+2 "Mixed service functionaires" 
+3 "Blue and lower white collar" 
+4 "Socio-cultural (semi-)professionals" 
+5 "Low service functionaires"
+
+
+
+tab isco88_2d if groups==. //Check whether all ISCO groups are used 
+/* Three occupational groups are omitted: 0-3 (Armed Forces), 14, 44.
+Armed Forces are supposed to be missings; 44 was put into class group 1 (Oesch class 10) and 44 into class group 2 (Oesch class 11)*/
+
+label var groups "Respondent's socio-economic group"
+
+#delimit ;
+label define groups 
+1 "Capital accumulators" 
+2 "Mixed service functionaires" 
+3 "Blue and lower white collar" 
+4 "Socio-cultural (semi-)professionals" 
+5 "Low service functionaires"
+
+```{r sgroups}
+
+# create ISCO88 2-digit
+
+
+df$isco88_2d <- ifelse(df$isco88 < 1000, NA, df$isco88)
+df$isco88_2d <- round(df$isco88_2d/100, 0)
+# create Schwander and Haeusermann coding groups
+
+df <- df %>%
+  mutate(sh_groups = case_when(
+    isco88_2d==11 | isco88_2d==12 | isco88_2d==13 | isco88_2d==21 | isco88_2d==22 | isco88_2d==24 | isco88_2d==34 ~ 1,
+    isco88_2d==31 | isco88_2d==41 | isco88_2d==42 ~ 2,
+    isco88_2d==60 | isco88_2d==61 | isco88_2d==70 | isco88_2d==71 | isco88_2d==72 | isco88_2d==73 | isco88_2d==74 | isco88_2d==80 | isco88_2d==81 | isco88_2d==82 | isco88_2d==83 | isco88_2d==92 | isco88_2d==93 ~ 3,
+    isco88_2d==23 | isco88_2d==32 | isco88_2d==33 ~ 4,
+    isco88_2d==51 | isco88_2d==52 | isco88_2d==91 ~ 5)
+  )
+
+# Create dummies
+
+df <- df %>%
+  mutate(sh_groups_1 = ifelse(sh_groups == 1, 1, ifelse(is.na(sh_groups), NA, 0)),
+         sh_groups_2 = ifelse(sh_groups == 2, 1, ifelse(is.na(sh_groups), NA, 0)),
+         sh_groups_3 = ifelse(sh_groups == 3, 1, ifelse(is.na(sh_groups), NA, 0)),
+         sh_groups_4 = ifelse(sh_groups == 4, 1, ifelse(is.na(sh_groups), NA, 0)),
+         sh_groups_5 = ifelse(sh_groups == 5, 1, ifelse(is.na(sh_groups), NA, 0))
+  )
 
 ```
 
 
 
+Save
 
+```{r save}
 
+# clean up variables
+
+## Save df
+save(df, file = paste0(wd,"socstat.Rda"))
+```
 
 
 
