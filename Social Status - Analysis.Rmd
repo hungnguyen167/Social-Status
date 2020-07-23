@@ -72,7 +72,10 @@ kable_styling(tab1)
 
 ## Table 2. Descriptive Statistics
 
-Final coding of variable 'wrkst'
+Final coding 
+
+**wrkst**
+
 1 Employed, full-time
 2 Employed, part-time
 3 Employed, less than part-time
@@ -83,11 +86,18 @@ Final coding of variable 'wrkst'
 9 Permanently disabled
 10 Other, not in labour force, or refused, don't know, no answer
 
+**sh_groups
+
+1 "Capital accumulators" 
+2 "Mixed service functionaires" 
+3 "Blue and lower white collar" 
+4 "Socio-cultural (semi-)professionals" 
+5 "Low service functionaires"
 
 ```{r tbl2, echo = T}
-tab2 <- dplyr::as.tbl(dplyr::select(df, year, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, union, sparent, wrkhrs, wrkst, reduce))
+
 # make categories out of categorical variables
-tab2 <- tab2 %>%
+tab2 <- df %>%
   mutate(egp_un = as.numeric(egp6 == "Unskilled"),
          egp_skl = as.numeric(egp6 == "Skilled"),
          egp_othr = as.numeric(egp6 == "Self"),
@@ -103,7 +113,9 @@ tab2 <- tab2 %>%
          wk_home = as.numeric(wrkst == 8),
          wk_disab = as.numeric(wrkst == 9),
          wk_other = as.numeric(wrkst == 10))
-tab2 <- dplyr::select(tab2, year, ageC, female, educyrs, child, married, rincZ, hincZ, isei, egp_un, egp_skl, egp_othr, egp_rou, egp_svc2, egp_svc1, wk_full:wk_other, wrkhrs, union, sparent, reduce)
+
+tab2 <- dplyr::select(tab2, year, ageC, female, educyrs, child, married, rincZ, hincZ, isei, egp_un, egp_skl, egp_othr, egp_rou, egp_svc2, egp_svc1, sh_groups_1:sh_groups_5, wk_full:wk_other, wrkhrs, union, sparent, reduce)
+
 # Get summary stats
 tab2_1 <- summarise_all(tab2, list(mean), na.rm = T)
 tab2_1.1 <- summarise_all(tab2, list(sd), na.rm = T)
@@ -116,7 +128,7 @@ tab2_1.1 <- as.data.frame(t(round(tab2_1.1, 2)))
 tab2_2 <- as.data.frame(t(round(tab2_2, 0)))
 tab2_3 <- as.data.frame(t(round(tab2_3, 0)))
 tab2_4 <- as.data.frame(t(tab2_4))
-tab2_0 <- as.data.frame(c("Year","Age, in years", "Female", "Education, in years", "Children", "Married", "Indiv. Earnings, country-Z", "Household Earnings, country-Z", "Occ. Status, ISEI", "EGP - Unskilled", "EGP - Skilled", "EGP - Self/Other", "EGP - Routine", "EGP - Service II", "EGP - Service I", "Work - Full-time", "Work - Part-Time", "Work - Less-part-time", "Work - Unemployed", "Work - School/Training", "Work - Retired", "Work - Homecare/Family help", "Work - Disabled", "Work - Other/NA", "Hours Worked", "Union", "Parent", "DV - Support Redistribution"))
+tab2_0 <- as.data.frame(c("Year","Age, in years", "Female", "Education, in years", "Children", "Married", "Indiv. Earnings, country-Z", "Household Earnings, country-Z", "Occ. Status, ISEI", "EGP - Unskilled", "EGP - Skilled", "EGP - Self/Other", "EGP - Routine", "EGP - Service II", "EGP - Service I", "SH1 - Capital Accumulator", "SH2 - Mixed Service", "SH3 - Blue-collar/lower", "SH4 - SC Semi-Professional", "SH5 - Lower Service", "Work - Full-time", "Work - Part-Time", "Work - Less-part-time", "Work - Unemployed", "Work - School/Training", "Work - Retired", "Work - Homecare/Family help", "Work - Disabled", "Work - Other/NA", "Hours Worked", "Union", "Parent", "DV - Support Redistribution"))
 # Bind into table
 tab2f <- cbind(tab2_0,tab2_1,tab2_1.1,tab2_2,tab2_3,tab2_4)
 colnames(tab2f) <- c("Variable","Mean","SD","Min","Max","N")
@@ -175,43 +187,38 @@ kable_styling(cor1k)
 
 # Group Comparisons
 
-## 'Playing' Around with Groups/Visualizations
 
-Take some basic social groups just for show. (coded above to make easier) 
-
-Group1. Impoverished, Struggling = ISEI < 60, less-part-time or unemp or disabled/sick
-Group2. Full-time workers = ISEI < 45, full-time
-Group3. High status = ISEI > 72
+1 "Capital accumulators" 
+2 "Mixed service functionaires" 
+3 "Blue and lower white collar" 
+4 "Socio-cultural (semi-)professionals" 
+5 "Low service functionaires"
 
 ### Fig 2. Germany
 
 This is problematic. Should be split by East and West Germany
 
 ```{r grouptest}
-# make a grouping variable 
-df <- df %>%
-  mutate(groups = ifelse((isei < 60 & wrkst == 3) | (isei < 60 & wrkst == 5) | (isei < 60 & wrkst == 9), 1, ifelse(isei < 45 & wrkst == 1, 2, ifelse(isei > 72, 3, 4))),
-         groups = ifelse(is.na(groups), 4, groups))
 
 fig2 <- df %>%
-  group_by(cyear, groups) %>%
+  group_by(cyear, sh_groups) %>%
     mutate(reduceM = mean(reduce, na.rm = T),
            reduceSE = (sd(reduce, na.rm = T)/sqrt(length(which(!is.na(reduce))))))
 
-fig2 <- dplyr::select(fig2, year, cyear, lab, reduceM, reduceSE, wave, cntry, groups)
+fig2 <- dplyr::select(fig2, year, cyear, lab, reduceM, reduceSE, wave, cntry, sh_groups)
 
-fig2 <- aggregate(fig2,  by=list(fig2$cyear,fig2$groups), FUN=mean, na.rm=T)
+fig2 <- aggregate(fig2,  by=list(fig2$cyear,fig2$sh_groups), FUN=mean, na.rm=T)
 
 fig2de <- subset(fig2, cntry == 276)
-fig2de$groups <- as.factor(fig2de$groups)
+fig2de$sh_groups <- as.factor(fig2de$sh_groups)
 
-ggplot(fig2de, aes(x=year, y=reduceM, color=groups)) + 
+ggplot(fig2de, aes(x=year, y=reduceM, color=sh_groups)) + 
     geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
     geom_point(size=2) +
     geom_line() +
     labs(title = "Support for Redistribution Over Time, Germany") +
     ylab(label = "Mean Support") +
-    scale_color_hue(labels = c("Marginal", "Blue-collar", "High Status", "other"))
+    scale_color_hue(labels = c("Capital Accum.", "Mixed Srvc.", "Blue-collar/low", "Soc.Cult. Prof.", "Low Srvc."))
 
 ```
 
@@ -221,15 +228,15 @@ ggplot(fig2de, aes(x=year, y=reduceM, color=groups)) +
 
 ```{r fig3}
 fig2gb <- subset(fig2, cntry == 826)
-fig2gb$groups <- as.factor(fig2gb$groups)
+fig2gb$sh_groups <- as.factor(fig2gb$sh_groups)
 
-ggplot(fig2gb, aes(x=year, y=reduceM, color=groups)) + 
+ggplot(fig2gb, aes(x=year, y=reduceM, color=sh_groups)) + 
     geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
     geom_point(size=2) +
     geom_line() +
-    labs(title = "Support for Redistribution Over Time, Great Britain") +
+    labs(title = "Support for Redistribution Over Time, Germany") +
     ylab(label = "Mean Support") +
-    scale_color_hue(labels = c("Marginal", "Blue-collar", "High Status", "other"))
+    scale_color_hue(labels = c("Capital Accum.", "Mixed Srvc.", "Blue-collar/low", "Soc.Cult. Prof.", "Low Srvc."))
 ```
 
 
@@ -239,16 +246,27 @@ This graph indicates there is a problem with our conversion. there are no ISEI s
 
 ```{r fig4}
 fig2us <- subset(fig2, cntry == 840)
-fig2us$groups <- as.factor(fig2us$groups)
+fig2us$sh_groups <- as.factor(fig2us$sh_groups)
 
-ggplot(fig2us, aes(x=year, y=reduceM, color=groups)) + 
+ggplot(fig2us, aes(x=year, y=reduceM, color=sh_groups)) + 
     geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
     geom_point(size=2) +
     geom_line() +
-    labs(title = "Support for Redistribution Over Time, United States") +
+    labs(title = "Support for Redistribution Over Time, Germany") +
     ylab(label = "Mean Support") +
-    scale_color_hue(labels = c("Marginal", "Blue-collar", "High Status", "other"))
+    scale_color_hue(labels = c("Capital Accum.", "Mixed Srvc.", "Blue-collar/low", "Soc.Cult. Prof.", "Low Srvc."))
 ```
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## Different Approaches to Group Comparison
