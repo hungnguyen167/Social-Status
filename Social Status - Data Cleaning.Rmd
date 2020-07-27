@@ -202,8 +202,82 @@ socin$hincZ = ifelse(socin$hincZ=="NaN",NA,socin$hincZ)
 
 
 # Think about ISCED for education (see Schneider's work). #Hung# Two problems: (1) we would have to code each country-year separately; (2) more importantly, many countries don't record degrees higher than bachelor (master and doctoral), which are 7 and 8 in the ISCED 2011 coding scheme. For the mean time, I propose we use the variable degree instead.
+```
+
+## Occupation Coding Harmonization
+
+#### 1987
+AUS - ASCO1
+DEU, AUT, CHE, HUN - ISCO68
+GB - KOS 1980
+US - Census 1970 codes
+POL - handcodes [
+01 Professionals
+02 Managers
+03 Semiprofessionals white-collar
+04 Office workers
+05 Service workers manual/non-manual
+06 Owners of manufacturing, trades, artisans
+07 Foremen
+08 Skilled manual
+09 Semi-skilled manual
+10 Unskilled manual
+11 Farmers and family workers
+12 Agricultural laborers employed by farms
+]
+NET - handcodes [
+01 Manager 10 and more employees
+02 Manager 9 and less employees
+03 Professional
+04 Farmer
+05 Higher employee
+06 Intermediate employee
+07 Lower employee
+08 Skilled labourer
+09 Unskilled labourer
+]
+ITA - handcodes [
+*Entrepreneur*
+011 Entrepreneuers, manufacturers
+012 Independent professionals
+013 Authors, writers artists
+014 Proprietors, owners,drawer of rents, living from revenue
+*Professionals*
+021 Managers, officials, civil servants, administrators
+022 Professors, teachers
+023 Journalists
+024 Officers and non-commisioned officers in pro army
+025 Chief clerks, supervisors, office managers
+026 Employees, officials
+027 Clergymen
+*Workers, manual*
+031 Workers, operatives or similar
+032 Soldiers or similar
+033 Domestic servants, housemaids
+034 Day labor, farm, wage
+*Labourers, indep/self-emp*
+041 Retail traders, merchants, salesment (with trade/shop)
+042 Trade agents, sales reps (self-emp)
+043 Craftsmen
+044 Other self-emp without shop
+045 Family assistants
+046 Farmers, farm managers
+047 Farm labourers, family workers
+]
+
+#### 1992
+GB - SOC
+I - Italian Occupation Code
+S - Nordic Occupation Code NYK
+AUT, CAN, DEU, NET, BG, CS, USA, HUN - ISCO68
+AUS, POL, SLO, NZ, RUS - ISCO88
+
+#### 1999
 
 
+#### 2009
+
+```{r socinisco, include = TRUE, warning=F,message=F}
 ## Class scheme re-coding
 ## EGP
 #There are a few cases of unspecified occupational coding schemes, including Australia 1987, Italy 1987 & 1992, Great Britain 1987 & 1992, the United States 1987, Bulgaria 1999, France 1999, Japan 1999, and Sweden 1992. We integrated into the main data set. 
