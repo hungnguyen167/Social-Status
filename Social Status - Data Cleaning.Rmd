@@ -365,7 +365,7 @@ socin$jp_occ <- zap_labels(socin2$JP_OCC99)
 # Here is Nate's code to create rough ISCO88-2 categories
 socin <- socin %>%
   mutate(
-    isco88_2 = case_when(
+    isco88_2digit = case_when(
       au_occ >= 1100 & au_occ <= 1199 ~ 11, 
       au_occ >= 1200 & au_occ <= 1299 ~ 14,
       au_occ >= 1300 & au_occ <= 1303 ~ 12,
@@ -420,16 +420,16 @@ socin <- socin %>%
 
 
 
-# Recoding to isco88_2: Italy 1987/Italy 1992 (not found)
+# Recoding to isco88_2digit: Italy 1987/Italy 1992 (not found)
 
 
-# Recoding to isco88_2: Great Britain 1987/1992 (not found)
+# Recoding to isco88_2digit: Great Britain 1987/1992 (not found)
 
 
-# Recoding to isco88: Poland 1987 (manually code to EGP6?)
+# Recoding to isco88_2digit: Poland 1987 (manually code to EGP6?)
 
 
-# Recoding to isco88: U.S 1987
+# Recoding to isco88 & isco88_2digit: U.S 1987
 
 # From US87 to USt
 
