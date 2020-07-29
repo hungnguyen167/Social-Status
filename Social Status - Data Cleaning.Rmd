@@ -236,34 +236,7 @@ NET - handcodes [
 08 Skilled labourer
 09 Unskilled labourer
 ]
-ITA - handcodes [
-*Entrepreneur*
-011 Entrepreneuers, manufacturers
-012 Independent professionals
-013 Authors, writers artists
-014 Proprietors, owners,drawer of rents, living from revenue
-*Professionals*
-021 Managers, officials, civil servants, administrators
-022 Professors, teachers
-023 Journalists
-024 Officers and non-commisioned officers in pro army
-025 Chief clerks, supervisors, office managers
-026 Employees, officials
-027 Clergymen
-*Workers, manual*
-031 Workers, operatives or similar
-032 Soldiers or similar
-033 Domestic servants, housemaids
-034 Day labor, farm, wage
-*Labourers, indep/self-emp*
-041 Retail traders, merchants, salesment (with trade/shop)
-042 Trade agents, sales reps (self-emp)
-043 Craftsmen
-044 Other self-emp without shop
-045 Family assistants
-046 Farmers, farm managers
-047 Farm labourers, family workers
-]
+
 
 #### 1992
 GB - SOC
@@ -284,6 +257,10 @@ AUS, POL, SLO, NZ, RUS - ISCO88
 13	Production and Specialized Services Managers
 14	Hospitality, Retail and Other Services Managers
 
+
+
+      
+
 2	Professionals
 21	Science and Engineering Professionals
 22	Health Professionals
@@ -292,7 +269,7 @@ AUS, POL, SLO, NZ, RUS - ISCO88
 25	Information and Communications Technology Professionals
 26	Legal, Social and Cultural Professionals
   
-3	Technicians and Associate Professionals
+it_occ == 11 ~ 00,3	Technicians and Associate Professionals
 31	Science and Engineering Associate Professionals
 32	Health Associate Professionals
 33	Business and Administration Associate Professionals
@@ -359,10 +336,14 @@ socin$bg_occ <- zap_labels(socin2$BG_OCC99)
 socin$fr_occ <- zap_labels(socin2$FR_OCC99)
 socin$jp_occ <- zap_labels(socin2$JP_OCC99)
 
-# Recoding to isco88_2: Australia 1987
+# Australia 1987
+
+#isco88 4-digit not available
+
 # Data are in ASCO First Edition, emailed Kelley and Evans 10-Jun-20 to ask for correspondance tables
 
-# Here is Nate's code to create rough ISCO88-2 categories
+# Create rough isco88_2digit, taken from ZA1680_cdb.pdf pp. 184-191
+
 socin <- socin %>%
   mutate(
     isco88_2digit = case_when(
@@ -420,10 +401,118 @@ socin <- socin %>%
 
 
 
-# Recoding to isco88_2digit: Italy 1987/Italy 1992 (not found)
+# Italy 1987 & 1992
+
+# From 87 codebook and https://zacat.gesis.org/webview/index/no/ZACAT/ZACAT.c.ZACAT/ISSP.d.58/Cumulations.d.72/International-Social-Survey-Programme-Social-Inequality-I-IV-ADD-ON-ISSP-1987-1992-1999-2009.s.ZA5891/Ctry-specifi-occupation-respondent-spouse-father-mother-.h.9/Respondents-national-occupation-Italy/fVariable/ZA5891_V123
+
+# both coding schemes are identical for Italy in 1987 & 1992 in terms of the order of values, just in 1992 the values thmeselves changed to starting with 1
+socin <- socin %>%
+  mutate(
+    isco88_2digit = case_when(
+      it_occ == 11 & year == 1987 ~ 13,
+      it_occ == 12 & year == 1987 ~ 12,
+      it_occ == 13 & year == 1987 ~ 26,
+      it_occ == 14 & year == 1987 ~ 11,
+      it_occ == 21 & year == 1987 ~ 11,
+      it_occ == 22 & year == 1987 ~ 23,
+      it_occ == 23 & year == 1987 ~ 34,
+      it_occ == 24 & year == 1987 ~ 1,
+      it_occ == 25 & year == 1987 ~ 33,
+      it_occ == 26 & year == 1987 ~ 41,
+      it_occ == 27 & year == 1987 ~ 26,
+      it_occ == 31 & year == 1987 ~ 81,
+      it_occ == 32 & year == 1987 ~ 2,
+      it_occ == 33 & year == 1987 ~ 91,
+      it_occ == 34 & year == 1987 ~ 92,
+      it_occ == 41 & year == 1987 ~ 24,
+      it_occ == 42 & year == 1987 ~ 52,
+      it_occ == 43 & year == 1987 ~ 71,
+      it_occ == 44 & year == 1987 ~ 95,
+      it_occ == 45 & year == 1987 ~ 91,
+      it_occ == 46 & year == 1987 ~ 61,
+      it_occ == 47 & year == 1987 ~ 91,
+      TRUE ~ NA_real_
+    )
+  )
+
+# 1992
+
+socin <- socin %>%
+  mutate(
+    isco88_2digit = case_when(
+      it_occ == 1 & year == 1992 ~ 13,
+      it_occ == 2 & year == 1992 ~ 12,
+      it_occ == 3 & year == 1992 ~ 26,
+      it_occ == 4 & year == 1992 ~ 11,
+      it_occ == 5 & year == 1992 ~ 11,
+      it_occ == 6 & year == 1992 ~ 23,
+      it_occ == 7 & year == 1992 ~ 34,
+      it_occ == 8 & year == 1992 ~ 1,
+      it_occ == 9 & year == 1992 ~ 33,
+      it_occ == 10 & year == 1992 ~ 41,
+      it_occ == 11 & year == 1992 ~ 26,
+      it_occ == 12 & year == 1992 ~ 81,
+      it_occ == 13 & year == 1992 ~ 2,
+      it_occ == 14 & year == 1992 ~ 91,
+      it_occ == 15 & year == 1992 ~ 92,
+      it_occ == 16 & year == 1992 ~ 24,
+      it_occ == 17 & year == 1992 ~ 52,
+      it_occ == 18 & year == 1992 ~ 71,
+      it_occ == 19 & year == 1992 ~ 95,
+      it_occ == 20 & year == 1992 ~ 91,
+      it_occ == 21 & year == 1992 ~ 61,
+      it_occ == 22 & year == 1992 ~ 91,
+      TRUE ~ NA_real_
+    )
+  )
 
 
-# Recoding to isco88_2digit: Great Britain 1987/1992 (not found)
+# Great Britain 1987
+
+socin <- socin %>%
+  mutate(
+    isco88_2digit = case_when(
+      gbr_occ == 1 & year == 1987 ~ 11,
+      gbr_occ == 2 & year == 1987 ~ 12,
+      gbr_occ == 3 & year == 1987 ~ 13,
+      gbr_occ == 4 & year == 1987 ~ 24,
+      gbr_occ == 5 & year == 1987 ~ 14,
+      gbr_occ >= 6 & gbr_occ <= 8 & year == 1987 ~ 11,
+      gbr_occ == 9 & year == 1987 ~ 14,
+      gbr_occ >= 10 & gbr_occ <= 18 & year == 1987 ~ 23,
+      gbr_occ >= 19 & gbr_occ <= 23 & year == 1987 ~ 26,
+      gbr_occ >= 24 & gbr_occ <= 33 & year == 1987 ~ 21,
+      gbr_occ >= 34 & gbr_occ <= 39 & year == 1987 ~ 31,
+      gbr_occ == 40 & year == 1987 ~ 61,
+      gbr_occ >= 41 & gbr_occ <= 42 & year == 1987 ~ 1,
+      gbr_occ == 43 & year == 1987 ~ 26,
+      gbr_occ >= 44 & gbr_occ <= 45 & year == 1987 ~ 33,
+      gbr_occ >= 46 & gbr_occ <= 51 & year == 1987 ~ 41,
+      gbr_occ == 52 & year == 1987 ~ 33,
+      gbr_occ == 54 & year == 1987 ~ 33,
+      gbr_occ >= 55 & gbr_occ <= 57 & year == 1987 ~ 52,
+      gbr_occ >= 58 & gbr_occ <= 59 & year == 1987 ~ 2,
+      gbr_occ == 60 & year == 1987 ~ 33,
+      gbr_occ >= 61 & gbr_occ <= 62 & year == 1987 ~ 54,
+      gbr_occ == 63 & year == 1987 ~ 33,
+      gbr_occ == 67 & year == 1987 ~ 33,
+      gbr_occ == 71 & year == 1987 ~ 33,
+      gbr_occ >= 64 & gbr_occ <= 66 & year == 1987 ~ 75,
+      gbr_occ >= 68 & gbr_occ <= 70 & year == 1987 ~ 51,
+      gbr_occ >= 72 & gbr_occ <= 75 & year == 1987 ~ 91,
+      gbr_occ == 76 & year == 1987 ~ 71,
+      gbr_occ == 77 & year == 1987 ~ 92,
+      gbr_occ == 78 & year == 1987 ~ 92,
+      gbr_occ == 79 & year == 1987 ~ 81,
+      gbr_occ == 80 & year == 1987 ~ 62,
+      gbr_occ == 81 & year == 1987 ~ 61,
+      gbr_occ == 82 & year == 1987 ~ 92,
+      gbr_occ == 83 & year == 1987 ~ 92,
+      TRUE ~ NA_real_
+    )
+  )
+
+# GB 1992 (not found)
 
 
 # Recoding to isco88_2digit: Poland 1987 (manually code to EGP6?)
