@@ -32,6 +32,8 @@ All files available from GESIS, ZACAT for download
 
 ISSP SI combined file "ZA5890_v1-0-0.dta" used, supplemented by "ZA5891_v1-1-0.dta"
 
+Ireland 1987 added manually "ZA1306_v1-0-0"
+Netherlands 1987 added manually "ZA1689.dta" (subset to country == 7)
 Denmark 1999 added manually "ZA3562_v1-0-0.dta"
 Ireland 1999 added manually "ZA3613_v1-0-0.dta"
 Netherlands 2009 added manually "ZA5995_v1-0-0.dta"
@@ -44,9 +46,15 @@ Netherlands 2009 added manually "ZA5995_v1-0-0.dta"
 
 Notes:
 
-A. ISCO in env93 is coded in mixed ways. I have listed them at the top of the code chunk (copied from the code book). First, the standard isco68 countries are in *3-digit ISCO* so they need to be multiplied by 10 before converting to isco88. Meanwhile some other countries are already in isco88 so they need to be directly transfered to the isco88 variable without transformation.
+A. HUNG - can you integrate nt87 and ie87 into the socin file please? I've added the data files, but not recoded them yet
+   
+   HUNG - can you follow my coding schemes for 2-digit ISCO and apply them to mothers and fathers in Australia 1987, Italy 87 & 92 & env93, Great Britain 87 & 92 & env93, & Poland 87 please? You will find the hand recodes in the code chunk 'isco88_2'. I haven't finished coding the other countries into 2-digit isco, will finish at some point, although we have most by now.
+   
+   HUNG - careful! in the env93 module you recoded all values of the ISCO variable into ISCO68 and then converted them to 88, but many countries already were in isco88 so this created a lot of mistakes. Always check variables after recoding them. For example there should be an equal number of non-missing values for isco68 and isco88 after conversion. I fixed it in the env93 section, but left your original code there in case you wanted to see it, just search for "PROBLEM CODE", it is in two places (and of course delete it after please)
+   
+   HUNG - we need to get spouse isco and spouse isco88_2digit, can you please add these everywhere? please name them spisco88 and spisco88_2digit. Of course for many countries there will be missing spisco88 in the earlier surveys, but spouse isco will be really important in determining the status of a housewife/partner.
 
-B. Need to use the supplementary file to divide East and West Germany at some point
+B. Need to use the supplementary file to divide East and West Germany at some point. Or maybe not. If we think of Germany as a political unit where policy change is or is not possible, it makes sense to use all of Germany (whatever that means at the time) to look for majority constellations
 
 C. We should see if there is any way to remove the NA from child, maybe they can safely be recoded to zero? 
 
@@ -55,6 +63,8 @@ D. I changed the variable 'year' to reflect the actual year when the survey was 
 E. Made a variable 'reduce' that is = to 'incdiff' but has 9 recoded into NA and has 8 recoded into neutral, also reversed the coding so that higher values = more agreement
 
 F. Recoded 'wrkst' so that they matched across all surveys (not just full-time, part-time, less than part time). Env00 uses a slightly different list than the others. Now wrkst doesn't have value "4". 
+
+G. Mistake with Australia - it should not have ISCO68 in env93, it is isco88. this explains why so many values go tdropped in the conversion
 
 
 ## SETUP
@@ -99,8 +109,11 @@ env00 <- read_dta(paste(wd, "ZA3440.dta",sep=""))
 env10 <- read_dta(paste(wd, "ZA5500_v3-0-0.dta",sep=""))
 
 
-# Integrate missing countries: Denmark/Ireland 1999; Netherlands 2009
+# Integrate missing countries
 
+ie87 <- read_dta(paste(wd, "ZA1306_v1-0-0.dta", sep=""))
+nt87 <- read_dta(paste(wd, "ZA1680.dta", sep=""))
+nt87 <- subset(nt87, nt87$v3 == 7)
 dk99 <- read_dta(paste(wd, "ZA3562_v1-0-0.dta", sep=""))
 ie99 <- read_dta(paste(wd, "ZA3613_v1-0-0.dta", sep=""))
 nl09 <- read_dta(paste(wd, "ZA5995_v1-0-0.dta", sep=""))
@@ -207,24 +220,7 @@ socin$hincZ = ifelse(socin$hincZ=="NaN",NA,socin$hincZ)
 ## Occupation Coding Harmonization
 
 #### 1987
-AUS - ASCO1
-DEU, AUT, CHE, HUN - ISCO68
-GB - KOS 1980
-US - Census 1970 codes
-POL - handcodes [
-01 Professionals
-02 Managers
-03 Semiprofessionals white-collar
-04 Office workers
-05 Service workers manual/non-manual
-06 Owners of manufacturing, trades, artisans
-07 Foremen
-08 Skilled manual
-09 Semi-skilled manual
-10 Unskilled manual
-11 Farmers and family workers
-12 Agricultural laborers employed by farms
-]
+
 NET - handcodes [
 01 Manager 10 and more employees
 02 Manager 9 and less employees
@@ -242,8 +238,7 @@ NET - handcodes [
 GB - SOC
 I - Italian Occupation Code
 S - Nordic Occupation Code NYK
-AUT, CAN, DEU, NET, BG, CS, USA, HUN - ISCO68
-AUS, POL, SLO, NZ, RUS - ISCO88
+
 
 #### 1999
 
@@ -251,6 +246,7 @@ AUS, POL, SLO, NZ, RUS - ISCO88
 #### 2009
 
 #### ISCO88 2-digit is all we need to determine the social groups of Schwander & Haeuserman
+
 1	Managers
 11	Chief Executives, Senior Officials and Legislators
 12	Administrative and Commercial Managers
@@ -265,7 +261,7 @@ AUS, POL, SLO, NZ, RUS - ISCO88
 25	Information and Communications Technology Professionals
 26	Legal, Social and Cultural Professionals
   
-it_occ == 11 ~ 00,3	Technicians and Associate Professionals
+3	Technicians and Associate Professionals
 31	Science and Engineering Associate Professionals
 32	Health Associate Professionals
 33	Business and Administration Associate Professionals
@@ -316,10 +312,7 @@ it_occ == 11 ~ 00,3	Technicians and Associate Professionals
 03	Armed Forces Occupations, Other Ranks
 
 ```{r isco88_2, include = TRUE, warning=F,message=F}
-## Class scheme re-coding
-## EGP
-#There are a few cases of unspecified occupational coding schemes, including Australia 1987, Italy 1987 & 1992, Great Britain 1987 & 1992, the United States 1987, Bulgaria 1999, France 1999, Japan 1999, and Sweden 1992. We integrated into the main data set. 
-
+# Get non-ISCO, country-specific occupation codes
 socin$au_occ <- socin2$AU_OCC87
 socin$it_occ <- zap_labels(socin2$IT_OCC87)
 socin[which(socin$cntry == 380 & socin$year == 1992),]$it_occ <- socin2[which(socin2$V5 == 380 & socin2$V4 == 1992),]$IT_OCC92
@@ -331,6 +324,7 @@ socin$se_occ <- zap_labels(socin2$SE_OCC92)
 socin$bg_occ <- zap_labels(socin2$BG_OCC99)
 socin$fr_occ <- zap_labels(socin2$FR_OCC99)
 socin$jp_occ <- zap_labels(socin2$JP_OCC99)
+
 
 # Australia 1987
 
@@ -401,7 +395,7 @@ socin <- socin %>%
 
 # From 87 codebook and https://zacat.gesis.org/webview/index/no/ZACAT/ZACAT.c.ZACAT/ISSP.d.58/Cumulations.d.72/International-Social-Survey-Programme-Social-Inequality-I-IV-ADD-ON-ISSP-1987-1992-1999-2009.s.ZA5891/Ctry-specifi-occupation-respondent-spouse-father-mother-.h.9/Respondents-national-occupation-Italy/fVariable/ZA5891_V123
 
-# both coding schemes are identical for Italy in 1987 & 1992 in terms of the order of values, just in 1992 the values thmeselves changed to starting with 1
+# both coding schemes are identical for Italy in 1987 & 1992 in terms of the order of values, just in 1992 the values themeselves changed to starting with 1
 socin <- socin %>%
   mutate(
     isco88_2digit = case_when(
@@ -597,10 +591,30 @@ socin <- socin %>%
   )
 
 
-# Recoding to isco88_2digit: Poland 1987 (manually code to EGP6?)
+# Poland 1987
 
+socin <- socin %>%
+  mutate(
+    isco88_2digit = case_when(
+      pl_occ == 1 & year == 1987 ~ 24, # Professionals
+      pl_occ == 2 & year == 1987 ~ 12, # Managers
+      pl_occ == 3 & year == 1987 ~ 33, # Semiprof. white-collar
+      pl_occ == 4 & year == 1987 ~ 41, # Office workers
+      pl_occ == 5 & year == 1987 ~ 52, # Service workers manual/non
+      pl_occ == 6 & year == 1987 ~ 11, # Owners of manufacturing, trades, artisans
+      pl_occ == 7 & year == 1987 ~ 13, # Foremen
+      pl_occ == 8 & year == 1987 ~ 71, # Skilled manual
+      pl_occ == 9 & year == 1987 ~ 81, # Semi-skilled
+      pl_occ == 10 & year == 1987 ~ 91, # Unskilled
+      pl_occ == 11 & year == 1987 ~ 61, # Farmers
+      pl_occ == 12 & year == 1987 ~ 92, # Ag workers/laborers
+      TRUE ~ NA_real_
+    )
+  )
 
-# Recoding to isco88 & isco88_2digit: U.S 1987
+# US 1987
+
+# both Recoding to isco88 & isco88_2digit possible
 
 # From US87 to USt
 
@@ -654,9 +668,17 @@ socin$se_occ <- car::recode(socin$se_occ, recodes = se9288)
 
 socin[which(socin$cntry == 752 & socin$year == 1992),]$isco88 <- socin[which(socin$cntry == 752 & socin$year == 1992),]$se_occ
 
+# Truncate isco88 values
+socin <- socin %>%
+  mutate(isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA))
+```
 
+## Covert ISCO codes
 
+### EGP & ISEI
+### Schwander & Haeusermann's scheme (adapted)
 
+```{r occ_conversions, include = TRUE, warning=F,message=F}
 # Translating from isco88 to egp
 socin$egp <- occupar::isco88toEGP(isco88 = socin$isco88, n.employees = socin$nemploy, self.employed = socin$selfemp)
 # EGP6
@@ -738,7 +760,7 @@ socin <- socin %>%
 
 # Select relevant variables
 
-socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88)
+socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit)
 
 ```
 
@@ -807,6 +829,7 @@ dk99 <- dk99 %>%
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
     egp6 = car::recode(egp, recodes = egp6),
     isei = occupar::isco88toISEI92(isco88),
+    isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA), # Truncate isco88 values
     fisco88 = v142,
     f_selfemp = case_when(
       v501 == 0 ~ 0,
@@ -824,7 +847,9 @@ dk99 <- dk99 %>%
   )  
 
 
-dk99 <- dplyr::select(dk99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88)
+  
+
+dk99 <- dplyr::select(dk99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit)
 
 # Ireland 1999
 
@@ -883,6 +908,7 @@ ie99 <- ie99 %>%
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
     egp6 = car::recode(egp, recodes = egp6),
     isei = occupar::isco88toISEI92(isco88),
+    isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA), # Truncate isco88 values
     fisco88 = v62,
     f_egp = occupar::isco88toEGP(fisco88, n.employees = NULL, self.employed = NULL), # nemploy and selfemp missing (labels unkown) - some might be incorrectly coded.
     f_egp6 = car::recode(f_egp,recodes = egp6_2),
@@ -894,7 +920,7 @@ ie99 <- ie99 %>%
   )
 
 
-ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88)
+ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit)
 
 # Netherlands 
 # nelab <- lapply(nl09, attr, "label") 
@@ -956,6 +982,7 @@ nl09 <- nl09 %>%
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
     egp6 = car::recode(egp, recodes = egp6),
     isei = occupar::isco88toISEI92(isco88),
+    isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA), # Truncate isco88 values
     fisco88 = v57,
     f_egp = occupar::isco88toEGP(fisco88, n.employees = NULL, self.employed = NULL), # nemploy and selfemp missing (labels unkown) - some might be incorrectly coded.
     f_egp6 = car::recode(f_egp,recodes = egp6_2),
@@ -966,7 +993,7 @@ nl09 <- nl09 %>%
     m_isei = occupar::isco88toISEI92(misco88),
   )
 
-nl09 <- dplyr::select(nl09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88)
+nl09 <- dplyr::select(nl09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit)
 
 
 ## Merge data sets  
@@ -1065,25 +1092,44 @@ env93 <- env93 %>%
   )
 # Occupation codes
 
-env93 <- env93 %>%
+# PROBLEM CODE
+# This is a mistake, only some countries have ISCO68, not all. The code that appears later does not fix it, it just makes everything NA, but its too late then.
+
+
+# env93 <- env93 %>%
+#  mutate(
+#    isco68 = as.numeric(v214),
+#    isco88_2 = as.numeric(v214),
+#    fisco68 = as.numeric(v219),
+#    fisco88_2 = as.numeric(v219),
+#    misco68 = as.numeric(v218),
+#    misco88_2 = as.numeric(v218)
+#  )
+
+
+# Fixed
+# Australia, Ireland, Slovakia, Poland and Russia are in isco88 format already
+
+ env93 <- env93 %>%
   mutate(
-    isco68 = as.numeric(v214),
+    isco68 = ifelse(cntry!= 36 & cntry != 372 & cntry != 705 & cntry!=616 & cntry!=643, as.numeric(v214), NA),
     isco88_2 = as.numeric(v214),
-    fisco68 = as.numeric(v219),
+    fisco68 = ifelse(cntry!= 36 & cntry != 372 & cntry != 705 & cntry!=616 & cntry!=643, as.numeric(v219), NA),
     fisco88_2 = as.numeric(v219),
-    misco68 = as.numeric(v218),
+    misco68 = ifelse(cntry!= 36 & cntry != 372 & cntry != 705 & cntry!=616 & cntry!=643, as.numeric(v218), NA),
     misco88_2 = as.numeric(v218)
   )
+
 
 # ISCO68 problems
 
 
-# In Germany, Norway, Czech Republic, BUlgaria, Canada, Israel, New Zealand, and Spain, isco68 appears to be 3-digit, multiply by 10.
+# In Germany, Norway, Czech Republic, BUlgaria, Canada, Israel, New Zealand, and Spain, isco68 appears to be 3-digit, multiply by 10 and add 1.
 
 
-env93$isco68 <- ifelse(env93$cntry == 276 | env93$cntry == 100 | env93$cntry == 124 | env93$cntry == 376 | env93$cntry == 554 | env93$cntry == 578 | env93$cntry == 705 | env93$cntry == 724, env93$isco68 * 10, env93$isco68)
-env93$fisco68 <- ifelse(env93$cntry == 276 | env93$cntry == 100 | env93$cntry == 124 | env93$cntry == 376 | env93$cntry == 554 | env93$cntry == 578 | env93$cntry == 705 | env93$cntry == 724, env93$fisco68 * 10, env93$fisco68)
-env93$misco68 <- ifelse(env93$cntry == 276 | env93$cntry == 100 | env93$cntry == 124 | env93$cntry == 376 | env93$cntry == 554 | env93$cntry == 578 | env93$cntry == 705 | env93$cntry == 724, env93$misco68 * 10, env93$misco68)
+env93$isco68 <- ifelse(env93$cntry == 276 | env93$cntry == 100 | env93$cntry == 124 | env93$cntry == 376 | env93$cntry == 554 | env93$cntry == 578 | env93$cntry == 705 | env93$cntry == 724, (env93$isco68 * 10)+1, env93$isco68)
+env93$fisco68 <- ifelse(env93$cntry == 276 | env93$cntry == 100 | env93$cntry == 124 | env93$cntry == 376 | env93$cntry == 554 | env93$cntry == 578 | env93$cntry == 705 | env93$cntry == 724, (env93$fisco68 * 10)+1, env93$fisco68)
+env93$misco68 <- ifelse(env93$cntry == 276 | env93$cntry == 100 | env93$cntry == 124 | env93$cntry == 376 | env93$cntry == 554 | env93$cntry == 578 | env93$cntry == 705 | env93$cntry == 724, (env93$misco68 * 10)+1, env93$misco68)
 
 # Norway: Nordic Standard Classification of Occupation (20: Chief Engineers = 230: Electrical and electronics engineers)
 env93[which(env93$cntry==578),]$isco68 <- car::recode(env93[which(env93$cntry==578),]$isco68, recodes = '20 = 230')
@@ -1095,7 +1141,6 @@ env93$isco88 <- occupar::isco68to88(isco68 = env93$isco68, display.nas = T)
 env93$fisco88 <- occupar::isco68to88(isco68 = env93$fisco68, display.nas = T)
 env93$misco88 <- occupar::isco68to88(isco68 = env93$misco68, display.nas = T)
 
-# Australia: ASCO
 
 # Slovenia
 
@@ -1151,22 +1196,237 @@ jp$jp_mocc <- if_else(jp$jp_mocc == 2265 & jp$meducyrsjp < 16, 1229, jp$jp_mocc)
 env93[which(env93$cntry == 392),]$misco88 <- jp$jp_mocc
 
 
-# Italy
+# Nation-specific Occ recodes
 
+# Italy goes from 1 to 22, looks similar to 1992, check that this is absolute at some point
+# Great Britain: Standard Occupational Classification, this should be SOC80, but make sure someday (it might be SOC90 which means the code below may not work)
 
-# Great Britain: Standard Occupational Classification
+env93 <- env93 %>%
+  mutate(
+    isco88_2digit = case_when(
+      v215 == 1 & cntry == 380 ~ 13,
+      v215 == 2 & cntry == 380 ~ 12,
+      v215 == 3 & cntry == 380 ~ 26,
+      v215 == 4 & cntry == 380 ~ 11,
+      v215 == 5 & cntry == 380 ~ 11,
+      v215 == 6 & cntry == 380 ~ 23,
+      v215 == 7 & cntry == 380 ~ 34,
+      v215 == 8 & cntry == 380 ~ 1,
+      v215 == 9 & cntry == 380 ~ 33,
+      v215 == 10 & cntry == 380 ~ 41,
+      v215 == 11 & cntry == 380 ~ 26,
+      v215 == 12 & cntry == 380 ~ 81,
+      v215 == 13 & cntry == 380 ~ 2,
+      v215 == 14 & cntry == 380 ~ 91,
+      v215 == 15 & cntry == 380 ~ 92,
+      v215 == 16 & cntry == 380 ~ 24,
+      v215 == 17 & cntry == 380 ~ 52,
+      v215 == 18 & cntry == 380 ~ 71,
+      v215 == 19 & cntry == 380 ~ 95,
+      v215 == 20 & cntry == 380 ~ 91,
+      v215 == 21 & cntry == 380 ~ 61,
+      v215 == 22 & cntry == 380 ~ 91,
+      v215 == 10 & cntry == 826 ~ 11,
+      v215 == 11 & cntry == 826 ~ 13,
+      v215 == 12 & cntry == 826 ~ 13,
+      v215 == 13 & cntry == 826 ~ 12,
+      v215 == 14 & cntry == 826 ~ 24,
+      v215 == 15 & cntry == 826 ~ 54,
+      v215 == 16 & cntry == 826 ~ 12,
+      v215 == 17 & cntry == 826 ~ 14,
+      v215 == 19 & cntry == 826 ~ 14,
+      v215 == 20 & cntry == 826 ~ 21,
+      v215 == 21 & cntry == 826 ~ 21,
+      v215 == 22 & cntry == 826 ~ 22,
+      v215 == 23 & cntry == 826 ~ 23,
+      v215 == 24 & cntry == 826 ~ 26,
+      v215 == 25 & cntry == 826 ~ 24,
+      v215 == 26 & cntry == 826 ~ 21,
+      v215 == 27 & cntry == 826 ~ 25,
+      v215 == 29 & cntry == 826 ~ 34,
+      v215 == 30 & cntry == 826 ~ 31,
+      v215 == 31 & cntry == 826 ~ 31,
+      v215 == 32 & cntry == 826 ~ 35,
+      v215 == 33 & cntry == 826 ~ 33,
+      v215 == 34 & cntry == 826 ~ 32,
+      v215 == 35 & cntry == 826 ~ 34,
+      v215 == 36 & cntry == 826 ~ 33,
+      v215 == 37 & cntry == 826 ~ 34,
+      v215 == 38 & cntry == 826 ~ 34,
+      v215 == 39 & cntry == 826 ~ 31,
+      v215 == 40 & cntry == 826 ~ 44,
+      v215 == 41 & cntry == 826 ~ 43,
+      v215 == 42 & cntry == 826 ~ 43,
+      v215 == 43 & cntry == 826 ~ 44,
+      v215 == 44 & cntry == 826 ~ 42,
+      v215 == 45 & cntry == 826 ~ 51,
+      v215 == 46 & cntry == 826 ~ 51,
+      v215 == 49 & cntry == 826 ~ 51,
+      v215 == 50 & cntry == 826 ~ 71,
+      v215 == 51 & cntry == 826 ~ 72,
+      v215 == 52 & cntry == 826 ~ 74,
+      v215 == 53 & cntry == 826 ~ 72,
+      v215 == 54 & cntry == 826 ~ 72,
+      v215 == 55 & cntry == 826 ~ 75,
+      v215 == 56 & cntry == 826 ~ 75,
+      v215 == 57 & cntry == 826 ~ 75,
+      v215 == 58 & cntry == 826 ~ 75,
+      v215 == 59  & cntry == 826 ~ 75,
+      v215 == 60  & cntry == 826 ~ 1,
+      v215 == 61  & cntry == 826 ~ 54,
+      v215 == 62  & cntry == 826 ~ 52,
+      v215 == 63  & cntry == 826 ~ 52,
+      v215 == 64  & cntry == 826 ~ 14,
+      v215 == 65  & cntry == 826 ~ 51,
+      v215 == 66  & cntry == 826 ~ 51,
+      v215 == 67  & cntry == 826 ~ 91,
+      v215 == 69  & cntry == 826 ~ 54,
+      v215 == 70  & cntry == 826 ~ 52,
+      v215 == 71  & cntry == 826 ~ 52,
+      v215 == 72  & cntry == 826 ~ 95,
+      v215 == 73  & cntry == 826 ~ 95,
+      v215 == 79  & cntry == 826 ~ 95,
+      v215 == 80  & cntry == 826 ~ 94,
+      v215 == 81  & cntry == 826 ~ 82,
+      v215 == 82  & cntry == 826 ~ 81,
+      v215 == 83  & cntry == 826 ~ 81,
+      v215 == 84  & cntry == 826 ~ 81,
+      v215 == 85  & cntry == 826 ~ 82,
+      v215 == 86  & cntry == 826 ~ 82,
+      v215 == 87  & cntry == 826 ~ 83,
+      v215 == 88  & cntry == 826 ~ 83,
+      v215 == 89  & cntry == 826 ~ 81,
+      v215 == 90  & cntry == 826 ~ 92,
+      v215 == 91  & cntry == 826 ~ 93,
+      v215 == 92  & cntry == 826 ~ 93,
+      v215 == 93  & cntry == 826 ~ 93,
+      v215 == 94  & cntry == 826 ~ 95,
+      v215 == 95  & cntry == 826 ~ 95,
+      v215 == 99  & cntry == 826 ~ 96,
+      TRUE ~ NA_real_
+    )
+  )
+
+env93 <- env93 %>%
+  mutate(
+    spisco88_2digit = case_when(
+      v217 == 1 & cntry == 380 ~ 13,
+      v217 == 2 & cntry == 380 ~ 12,
+      v217 == 3 & cntry == 380 ~ 26,
+      v217 == 4 & cntry == 380 ~ 11,
+      v217 == 5 & cntry == 380 ~ 11,
+      v217 == 6 & cntry == 380 ~ 23,
+      v217 == 7 & cntry == 380 ~ 34,
+      v217 == 8 & cntry == 380 ~ 1,
+      v217 == 9 & cntry == 380 ~ 33,
+      v217 == 10 & cntry == 380 ~ 41,
+      v217 == 11 & cntry == 380 ~ 26,
+      v217 == 12 & cntry == 380 ~ 81,
+      v217 == 13 & cntry == 380 ~ 2,
+      v217 == 14 & cntry == 380 ~ 91,
+      v217 == 15 & cntry == 380 ~ 92,
+      v217 == 16 & cntry == 380 ~ 24,
+      v217 == 17 & cntry == 380 ~ 52,
+      v217 == 18 & cntry == 380 ~ 71,
+      v217 == 19 & cntry == 380 ~ 95,
+      v217 == 20 & cntry == 380 ~ 91,
+      v217 == 21 & cntry == 380 ~ 61,
+      v217 == 22 & cntry == 380 ~ 91,
+      v217 == 11 & cntry == 826 ~ 13,
+      v217 == 12 & cntry == 826 ~ 13,
+      v217 == 13 & cntry == 826 ~ 12,
+      v217 == 14 & cntry == 826 ~ 24,
+      v217 == 15 & cntry == 826 ~ 54,
+      v217 == 16 & cntry == 826 ~ 12,
+      v217 == 17 & cntry == 826 ~ 14,
+      v217 == 19 & cntry == 826 ~ 14,
+      v217 == 20 & cntry == 826 ~ 21,
+      v217 == 21 & cntry == 826 ~ 21,
+      v217 == 22 & cntry == 826 ~ 22,
+      v217 == 23 & cntry == 826 ~ 23,
+      v217 == 24 & cntry == 826 ~ 26,
+      v217 == 25 & cntry == 826 ~ 24,
+      v217 == 26 & cntry == 826 ~ 21,
+      v217 == 27 & cntry == 826 ~ 25,
+      v217 == 29 & cntry == 826 ~ 34,
+      v217 == 30 & cntry == 826 ~ 31,
+      v217 == 31 & cntry == 826 ~ 31,
+      v217 == 32 & cntry == 826 ~ 35,
+      v217 == 33 & cntry == 826 ~ 33,
+      v217 == 34 & cntry == 826 ~ 32,
+      v217 == 35 & cntry == 826 ~ 34,
+      v217 == 36 & cntry == 826 ~ 33,
+      v217 == 37 & cntry == 826 ~ 34,
+      v217 == 38 & cntry == 826 ~ 34,
+      v217 == 39 & cntry == 826 ~ 31,
+      v217 == 40 & cntry == 826 ~ 44,
+      v217 == 41 & cntry == 826 ~ 43,
+      v217 == 42 & cntry == 826 ~ 43,
+      v217 == 43 & cntry == 826 ~ 44,
+      v217 == 44 & cntry == 826 ~ 42,
+      v217 == 45 & cntry == 826 ~ 51,
+      v217 == 46 & cntry == 826 ~ 51,
+      v217 == 49 & cntry == 826 ~ 51,
+      v217 == 50 & cntry == 826 ~ 71,
+      v217 == 51 & cntry == 826 ~ 72,
+      v217 == 52 & cntry == 826 ~ 74,
+      v217 == 53 & cntry == 826 ~ 72,
+      v217 == 54 & cntry == 826 ~ 72,
+      v217 == 55 & cntry == 826 ~ 75,
+      v217 == 56 & cntry == 826 ~ 75,
+      v217 == 57 & cntry == 826 ~ 75,
+      v217 == 58 & cntry == 826 ~ 75,
+      v217 == 59  & cntry == 826 ~ 75,
+      v217 == 60  & cntry == 826 ~ 1,
+      v217 == 61  & cntry == 826 ~ 54,
+      v217 == 62  & cntry == 826 ~ 52,
+      v217 == 63  & cntry == 826 ~ 52,
+      v217 == 64  & cntry == 826 ~ 14,
+      v217 == 65  & cntry == 826 ~ 51,
+      v217 == 66  & cntry == 826 ~ 51,
+      v217 == 67  & cntry == 826 ~ 91,
+      v217 == 69  & cntry == 826 ~ 54,
+      v217 == 70  & cntry == 826 ~ 52,
+      v217 == 71  & cntry == 826 ~ 52,
+      v217 == 72  & cntry == 826 ~ 95,
+      v217 == 73  & cntry == 826 ~ 95,
+      v217 == 79  & cntry == 826 ~ 95,
+      v217 == 80  & cntry == 826 ~ 94,
+      v217 == 81  & cntry == 826 ~ 82,
+      v217 == 82  & cntry == 826 ~ 81,
+      v217 == 83  & cntry == 826 ~ 81,
+      v217 == 84  & cntry == 826 ~ 81,
+      v217 == 85  & cntry == 826 ~ 82,
+      v217 == 86  & cntry == 826 ~ 82,
+      v217 == 87  & cntry == 826 ~ 83,
+      v217 == 88  & cntry == 826 ~ 83,
+      v217 == 89  & cntry == 826 ~ 81,
+      v217 == 90  & cntry == 826 ~ 92,
+      v217 == 91  & cntry == 826 ~ 93,
+      v217 == 92  & cntry == 826 ~ 93,
+      v217 == 93  & cntry == 826 ~ 93,
+      v217 == 94  & cntry == 826 ~ 95,
+      v217 == 95  & cntry == 826 ~ 95,
+      v217 == 99  & cntry == 826 ~ 96,
+      TRUE ~ NA_real_
+    )
+  )
+
 
 # Slovenia - Father + Mother
 
+# PROBLEM CODE
+# it is too late here to do this, we need those isco 88 scores for these countries, not NA!
+
 # Australia, (Slovenia), Poland, Russia, Ireland: ISCO88 
-env93[which(env93$cntry %in% c(36,705,616,643,372)),]$isco88 <- NA 
-env93[which(env93$cntry %nin% c(36,705,616,643,372)),]$isco88_2 <- NA 
+# env93[which(env93$cntry %in% c(36,705,616,643,372)),]$isco88 <- NA 
+# env93[which(env93$cntry %nin% c(36,705,616,643,372)),]$isco88_2 <- NA 
 
-env93[which(env93$cntry %in% c(36,616,643,372)),]$fisco88 <- NA 
-env93[which(env93$cntry %nin% c(36,616,643,372)),]$fisco88_2 <- NA 
+# env93[which(env93$cntry %in% c(36,616,643,372)),]$fisco88 <- NA 
+# env93[which(env93$cntry %nin% c(36,616,643,372)),]$fisco88_2 <- NA 
 
-env93[which(env93$cntry %in% c(36,616,643,372)),]$misco88 <- NA 
-env93[which(env93$cntry %nin% c(36,616,643,372)),]$misco88_2 <- NA 
+# env93[which(env93$cntry %in% c(36,616,643,372)),]$misco88 <- NA 
+# env93[which(env93$cntry %nin% c(36,616,643,372)),]$misco88_2 <- NA 
 
 
 # coalesce
@@ -1204,9 +1464,12 @@ env93 <- env93 %>%
   ungroup()
 
 
+env93 <- env93 %>%
+  mutate(isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), isco88_2digit)) # Truncate isco88 values
+
 # Select relevant variables 
 
-env93 <- dplyr::select(env93,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, v231, v253, isco88))
+env93 <- dplyr::select(env93,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, v231, v253, isco88, isco88_2digit, spisco88_2digit))
 
 ```
 
@@ -1309,9 +1572,11 @@ env00 <- env00 %>%
     m_isei = NA_real_,
   )
 
+env00 <- env00 %>%
+  mutate(isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA)) # Truncate isco88 values
 
 # Select relevant variables 
-env00 <- dplyr::select(env00,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88)) 
+env00 <- dplyr::select(env00,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit)) 
 ```
 
 
@@ -1437,9 +1702,12 @@ env10 <- env10 %>%
     m_isei = NA_real_,
   )
 
+env10 <- env10 %>%
+  mutate(isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA)) # Truncate isco88 values
+
 
 # Select relevant variables 
-env10 <- dplyr::select(env10,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88))
+env10 <- dplyr::select(env10,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit))
 
 ```
 ## Merge environment data sets and social inequality cumulative data set and save 
@@ -1457,7 +1725,7 @@ df <- plyr::rbind.fill(env,df)
 df <- df %>%
   mutate(
          year = ifelse(wave == 1987 & cntry == 40, 1988, 
-                       ifelse((wave == 1992 & cntry == 36) | (wave == 1992 & cntry == 40) | (wave == 1992 & cntry == 100), 1993, 
+                       ifelse((wave == 1992 & cntry == 36) | (wave == 1992 & cntry == 40) | (wave == 1992 & cntry == 100), 1993, ifelse(wave == 1987 & cntry == 372, 1989,
                               ifelse(wave == 1992 & cntry == 752, 1991, 
                                      ifelse((wave == 1999 & cntry == 40) |(wave == 1999 & cntry == 152) | (wave == 1999 & cntry == 276) | (wave == 1999 & cntry == 840), 2000, 
                                             ifelse((wave == 1999 & cntry == 348) | (wave == 1999 & cntry == 705), 1998, 
@@ -1471,7 +1739,7 @@ df <- df %>%
                                                                                                     ifelse((wave == 2000 & cntry == 40) | (wave == 2000 & cntry == 124) | (wave == 2000 & cntry == 208) | (wave == 2000 & cntry == 372) | (wave == 2000 & cntry == 484) | (wave == 2000 & cntry == 752) | (wave == 2000 & cntry == 756), 2001, 
                                                                                                            ifelse((wave == 2010 & cntry == 100) | (wave == 2010 & cntry == 124) | (wave == 2010 & cntry == 191) | (wave == 2010 & cntry == 376) | (wave == 2010 & cntry == 428) | (wave == 2010 & cntry == 484) | (wave == 2010 & cntry == 528) | (wave == 2010 & cntry == 578) | (wave == 2010 & cntry == 705) | (wave == 2010 & cntry == 756), 2011, 
                                                                                                                   ifelse((wave == 2010 & cntry == 352) | (wave == 2010 & cntry == 36) | (wave == 2010 & cntry == 608), 2012, 
-                                                                                                                         ifelse((wave == 2010 & cntry == 608) | (wave == 2010 & cntry == 703), 2009, year))))))))))))))))
+                                                                                                                         ifelse((wave == 2010 & cntry == 608) | (wave == 2010 & cntry == 703), 2009, year)))))))))))))))))
   )
 
 
@@ -1506,38 +1774,46 @@ Oesch, D. (2006) Redrawing the Class Map: Stratification and Institutions in Ger
 4 "Socio-cultural (semi-)professionals" 
 5 "Low service functionaires"
 
+Strangely, their code omits some ISCO 2-digit codes
 
 
-tab isco88_2d if groups==. //Check whether all ISCO groups are used 
-/* Three occupational groups are omitted: 0-3 (Armed Forces), 14, 44.
-Armed Forces are supposed to be missings; 44 was put into class group 1 (Oesch class 10) and 44 into class group 2 (Oesch class 11)*/
+14	Hospitality, Retail and Other Services Managers
 
-label var groups "Respondent's socio-economic group"
+25	Information and Communications Technology Professionals
+26	Legal, Social and Cultural Professionals
+  
+35	Information and Communications Technicians
 
-#delimit ;
-label define groups 
-1 "Capital accumulators" 
-2 "Mixed service functionaires" 
-3 "Blue and lower white collar" 
-4 "Socio-cultural (semi-)professionals" 
-5 "Low service functionaires"
+43	Numerical and Material Recording Clerks
+44	Other Clerical Support Workers
+
+53	Personal Care Workers
+54	Protective Services Workers
+
+62	Market-oriented Skilled Forestry, Fishery and Hunting Workers
+63	Subsistence Farmers, Fishers, Hunters and Gatherers
+
+75	Food Processing, Woodworking, Garment and Other Craft and Related Trades Workers
+
+94	Food Preparation Assistants
+95	Street and Related Sales and Services Workers
+96	Refuse Workers and Other Elementary Workers
+
 
 ```{r sgroups}
 
-# create ISCO88 2-digit
 
-
-df$isco88_2d <- ifelse(df$isco88 < 1000, NA, df$isco88)
-df$isco88_2d <- round(df$isco88_2d/100, 0)
 # create Schwander and Haeusermann coding groups
+
+# seems like they made an error, 60 and 61 should probably be 61 and 62 (as there is no 60 in the 2-digit scheme), perhaps similar with 70 instead of 71 and onwards, 80 instead of 81 and onwards
 
 df <- df %>%
   mutate(sh_groups = case_when(
-    isco88_2d==11 | isco88_2d==12 | isco88_2d==13 | isco88_2d==21 | isco88_2d==22 | isco88_2d==24 | isco88_2d==34 ~ 1,
-    isco88_2d==31 | isco88_2d==41 | isco88_2d==42 ~ 2,
-    isco88_2d==60 | isco88_2d==61 | isco88_2d==70 | isco88_2d==71 | isco88_2d==72 | isco88_2d==73 | isco88_2d==74 | isco88_2d==80 | isco88_2d==81 | isco88_2d==82 | isco88_2d==83 | isco88_2d==92 | isco88_2d==93 ~ 3,
-    isco88_2d==23 | isco88_2d==32 | isco88_2d==33 ~ 4,
-    isco88_2d==51 | isco88_2d==52 | isco88_2d==91 ~ 5)
+    isco88_2digit==11 | isco88_2digit==12 | isco88_2digit==13 | isco88_2digit==21 | isco88_2digit==22 | isco88_2digit==24 | isco88_2digit==34 ~ 1,
+    isco88_2digit==31 | isco88_2digit==41 | isco88_2digit==42 ~ 2,
+    isco88_2digit==60 | isco88_2digit==61 | isco88_2digit==70 | isco88_2digit==71 | isco88_2digit==72 | isco88_2digit==73 | isco88_2digit==74 | isco88_2digit==80 | isco88_2digit==81 | isco88_2digit==82 | isco88_2digit==83 | isco88_2digit==92 | isco88_2digit==93 ~ 3,
+    isco88_2digit==23 | isco88_2digit==32 | isco88_2digit==33 ~ 4,
+    isco88_2digit==51 | isco88_2digit==52 | isco88_2digit==91 ~ 5)
   )
 
 # Create dummies
