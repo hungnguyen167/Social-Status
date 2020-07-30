@@ -97,7 +97,7 @@ Final coding
 ```{r tbl2, echo = T}
 
 # make categories out of categorical variables
-tab2 <- df %>%
+df <- df %>%
   mutate(egp_un = as.numeric(egp6 == "Unskilled"),
          egp_skl = as.numeric(egp6 == "Skilled"),
          egp_othr = as.numeric(egp6 == "Self"),
@@ -114,6 +114,8 @@ tab2 <- df %>%
          wk_disab = as.numeric(wrkst == 9),
          wk_other = as.numeric(wrkst == 10))
 
+tab2 <- df
+
 tab2 <- dplyr::select(tab2, year, ageC, female, educyrs, child, married, rincZ, hincZ, isei, egp_un, egp_skl, egp_othr, egp_rou, egp_svc2, egp_svc1, sh_groups_1:sh_groups_5, wk_full:wk_other, wrkhrs, union, sparent, reduce)
 
 # Get summary stats
@@ -128,7 +130,7 @@ tab2_1.1 <- as.data.frame(t(round(tab2_1.1, 2)))
 tab2_2 <- as.data.frame(t(round(tab2_2, 0)))
 tab2_3 <- as.data.frame(t(round(tab2_3, 0)))
 tab2_4 <- as.data.frame(t(tab2_4))
-tab2_0 <- as.data.frame(c("Year","Age, in years", "Female", "Education, in years", "Children", "Married", "Indiv. Earnings, country-Z", "Household Earnings, country-Z", "Occ. Status, ISEI", "EGP - Unskilled", "EGP - Skilled", "EGP - Self/Other", "EGP - Routine", "EGP - Service II", "EGP - Service I", "SH1 - Capital Accumulator", "SH2 - Mixed Service", "SH3 - Blue-collar/lower", "SH4 - SC Semi-Professional", "SH5 - Lower Service", "Work - Full-time", "Work - Part-Time", "Work - Less-part-time", "Work - Unemployed", "Work - School/Training", "Work - Retired", "Work - Homecare/Family help", "Work - Disabled", "Work - Other/NA", "Hours Worked", "Union", "Parent", "DV - Support Redistribution"))
+tab2_0 <- as.data.frame(c("Year","Age, in years", "Female", "Education, in years", "Children", "Married", "Indiv. Earnings, country-Z", "Household Earnings, country-Z", "Occ. Status, ISEI", "EGP - Unskilled", "EGP - Skilled", "EGP - Self/Other", "EGP - Routine", "EGP - Service II", "EGP - Service I", "SH1 - Capital Accumulator", "SH2 - Mixed Service", "SH3 - Blue-collar/low white", "SH4 - SC Semi-Professional", "SH5 - Lower Service", "Work - Full-time", "Work - Part-Time", "Work - Less-part-time", "Work - Unemployed", "Work - School/Training", "Work - Retired", "Work - Homecare/Family help", "Work - Disabled", "Work - Other/NA", "Hours Worked", "Union", "Parent", "DV - Support Redistribution"))
 # Bind into table
 tab2f <- cbind(tab2_0,tab2_1,tab2_1.1,tab2_2,tab2_3,tab2_4)
 colnames(tab2f) <- c("Variable","Mean","SD","Min","Max","N")
@@ -173,7 +175,6 @@ ggplot(fig1a, aes(x=year, y=reduceM, color=country)) +
 
 ```
 
-
 ## Table 3. Correlations, Pooled
 
 ```{r corrs}
@@ -196,7 +197,6 @@ kable_styling(cor1k)
 
 ### Fig 2. Germany
 
-This is problematic. Should be split by East and West Germany
 
 ```{r grouptest}
 
@@ -222,6 +222,49 @@ ggplot(fig2de, aes(x=year, y=reduceM, color=sh_groups)) +
 
 ```
 
+### Risk and Redistributive Preferences
+
+#### Table XX. Risk by Group (a la S&H)
+
+```{r risk_prefs}
+
+# make risk-based categorizations
+
+df <- df %>%
+  group_by(cyear) %>%
+  mutate(atrisk = ifelse(wk_unemp == 1 | wk_lesspart == 1, 1, 0),
+    risk_cymean = mean(atrisk, na.rm = T))
+
+df <- df %>%
+  group_by(cyear, sh_groups) %>%
+  mutate(risk_gcymean = mean(atrisk, na.rm =T),
+         risk_gcyse = (sd(atrisk, na.rm=T)/sqrt(length(which(!is.na(atrisk))))),
+         risk_grp_rate = risk_gcymean - risk_cymean,
+         count = sum(!is.na(sh_groups))) %>%
+  ungroup()
+
+
+
+tab3 <- dplyr::select(df, sh_groups, cntry, year, reduce, risk_grp_rate, risk_gcyse, count)
+tab3 <- subset(tab3, !is.na(tab3$sh_groups))
+tab3 <- aggregate(tab3, by = list(tab3$cntry, tab3$year, tab3$sh_groups), FUN=mean, na.rm=T)
+tab3 <- tab3[-c(1:3)]
+tab3 <- tab3 %>%
+  mutate(risk_grp_rate = ifelse(risk_grp_rate == "NaN", NA, round(risk_grp_rate, 3)),
+         risk_gcyse = ifelse(risk_gcyse=="NaN", NA, ifelse(risk_gcyse!=0, round(risk_gcyse,3), 0.001)))
+
+tab3de <- subset(tab3, tab3$cntry==276)
+
+# Make DE-specific table later
+```
+
+```{r risk_p_corr}
+tab3simp <- subset(tab3, tab3$cntry==276 | tab3$cntry==826 | tab3$cntry==752 | tab3$cntry==616)
+ggplot(tab3simp, aes(x=risk_grp_rate, y=reduce, color=factor(cntry))) +
+  geom_point(size=2) +
+  geom_smooth(aes(x=risk_grp_rate, y=reduce), method=lm, se=FALSE)
+
+```
 
 
 ### Fig 3. Great Britain
@@ -234,7 +277,7 @@ ggplot(fig2gb, aes(x=year, y=reduceM, color=sh_groups)) +
     geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
     geom_point(size=2) +
     geom_line() +
-    labs(title = "Support for Redistribution Over Time, Germany") +
+    labs(title = "Support for Redistribution Over Time, Gr. Britain") +
     ylab(label = "Mean Support") +
     scale_color_hue(labels = c("Capital Accum.", "Mixed Srvc.", "Blue-collar/low", "Soc.Cult. Prof.", "Low Srvc."))
 ```
@@ -242,7 +285,6 @@ ggplot(fig2gb, aes(x=year, y=reduceM, color=sh_groups)) +
 
 ### Fig 4. United States
 
-This graph indicates there is a problem with our conversion. there are no ISEI scores below 45...
 
 ```{r fig4}
 fig2us <- subset(fig2, cntry == 840)
@@ -252,7 +294,7 @@ ggplot(fig2us, aes(x=year, y=reduceM, color=sh_groups)) +
     geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
     geom_point(size=2) +
     geom_line() +
-    labs(title = "Support for Redistribution Over Time, Germany") +
+    labs(title = "Support for Redistribution Over Time, United States") +
     ylab(label = "Mean Support") +
     scale_color_hue(labels = c("Capital Accum.", "Mixed Srvc.", "Blue-collar/low", "Soc.Cult. Prof.", "Low Srvc."))
 ```
