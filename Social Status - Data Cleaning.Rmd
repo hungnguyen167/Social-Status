@@ -1816,6 +1816,20 @@ df <- df %>%
     isco88_2digit==51 | isco88_2digit==52 | isco88_2digit==91 ~ 5)
   )
 
+# Our updated coding scheme
+# added 94 & 96 to blue-collar (3)
+# added 95 & 53 to low service (5)
+# added 14 to mixed service (2)
+
+df <- df %>%
+  mutate(sh_groups_new = case_when(
+    isco88_2digit==11 | isco88_2digit==12 | isco88_2digit==13 | isco88_2digit==21 | isco88_2digit==22 | isco88_2digit==24 | isco88_2digit==34 ~ 1,
+    isco88_2digit==31 | isco88_2digit==41 | isco88_2digit==42 | isco88_2digit==14 ~ 2,
+    isco88_2digit==60 | isco88_2digit==61 | isco88_2digit==70 | isco88_2digit==71 | isco88_2digit==72 | isco88_2digit==73 | isco88_2digit==74 | isco88_2digit==80 | isco88_2digit==81 | isco88_2digit==82 | isco88_2digit==83 | isco88_2digit==92 | isco88_2digit==93 | isco88_2digit==94 | isco88_2digit==96 ~ 3,
+    isco88_2digit==23 | isco88_2digit==32 | isco88_2digit==33 ~ 4,
+    isco88_2digit==51 | isco88_2digit==52 | isco88_2digit==91 | isco88_2digit==95 | isco88_2digit==53 ~ 5)
+  )
+
 # Create dummies
 
 df <- df %>%
@@ -1824,6 +1838,14 @@ df <- df %>%
          sh_groups_3 = ifelse(sh_groups == 3, 1, ifelse(is.na(sh_groups), NA, 0)),
          sh_groups_4 = ifelse(sh_groups == 4, 1, ifelse(is.na(sh_groups), NA, 0)),
          sh_groups_5 = ifelse(sh_groups == 5, 1, ifelse(is.na(sh_groups), NA, 0))
+  )
+
+df <- df %>%
+  mutate(sh_groups_new_1 = ifelse(sh_groups_new == 1, 1, ifelse(is.na(sh_groups_new), NA, 0)),
+         sh_groups_new_2 = ifelse(sh_groups_new == 2, 1, ifelse(is.na(sh_groups_new), NA, 0)),
+         sh_groups_new_3 = ifelse(sh_groups_new == 3, 1, ifelse(is.na(sh_groups_new), NA, 0)),
+         sh_groups_new_4 = ifelse(sh_groups_new == 4, 1, ifelse(is.na(sh_groups_new), NA, 0)),
+         sh_groups_new_5 = ifelse(sh_groups_new == 5, 1, ifelse(is.na(sh_groups_new), NA, 0))
   )
 
 ```
