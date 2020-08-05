@@ -116,7 +116,7 @@ df <- df %>%
 
 tab2 <- df
 
-tab2 <- dplyr::select(tab2, year, ageC, female, educyrs, child, married, rincZ, hincZ, isei, egp_un, egp_skl, egp_othr, egp_rou, egp_svc2, egp_svc1, sh_groups_1:sh_groups_5, wk_full:wk_other, wrkhrs, union, sparent, reduce)
+tab2 <- dplyr::select(tab2, year, ageC, female, educyrs, child, married, rincZ, hincZ, isei, egp_un, egp_skl, egp_othr, egp_rou, egp_svc2, egp_svc1, sh_groups_1:sh_groups_5, sh_groups_new_1:sh_groups_new_5, wk_full:wk_other, wrkhrs, union, sparent, reduce)
 
 # Get summary stats
 tab2_1 <- summarise_all(tab2, list(mean), na.rm = T)
@@ -130,7 +130,7 @@ tab2_1.1 <- as.data.frame(t(round(tab2_1.1, 2)))
 tab2_2 <- as.data.frame(t(round(tab2_2, 0)))
 tab2_3 <- as.data.frame(t(round(tab2_3, 0)))
 tab2_4 <- as.data.frame(t(tab2_4))
-tab2_0 <- as.data.frame(c("Year","Age, in years", "Female", "Education, in years", "Children", "Married", "Indiv. Earnings, country-Z", "Household Earnings, country-Z", "Occ. Status, ISEI", "EGP - Unskilled", "EGP - Skilled", "EGP - Self/Other", "EGP - Routine", "EGP - Service II", "EGP - Service I", "SH1 - Capital Accumulator", "SH2 - Mixed Service", "SH3 - Blue-collar/low white", "SH4 - SC Semi-Professional", "SH5 - Lower Service", "Work - Full-time", "Work - Part-Time", "Work - Less-part-time", "Work - Unemployed", "Work - School/Training", "Work - Retired", "Work - Homecare/Family help", "Work - Disabled", "Work - Other/NA", "Hours Worked", "Union", "Parent", "DV - Support Redistribution"))
+tab2_0 <- as.data.frame(c("Year","Age, in years", "Female", "Education, in years", "Children", "Married", "Indiv. Earnings, country-Z", "Household Earnings, country-Z", "Occ. Status, ISEI", "EGP - Unskilled", "EGP - Skilled", "EGP - Self/Other", "EGP - Routine", "EGP - Service II", "EGP - Service I", "SH1 - Capital Accumulator", "SH2 - Mixed Service", "SH3 - Blue-collar/low white", "SH4 - SC Semi-Professional", "SH5 - Lower Service", "SH1_new - Capital Accumulator", "SH2_new - Mixed Service", "SH3_new - Blue-collar/low white", "SH4_new - SC Semi-Professional", "SH5_new - Lower Service","Work - Full-time", "Work - Part-Time", "Work - Less-part-time", "Work - Unemployed", "Work - School/Training", "Work - Retired", "Work - Homecare/Family help", "Work - Disabled", "Work - Other/NA", "Hours Worked", "Union", "Parent", "DV - Support Redistribution"))
 # Bind into table
 tab2f <- cbind(tab2_0,tab2_1,tab2_1.1,tab2_2,tab2_3,tab2_4)
 colnames(tab2f) <- c("Variable","Mean","SD","Min","Max","N")
@@ -198,21 +198,21 @@ kable_styling(cor1k)
 ### Fig 2. Germany
 
 
-```{r grouptest}
+```{r f2de}
 
 fig2 <- df %>%
-  group_by(cyear, sh_groups) %>%
+  group_by(cyear, sh_groups_new) %>%
     mutate(reduceM = mean(reduce, na.rm = T),
            reduceSE = (sd(reduce, na.rm = T)/sqrt(length(which(!is.na(reduce))))))
 
-fig2 <- dplyr::select(fig2, year, cyear, lab, reduceM, reduceSE, wave, cntry, sh_groups)
+fig2 <- dplyr::select(fig2, year, cyear, lab, reduceM, reduceSE, wave, cntry, sh_groups_new)
 
-fig2 <- aggregate(fig2,  by=list(fig2$cyear,fig2$sh_groups), FUN=mean, na.rm=T)
+fig2 <- aggregate(fig2,  by=list(fig2$cyear,fig2$sh_groups_new), FUN=mean, na.rm=T)
 
 fig2de <- subset(fig2, cntry == 276)
-fig2de$sh_groups <- as.factor(fig2de$sh_groups)
+fig2de$sh_groups_new <- as.factor(fig2de$sh_groups_new)
 
-ggplot(fig2de, aes(x=year, y=reduceM, color=sh_groups)) + 
+ggplot(fig2de, aes(x=year, y=reduceM, color=sh_groups_new)) + 
     geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
     geom_point(size=2) +
     geom_line() +
@@ -221,6 +221,136 @@ ggplot(fig2de, aes(x=year, y=reduceM, color=sh_groups)) +
     scale_color_hue(labels = c("Capital Accum.", "Mixed Srvc.", "Blue-collar/low", "Soc.Cult. Prof.", "Low Srvc."))
 
 ```
+```{r f2de_gender}
+
+fig2g <- df %>%
+  group_by(cyear, sh_groups_new, female) %>%
+    mutate(reduceM = mean(reduce, na.rm = T),
+           reduceSE = (sd(reduce, na.rm = T)/sqrt(length(which(!is.na(reduce))))))
+
+fig2g <- dplyr::select(fig2g, year, cyear, lab, reduceM, reduceSE, wave, cntry, sh_groups_new, female)
+fig2g$sh_groups_new_g <- fig2g$sh_groups_new + (5*fig2g$female)
+fig2g <- subset(fig2g, select = -c(sh_groups_new, female))
+
+fig2g <- aggregate(fig2g,  by=list(fig2g$cyear,fig2g$sh_groups_new_g), FUN=mean, na.rm=T)
+
+fig2gde <- subset(fig2g, cntry == 276)
+fig2gde$sh_groups_new <- as.factor(fig2gde$sh_groups_new)
+
+ggplot(fig2gde, aes(x=year, y=reduceM, color=sh_groups_new)) + 
+    geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
+    geom_point(size=2) +
+    geom_line() +
+    labs(title = "Support for Redistribution Over Time, Germany") +
+    ylab(label = "Mean Support") +
+    scale_color_manual(labels = c("M: Capital Accum.", "M: Mixed Srvc.", "M: Blue-collar/low", "M: Soc.Cult. Prof.", "M: Low Srvc.", "F: Capital Accum.", "F: Mixed Srvc.", "F: Blue-collar/low", "F: Soc.Cult. Prof.", "F: Low Srvc."), values = c("red", "darkorange", "royalblue", "purple", "green", "red3", "darkorange3", "royalblue4", "purple3", "green4"))
+
+
+
+```
+
+### Welfare State and Redistributive Prefs
+
+Decommodification data from CWED2
+Government Consumption Data from OECD
+Government Spending Data from OECD
+Pre- Post- Gini from Solt
+
+```{r macro_data}
+# get from github
+pacman::p_load(readr)
+cwed <- read_csv("https://raw.githubusercontent.com/hungnguyen167/Social-Status/master/cwed-subset.csv?token=AGMAHBX3HBSAPIGWMSG4FB27GOJM2")
+
+cwed$cntry <- countrycode(cwed$COUNTRY, "country.name", "iso3n")
+cwed$year <- cwed$YEAR
+
+cweds <- dplyr::select(cwed, cntry, year, TOTGEN, UEGEN, SKGEN, PGEN)
+
+# Get other data later
+```
+
+
+```{r macro_table}
+tab_macro <- fig2 %>%
+  mutate(year2 = year,
+         year = ifelse(year > 2010, 2010, ifelse(year < 1987, 1987, year))
+  )
+
+tab_macro <- left_join(tab_macro,cweds, by = c("cntry","year"))
+
+tab_macro$year <- tab_macro$year2
+tab_macro <- dplyr::select(tab_macro, cntry, year, sh_groups_new, TOTGEN, reduceM, reduceSE)
+tab_macro <- tab_macro[order(tab_macro$cntry, tab_macro$year),]
+tab_macro <- subset(tab_macro, !is.na(tab_macro$TOTGEN))
+
+# get aggregate scores by country/year
+# mean
+t_mean <- aggregate(tab_macro, by = list(tab_macro$cntry, tab_macro$year), FUN = mean)
+t_min <- aggregate(tab_macro, by = list(tab_macro$cntry, tab_macro$year), FUN = min)
+t_max <- aggregate(tab_macro, by = list(tab_macro$cntry, tab_macro$year), FUN = max)
+
+# clean
+t_mean <- dplyr::select(t_mean, cntry, year, TOTGEN, reduceM, reduceSE)
+
+t_min$min <- t_min$reduceM
+t_min <- dplyr::select(t_min, cntry, year, min)
+
+t_max$max <- t_max$reduceM
+t_max <- dplyr::select(t_max, cntry, year, max)
+
+t_max <- left_join(t_max, t_min, by = c("cntry", "year"))
+t_max$range <- t_max$max - t_max$min
+t_max <- dplyr::select(t_max, cntry, year, range)
+
+tab_macro <- left_join(t_mean, t_max, by = c("cntry","year"))
+
+tab_macro <- tab_macro[order(tab_macro$TOTGEN, tab_macro$cntry, tab_macro$year),]
+
+
+tab1_m <- kable(tab_macro)
+
+kable_styling(tab1_m)
+
+
+```
+
+
+```{r scatter_macro}
+# create regime variable
+
+tab_macro <- tab_macro %>%
+  mutate(regime = case_when(
+    cntry == 752 | cntry == 208 | cntry == 578 | cntry == 246 ~ 1,
+    cntry == 276 | cntry == 250 | cntry == 56 | cntry == 528 | cntry == 40 | cntry == 756 ~ 2,
+    cntry == 724 | cntry == 620 | cntry == 380 ~ 3,
+    cntry == 392 | cntry == 410 ~ 4,
+    cntry == 36 | cntry == 840 | cntry == 554 | cntry == 826 | cntry == 372 | cntry == 124 ~ 5
+  ))
+
+tab_macro$regime <- as.factor(tab_macro$regime)
+
+ggplot(tab_macro, aes(y = TOTGEN, x = range, color = regime)) +
+  geom_point() +
+  scale_color_manual(labels = c("Scandinavia", "Cntl. Europe", "S. Europe", "East Asia", "English Diaspora"), values = c("red", "green3", "blue", "darkorange",  "darkgreen"))
+
+```
+
+
+```{r}
+ggplot(tab_macro, aes(y = TOTGEN, x = range)) +
+  geom_point() +
+  geom_smooth(method=lm, se=FALSE)
+```
+
+
+
+
+
+
+
+
+
+
 
 ### Risk and Redistributive Preferences
 
@@ -271,9 +401,9 @@ ggplot(tab3simp, aes(x=risk_grp_rate, y=reduce, color=factor(cntry))) +
 
 ```{r fig3}
 fig2gb <- subset(fig2, cntry == 826)
-fig2gb$sh_groups <- as.factor(fig2gb$sh_groups)
+fig2gb$sh_groups_new <- as.factor(fig2gb$sh_groups_new)
 
-ggplot(fig2gb, aes(x=year, y=reduceM, color=sh_groups)) + 
+ggplot(fig2gb, aes(x=year, y=reduceM, color=sh_groups_new)) + 
     geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
     geom_point(size=2) +
     geom_line() +
@@ -288,9 +418,9 @@ ggplot(fig2gb, aes(x=year, y=reduceM, color=sh_groups)) +
 
 ```{r fig4}
 fig2us <- subset(fig2, cntry == 840)
-fig2us$sh_groups <- as.factor(fig2us$sh_groups)
+fig2us$sh_groups_new <- as.factor(fig2us$sh_groups_new)
 
-ggplot(fig2us, aes(x=year, y=reduceM, color=sh_groups)) + 
+ggplot(fig2us, aes(x=year, y=reduceM, color=sh_groups_new)) + 
     geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
     geom_point(size=2) +
     geom_line() +
@@ -331,14 +461,15 @@ The error term $e$ is the difference between the predicted values and the observ
 
 Here we look at the case of Germany 2010.
 
-```{r nhst}
+```{r nhsta}
+
 
 de10 <- subset(df, year == 2010 & cntry == 276)
 
 # remove all missing values for now
 
-de10 <- completeFun(de10, "reduce")
-de10$groups <- as.factor(de10$groups)
+de10 <- subset(de10, !is.na(reduce))
+de10$groups <- as.factor(de10$sh_groups_new)
 
 # estimate means across groups ('lines-of-best-fit') - OLS
 
@@ -378,7 +509,7 @@ linearHypothesis(m1, c(paste0("groups1 =", reduce_test), paste0("groups2 =", red
 
 ```
 
-```{r m1_wald2}
+```{r m1_wald2a}
 
 # test that all three groups are different from sample mean 
 linearHypothesis(m1, c(paste0("groups1 =", reduceM), paste0("groups2 =", reduce_test), paste0("groups4 =", reduce_test)))
@@ -400,10 +531,10 @@ In our simple example this just doesn't matter much, but as we add more variable
 # lavaan does not accept factor variables so we have to recode manually
 
 de10 <- de10 %>%
-  mutate(group1 = ifelse(groups == 1, 1, 0),
-         group2 = ifelse(groups == 2, 1, 0),
-         group3 = ifelse(groups == 3, 1, 0),
-         group4 = ifelse(groups == 4, 1, 0)
+  mutate(group1 = ifelse(sh_groups_new == 1, 1, 0),
+         group2 = ifelse(sh_groups_new == 2, 1, 0),
+         group3 = ifelse(sh_groups_new == 3, 1, 0),
+         group4 = ifelse(sh_groups_new == 4, 1, 0)
   )
 
 # run a simple linear model
