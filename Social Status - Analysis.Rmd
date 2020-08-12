@@ -431,6 +431,55 @@ ggplot(fig2us, aes(x=year, y=reduceM, color=sh_groups_new)) +
 
 
 
+```{r income_analysis}
+m1 <- lm(reduce ~ as.factor(sh_groups_new)*hincZ*female, data = df)
+
+summary(m1, scale = T)
+
+df$female <- ifelse(df$female == 8, NA, df$female)
+
+df_g1 <- df[df$sh_groups_new == 1, ]
+
+df_g1$rincZ <- scale(df_g1$rincZ)
+df_g1$rincZ <- as.vector(df_g1$rincZ)
+df_g1$reduceZ <- scale(df_g1$reduce)
+df_g1$reduceZ <- as.vector(df_g1$reduceZ)
+
+
+m2 <- lm(reduceZ ~ rincZ + female + rincZ*female, data = df_g1)
+
+summary(m2, scale = T)
+summary(m2)
+
+
+```
+1 "Capital accumulators" 
+2 "Mixed service functionaires" 
+3 "Blue and lower white collar" 
+4 "Socio-cultural (semi-)professionals" 
+5 "Low service functionaires"
+
+```{r ineraction_f_inc}
+plot_model(m1, type = "pred", terms = c("hincZ", "sh_groups_new[1,3,4,5]", "female"))
+
+plot_model(m2, type = "pred", terms = c("rincZ", "female"))
+```
+
+
+
+
+```{r corrs}
+tab3 <- dplyr::select(df_g1, reduce, rincZ, female)
+cor2 <- cor(tab3, use = "pairwise.complete.obs")
+kable(cor2, digits = 2)
+
+
+```
+
+
+
+
+
 
 
 
