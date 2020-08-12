@@ -451,6 +451,11 @@ m2 <- lm(reduceZ ~ rincZ + female + rincZ*female, data = df_g1)
 summary(m2, scale = T)
 summary(m2)
 
+df$age2 <- df$age^2
+m3 <- lm(reduce ~ rincZ + female + degree + age2 + age, data = df[df$cntry == 124, ])
+
+summary(m3)
+
 
 ```
 1 "Capital accumulators" 
