@@ -704,7 +704,7 @@ socin$isei <- occupar::isco88toISEI92(isco88 = socin$isco88)
 
 ## Father, Mother, and Spouse
 
-```{r f&m, include = TRUE, warning=F,message=F}
+```{r f&m&sp, include = TRUE, warning=F,message=F}
 
 
 
@@ -1175,7 +1175,12 @@ socin[which(socin$cntry == 392),]$spisco88 <- jp$jp_socc
 
 # Truncate and coalesce
 
-
+socin <- socin %>%
+  mutate(
+    spisco88_2digit_else = ifelse(!is.na(spisco88), trunc(fisco88/100), NA),
+    spisco88_2digit = coalesce(spisco88_2digit_au,spisco88_2digit_it1,spisco88_2digit_it2,
+                             spisco88_2digit_gbr1,spisco88_2digit_gbr2,spisco88_2digit_else)
+    )
 ## FIsCO88/MISCO88 to EGP/EGP6 and ISEI 
 
 socin <- socin %>%
@@ -1192,7 +1197,7 @@ socin <- socin %>%
 
 # Select relevant variables
 
-socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit)
+socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 ```
 
@@ -1209,7 +1214,7 @@ socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, deg
 # ntlab <- lapply(nl87, attr, "label")
 
 
-# HUNG: recode occupation
+# HUNG: recode occupation. do not run until this is done. 
 
 nl87 <- nl87 %>%
   mutate(
@@ -1260,33 +1265,34 @@ nl87 <- nl87 %>%
     wrkhrs = v73,
     wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
     isco88 = v71,
-    #isco88 = case_when(  # need recoding
-    #  
-    #),
-    #egp = occupar::isco88toEGP(isco88, n.employees = NULL, self.employed = v72),
-    #egp6 = car::recode(egp, recodes = egp6),
-    #isei = occupar::isco88toISEI92(isco88),
-    #isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA), # Truncate isco88 values
+    isco88 = case_when(  # need recoding - one digit to two, can be misleading
+
+    ),
+    egp = occupar::isco88toEGP(isco88, n.employees = NULL, self.employed = v72),
+    egp6 = car::recode(egp, recodes = egp6),
+    isei = occupar::isco88toISEI92(isco88),
+    isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA), # Truncate isco88 values
     fisco88 = v67,
-    #fisco88 = case_when(
-    #  
-    #),
-    #fisco88_2digit = ifelse(!is.na(fisco88), trunc(fisco88/100), NA),
+    fisco88 = case_when( # same as above
+
+    ),
+    fisco88_2digit = ifelse(!is.na(fisco88), trunc(fisco88/100), NA),
     f_selfemp = v68,
     f_egp = occupar::isco88toEGP(fisco88, n.employees = NULL, self.employed = f_selfemp), # nemploy missing
     f_egp6 = car::recode(f_egp,recodes = egp6),
     f_isei = occupar::isco88toISEI92(fisco88),
-    misco88 = NA_real_,# No mother's occupation information available for Denmark 
+    misco88 = NA_real_,# No mother's occupation information available for Denmark
     misco88_2digit = NA_real_,
     m_egp = NA_real_,
-    m_egp6 = NA_real_, 
-    m_isei = NA_real_
-  )  
+    m_egp6 = NA_real_,
+    m_isei = NA_real_,
+    spisco88_2digit = NA_real_ # 100% missing values
+  )
 
 
   
 
-nl87 <- dplyr::select(nl87, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit)
+nl87 <- dplyr::select(nl87, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 # Ireland 1987
 
@@ -1342,18 +1348,18 @@ ie87 <- ie87 %>%
     wrkhrs = v73,
     wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
     isco88 = v71,
-    #isco88 = case_when(  # need recoding
-    #  
-    #),
-    #egp = occupar::isco88toEGP(isco88, n.employees = NULL, self.employed = v72),
-    #egp6 = car::recode(egp, recodes = egp6),
-    #isei = occupar::isco88toISEI92(isco88),
-    #isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA), # Truncate isco88 values
+    isco88 = case_when(  # need recoding
+      
+    ),
+    egp = occupar::isco88toEGP(isco88, n.employees = NULL, self.employed = v72),
+    egp6 = car::recode(egp, recodes = egp6),
+    isei = occupar::isco88toISEI92(isco88),
+    isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA), # Truncate isco88 values
     fisco88 = v67,
-    #fisco88 = case_when(
-    #  
-    #),
-    #fisco88_2digit = ifelse(!is.na(fisco88), trunc(fisco88/100), NA),
+    fisco88 = case_when(
+      
+    ),
+    fisco88_2digit = ifelse(!is.na(fisco88), trunc(fisco88/100), NA),
     f_selfemp = v68,
     #f_egp = occupar::isco88toEGP(fisco88, n.employees = NULL, self.employed = f_selfemp), # nemploy missing
     #f_egp6 = car::recode(f_egp,recodes = egp6),
@@ -1362,13 +1368,17 @@ ie87 <- ie87 %>%
     misco88_2digit = NA_real_,
     m_egp = NA_real_,
     m_egp6 = NA_real_, 
-    m_isei = NA_real_
+    m_isei = NA_real_,
+    spisco88 = v102,
+    spisco88 = case_when( 
+      
+    ),
+    spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
   )  
 
 
-  
 
-ie87 <- dplyr::select(ie87, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit)
+ie87 <- dplyr::select(ie87, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 
 
@@ -1528,6 +1538,7 @@ ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degre
 
 # Netherlands 
 # nelab <- lapply(nl09, attr, "label") 
+
 colnames(nl09) <- tolower(colnames(nl09))
 nl09 <- nl09 %>%
   mutate(
@@ -1708,7 +1719,9 @@ env93 <- env93 %>%
     fisco68 = ifelse(cntry!= 36 & cntry != 372 & cntry != 705 & cntry!=616 & cntry!=643, as.numeric(v219), NA),
     fisco88_2 = as.numeric(v219),
     misco68 = ifelse(cntry!= 36 & cntry != 372 & cntry != 705 & cntry!=616 & cntry!=643, as.numeric(v218), NA),
-    misco88_2 = as.numeric(v218)
+    misco88_2 = as.numeric(v218),
+    spisco68 = ifelse(cntry!= 36 & cntry != 372 & cntry != 705 & cntry!=616 & cntry!=643, as.numeric(v216), NA),
+    spisco88_2 = as.numeric(v216)
   )
 
 
@@ -1718,9 +1731,10 @@ env93 <- env93 %>%
 # In Germany, Norway, Czech Republic, BUlgaria, Canada, Israel, New Zealand, and Spain, isco68 appears to be 3-digit, multiply by 10 and add 1.
 
 
-env93$isco68 <- ifelse(env93$cntry == 276 | env93$cntry == 100 | env93$cntry == 124 | env93$cntry == 376 | env93$cntry == 554 | env93$cntry == 578 | env93$cntry == 705 | env93$cntry == 724, (env93$isco68 * 10)+1, env93$isco68)
-env93$fisco68 <- ifelse(env93$cntry == 276 | env93$cntry == 100 | env93$cntry == 124 | env93$cntry == 376 | env93$cntry == 554 | env93$cntry == 578 | env93$cntry == 705 | env93$cntry == 724, (env93$fisco68 * 10)+1, env93$fisco68)
-env93$misco68 <- ifelse(env93$cntry == 276 | env93$cntry == 100 | env93$cntry == 124 | env93$cntry == 376 | env93$cntry == 554 | env93$cntry == 578 | env93$cntry == 705 | env93$cntry == 724, (env93$misco68 * 10)+1, env93$misco68)
+env93$isco68 <- ifelse(env93$cntry %in% c(276,100,124,376,554,578,705,724), (env93$isco68 * 10)+1, env93$isco68)
+env93$fisco68 <- ifelse(env93$cntry %in% c(276,100,124,376,554,578,705,724), (env93$fisco68 * 10)+1, env93$fisco68)
+env93$misco68 <- ifelse(env93$cntry %in% c(276,100,124,376,554,578,705,724), (env93$misco68 * 10)+1, env93$misco68)
+  
 
 # Norway: Nordic Standard Classification of Occupation (20: Chief Engineers = 230: Electrical and electronics engineers)
 env93[which(env93$cntry==578),]$isco68 <- car::recode(env93[which(env93$cntry==578),]$isco68, recodes = '20 = 230')
@@ -1897,111 +1911,111 @@ env93 <- env93 %>%
       TRUE ~ NA_real_
     )
   )
-# 
-# env93 <- env93 %>%
-#   mutate(
-#     spisco88_2digit_gbr = case_when(
-#       v217 == 1 & cntry == 380 ~ 13,
-#       v217 == 2 & cntry == 380 ~ 12,
-#       v217 == 3 & cntry == 380 ~ 26,
-#       v217 == 4 & cntry == 380 ~ 11,
-#       v217 == 5 & cntry == 380 ~ 11,
-#       v217 == 6 & cntry == 380 ~ 23,
-#       v217 == 7 & cntry == 380 ~ 34,
-#       v217 == 8 & cntry == 380 ~ 1,
-#       v217 == 9 & cntry == 380 ~ 33,
-#       v217 == 10 & cntry == 380 ~ 41,
-#       v217 == 11 & cntry == 380 ~ 26,
-#       v217 == 12 & cntry == 380 ~ 81,
-#       v217 == 13 & cntry == 380 ~ 2,
-#       v217 == 14 & cntry == 380 ~ 91,
-#       v217 == 15 & cntry == 380 ~ 92,
-#       v217 == 16 & cntry == 380 ~ 24,
-#       v217 == 17 & cntry == 380 ~ 52,
-#       v217 == 18 & cntry == 380 ~ 71,
-#       v217 == 19 & cntry == 380 ~ 95,
-#       v217 == 20 & cntry == 380 ~ 91,
-#       v217 == 21 & cntry == 380 ~ 61,
-#       v217 == 22 & cntry == 380 ~ 91,
-#       v217 == 11 & cntry == 826 ~ 13,
-#       v217 == 12 & cntry == 826 ~ 13,
-#       v217 == 13 & cntry == 826 ~ 12,
-#       v217 == 14 & cntry == 826 ~ 24,
-#       v217 == 15 & cntry == 826 ~ 54,
-#       v217 == 16 & cntry == 826 ~ 12,
-#       v217 == 17 & cntry == 826 ~ 14,
-#       v217 == 19 & cntry == 826 ~ 14,
-#       v217 == 20 & cntry == 826 ~ 21,
-#       v217 == 21 & cntry == 826 ~ 21,
-#       v217 == 22 & cntry == 826 ~ 22,
-#       v217 == 23 & cntry == 826 ~ 23,
-#       v217 == 24 & cntry == 826 ~ 26,
-#       v217 == 25 & cntry == 826 ~ 24,
-#       v217 == 26 & cntry == 826 ~ 21,
-#       v217 == 27 & cntry == 826 ~ 25,
-#       v217 == 29 & cntry == 826 ~ 34,
-#       v217 == 30 & cntry == 826 ~ 31,
-#       v217 == 31 & cntry == 826 ~ 31,
-#       v217 == 32 & cntry == 826 ~ 35,
-#       v217 == 33 & cntry == 826 ~ 33,
-#       v217 == 34 & cntry == 826 ~ 32,
-#       v217 == 35 & cntry == 826 ~ 34,
-#       v217 == 36 & cntry == 826 ~ 33,
-#       v217 == 37 & cntry == 826 ~ 34,
-#       v217 == 38 & cntry == 826 ~ 34,
-#       v217 == 39 & cntry == 826 ~ 31,
-#       v217 == 40 & cntry == 826 ~ 44,
-#       v217 == 41 & cntry == 826 ~ 43,
-#       v217 == 42 & cntry == 826 ~ 43,
-#       v217 == 43 & cntry == 826 ~ 44,
-#       v217 == 44 & cntry == 826 ~ 42,
-#       v217 == 45 & cntry == 826 ~ 51,
-#       v217 == 46 & cntry == 826 ~ 51,
-#       v217 == 49 & cntry == 826 ~ 51,
-#       v217 == 50 & cntry == 826 ~ 71,
-#       v217 == 51 & cntry == 826 ~ 72,
-#       v217 == 52 & cntry == 826 ~ 74,
-#       v217 == 53 & cntry == 826 ~ 72,
-#       v217 == 54 & cntry == 826 ~ 72,
-#       v217 == 55 & cntry == 826 ~ 75,
-#       v217 == 56 & cntry == 826 ~ 75,
-#       v217 == 57 & cntry == 826 ~ 75,
-#       v217 == 58 & cntry == 826 ~ 75,
-#       v217 == 59  & cntry == 826 ~ 75,
-#       v217 == 60  & cntry == 826 ~ 1,
-#       v217 == 61  & cntry == 826 ~ 54,
-#       v217 == 62  & cntry == 826 ~ 52,
-#       v217 == 63  & cntry == 826 ~ 52,
-#       v217 == 64  & cntry == 826 ~ 14,
-#       v217 == 65  & cntry == 826 ~ 51,
-#       v217 == 66  & cntry == 826 ~ 51,
-#       v217 == 67  & cntry == 826 ~ 91,
-#       v217 == 69  & cntry == 826 ~ 54,
-#       v217 == 70  & cntry == 826 ~ 52,
-#       v217 == 71  & cntry == 826 ~ 52,
-#       v217 == 72  & cntry == 826 ~ 95,
-#       v217 == 73  & cntry == 826 ~ 95,
-#       v217 == 79  & cntry == 826 ~ 95,
-#       v217 == 80  & cntry == 826 ~ 94,
-#       v217 == 81  & cntry == 826 ~ 82,
-#       v217 == 82  & cntry == 826 ~ 81,
-#       v217 == 83  & cntry == 826 ~ 81,
-#       v217 == 84  & cntry == 826 ~ 81,
-#       v217 == 85  & cntry == 826 ~ 82,
-#       v217 == 86  & cntry == 826 ~ 82,
-#       v217 == 87  & cntry == 826 ~ 83,
-#       v217 == 88  & cntry == 826 ~ 83,
-#       v217 == 89  & cntry == 826 ~ 81,
-#       v217 == 90  & cntry == 826 ~ 92,
-#       v217 == 91  & cntry == 826 ~ 93,
-#       v217 == 92  & cntry == 826 ~ 93,
-#       v217 == 93  & cntry == 826 ~ 93,
-#       v217 == 94  & cntry == 826 ~ 95,
-#       v217 == 95  & cntry == 826 ~ 95,
-#       v217 == 99  & cntry == 826 ~ 96,
-#       TRUE ~ NA_real_
-#     )
-#   )
+
+env93 <- env93 %>%
+  mutate(
+    spisco88_2digit_gbr = case_when(
+      v217 == 1 & cntry == 380 ~ 13,
+      v217 == 2 & cntry == 380 ~ 12,
+      v217 == 3 & cntry == 380 ~ 26,
+      v217 == 4 & cntry == 380 ~ 11,
+      v217 == 5 & cntry == 380 ~ 11,
+      v217 == 6 & cntry == 380 ~ 23,
+      v217 == 7 & cntry == 380 ~ 34,
+      v217 == 8 & cntry == 380 ~ 1,
+      v217 == 9 & cntry == 380 ~ 33,
+      v217 == 10 & cntry == 380 ~ 41,
+      v217 == 11 & cntry == 380 ~ 26,
+      v217 == 12 & cntry == 380 ~ 81,
+      v217 == 13 & cntry == 380 ~ 2,
+      v217 == 14 & cntry == 380 ~ 91,
+      v217 == 15 & cntry == 380 ~ 92,
+      v217 == 16 & cntry == 380 ~ 24,
+      v217 == 17 & cntry == 380 ~ 52,
+      v217 == 18 & cntry == 380 ~ 71,
+      v217 == 19 & cntry == 380 ~ 95,
+      v217 == 20 & cntry == 380 ~ 91,
+      v217 == 21 & cntry == 380 ~ 61,
+      v217 == 22 & cntry == 380 ~ 91,
+      v217 == 11 & cntry == 826 ~ 13,
+      v217 == 12 & cntry == 826 ~ 13,
+      v217 == 13 & cntry == 826 ~ 12,
+      v217 == 14 & cntry == 826 ~ 24,
+      v217 == 15 & cntry == 826 ~ 54,
+      v217 == 16 & cntry == 826 ~ 12,
+      v217 == 17 & cntry == 826 ~ 14,
+      v217 == 19 & cntry == 826 ~ 14,
+      v217 == 20 & cntry == 826 ~ 21,
+      v217 == 21 & cntry == 826 ~ 21,
+      v217 == 22 & cntry == 826 ~ 22,
+      v217 == 23 & cntry == 826 ~ 23,
+      v217 == 24 & cntry == 826 ~ 26,
+      v217 == 25 & cntry == 826 ~ 24,
+      v217 == 26 & cntry == 826 ~ 21,
+      v217 == 27 & cntry == 826 ~ 25,
+      v217 == 29 & cntry == 826 ~ 34,
+      v217 == 30 & cntry == 826 ~ 31,
+      v217 == 31 & cntry == 826 ~ 31,
+      v217 == 32 & cntry == 826 ~ 35,
+      v217 == 33 & cntry == 826 ~ 33,
+      v217 == 34 & cntry == 826 ~ 32,
+      v217 == 35 & cntry == 826 ~ 34,
+      v217 == 36 & cntry == 826 ~ 33,
+      v217 == 37 & cntry == 826 ~ 34,
+      v217 == 38 & cntry == 826 ~ 34,
+      v217 == 39 & cntry == 826 ~ 31,
+      v217 == 40 & cntry == 826 ~ 44,
+      v217 == 41 & cntry == 826 ~ 43,
+      v217 == 42 & cntry == 826 ~ 43,
+      v217 == 43 & cntry == 826 ~ 44,
+      v217 == 44 & cntry == 826 ~ 42,
+      v217 == 45 & cntry == 826 ~ 51,
+      v217 == 46 & cntry == 826 ~ 51,
+      v217 == 49 & cntry == 826 ~ 51,
+      v217 == 50 & cntry == 826 ~ 71,
+      v217 == 51 & cntry == 826 ~ 72,
+      v217 == 52 & cntry == 826 ~ 74,
+      v217 == 53 & cntry == 826 ~ 72,
+      v217 == 54 & cntry == 826 ~ 72,
+      v217 == 55 & cntry == 826 ~ 75,
+      v217 == 56 & cntry == 826 ~ 75,
+      v217 == 57 & cntry == 826 ~ 75,
+      v217 == 58 & cntry == 826 ~ 75,
+      v217 == 59  & cntry == 826 ~ 75,
+      v217 == 60  & cntry == 826 ~ 1,
+      v217 == 61  & cntry == 826 ~ 54,
+      v217 == 62  & cntry == 826 ~ 52,
+      v217 == 63  & cntry == 826 ~ 52,
+      v217 == 64  & cntry == 826 ~ 14,
+      v217 == 65  & cntry == 826 ~ 51,
+      v217 == 66  & cntry == 826 ~ 51,
+      v217 == 67  & cntry == 826 ~ 91,
+      v217 == 69  & cntry == 826 ~ 54,
+      v217 == 70  & cntry == 826 ~ 52,
+      v217 == 71  & cntry == 826 ~ 52,
+      v217 == 72  & cntry == 826 ~ 95,
+      v217 == 73  & cntry == 826 ~ 95,
+      v217 == 79  & cntry == 826 ~ 95,
+      v217 == 80  & cntry == 826 ~ 94,
+      v217 == 81  & cntry == 826 ~ 82,
+      v217 == 82  & cntry == 826 ~ 81,
+      v217 == 83  & cntry == 826 ~ 81,
+      v217 == 84  & cntry == 826 ~ 81,
+      v217 == 85  & cntry == 826 ~ 82,
+      v217 == 86  & cntry == 826 ~ 82,
+      v217 == 87  & cntry == 826 ~ 83,
+      v217 == 88  & cntry == 826 ~ 83,
+      v217 == 89  & cntry == 826 ~ 81,
+      v217 == 90  & cntry == 826 ~ 92,
+      v217 == 91  & cntry == 826 ~ 93,
+      v217 == 92  & cntry == 826 ~ 93,
+      v217 == 93  & cntry == 826 ~ 93,
+      v217 == 94  & cntry == 826 ~ 95,
+      v217 == 95  & cntry == 826 ~ 95,
+      v217 == 99  & cntry == 826 ~ 96,
+      TRUE ~ NA_real_
+    )
+  )
 
 
 # Slovenia - Father + Mother
@@ -2045,16 +2059,17 @@ env93 <- env93 %>%
 
 env93 <- env93 %>%
   mutate(
-    isco88_2digit_else = ifelse(!is.na(isco88), trunc(isco88/100), isco88_2digit),
+    isco88_2digit_else = ifelse(!is.na(isco88), trunc(isco88/100), NA),
     isco88_2digit = coalesce(isco88_2digit_it, isco88_2digit_else),
-    fisco88_2digit_else = ifelse(!is.na(fisco88), trunc(fisco88/100), isco88_2digit),
-    fisco88_2digit = coalesce(fisco88_2digit_gbr, fisco88_2digit_else),
-    misco88_2digit = ifelse(!is.na(misco88), trunc(misco88/100), misco88_2digit)
-    ) # Truncate isco88 values
+    fisco88_2digit = ifelse(!is.na(fisco88), trunc(fisco88/100), NA),
+    misco88_2digit = ifelse(!is.na(misco88), trunc(misco88/100), NA),
+    spisco88_2digit = 
+    ) 
+# Truncate isco88 values
 
 # Select relevant variables 
 
-env93 <- dplyr::select(env93,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, v231, v253, isco88, isco88_2digit, fisco88_2digit, misco88_2digit))
+env93 <- dplyr::select(env93,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, v231, v253, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit))
 
 ```
 
@@ -2278,7 +2293,7 @@ env10 <- env10 %>%
     m_egp6 = NA_real_,
     m_isei = NA_real_,
     fisco88_2digit = NA_real_,
-    fisco88_2digit = NA_real_
+    misco88_2digit = NA_real_
   )
 
 env10 <- env10 %>%
