@@ -33,7 +33,7 @@ rm(list = ls())
 
 ```{r setup, include=FALSE}
 library(pacman)
-pacman::p_load("tidyverse","knitr","car","expss","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools","ggplot2","countrycode")
+pacman::p_load("tidyverse","knitr","car","expss","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools","ggplot2","countrycode","rjags")
 
 knitr::opts_chunk$set(message = F, warning = F)
 
@@ -257,9 +257,9 @@ Government Spending Data from OECD
 Pre- Post- Gini from Solt
 
 ```{r macro_data}
-# get from github
+# get from github - cwed
 pacman::p_load(readr)
-cwed <- read_csv("https://raw.githubusercontent.com/hungnguyen167/Social-Status/master/cwed-subset.csv?token=AGMAHBX3HBSAPIGWMSG4FB27GOJM2")
+cwed <- read.csv("https://raw.githubusercontent.com/hungnguyen167/Social-Status/master/cwed-subset.csv?token=AG6CBQYFHE3RYFAXHOMKPTS7IQGHU")
 
 cwed$cntry <- countrycode(cwed$COUNTRY, "country.name", "iso3n")
 cwed$year <- cwed$YEAR
@@ -267,6 +267,10 @@ cwed$year <- cwed$YEAR
 cweds <- dplyr::select(cwed, cntry, year, TOTGEN, UEGEN, SKGEN, PGEN)
 
 # Get other data later
+
+
+
+
 ```
 
 
@@ -653,4 +657,126 @@ kable(tab_m3)
 ```{r m3_chitest}
 compareFit(m2, m3)
 ```
+
+### Hung's corner
+
+```{r hung}
+# Compute Gini coefficients
+
+gini <- aggregate(df, by = list(df$cntry), function(x) Gini(x))
+gini <- select(gini, Group.1, rincO)
+gini <- rename(gini, cntry = Group.1)
+gini$rincO <- round(gini$rincO, digits = 3)
+
+
+# Bayesian estimation - ANOVA
+
+## non-informative prior 
+m1 <- lm(reduce ~ as.factor(sh_groups_new), data = de10)
+summary(m1)
+
+## The anova() function in R compares variability of observations between the treatment groups to variability within the treatment groups to test whether all means are equal or whether at least one is different. The small p-value here suggests that the means are not all equal.
+
+anova(m1)
+
+library(rjags)
+
+de10 <- subset(df, year == 2010 & cntry == 276)
+
+de10 <- de10[complete.cases(de10$sh_groups_new),]  # get complete cases for the model to work
+
+## Model 
+mod_string = " model {
+  for (i in 1:length(y)) {
+      y[i] ~ dnorm(mu[grp[i]], prec)
+  }
+  for (j in 1:5) {
+      mu[j] ~ dnorm(0.0, 1.0/1.0e6)
+  }
+  prec ~ dgamma(5/2.0, 5*1.0/2.0)
+  sig = sqrt( 1.0 / prec )
+}"
+
+set.seed(62)
+
+data_jags = list(y = de10$reduce, grp = as.numeric(de10$sh_groups_new))
+params = c("mu", "sig")
+
+inits = function() {
+  inits = list("mu" = rnorm(5,0.0,100.0), "prec"=rgamma(1,1.0,1.0))
+}
+
+mod = jags.model(textConnection(mod_string), data=data_jags, inits = inits, n.chains=3)
+update(mod, 1e3)
+mod_sim = coda.samples(model=mod, variable.names=params, n.iter=5e3)
+mod_csim = as.mcmc(do.call(rbind, mod_sim))
+
+## Convergence checks 
+
+
+gelman.diag(mod_sim)
+autocorr.diag(mod_sim)
+effectiveSize(mod_sim)
+
+
+(pm_params = colMeans(mod_csim))
+
+yhat = pm_params[1:5][data_jags$grp]
+resid = data_jags$y - yhat
+
+plot(yhat, resid)
+
+
+## Results
+
+summary(mod_sim)
+HPDinterval(mod_csim)
+
+mean(mod_csim[,3] > mod_csim[,3])
+
+## Conclusion: Seems like these groups are significantly different from each other 
+
+```
+
+Let's try a more complicated model using Bayesian estimation, this time an Ordinal Logistic Regression
+
+
+```{r OLR}
+
+## Model setup
+
+mod_string2 <- " model {
+  for ( i in 1:n) {
+    y[i] ~ dcat( pr[i,1:n] )
+    pr[i,1] <- pnorm( thresh[1], mu[i], 1/sigma^2)
+    for ( k in 2:(n-1) ) {
+      pr[i,k] <- max( 0, pnorm(thresh[k], mu[i], 1/sigma^2) - pnorm(thresh[k-1], mu[i], 1/sigma^2))
+    }
+  
+    pr[i,n] <- 1 - pnorm(thresh[n-1], mu[i], 1/sigma^2)
+    mu[i] <- b0 + b1*x[i]
+  }
+  b0 ~ dnorm((n+1)/2, 1/n^2)
+  b1 ~ dnorm(0, 1/n^2)
+  sigma ~ dunif(n/1000, n*10)
+  for ( k in 2:(n-2)) {
+    thresh[k] ~ dnorm(k+0.5, 1/2^2)
+  }
+}"
+thresh = rep(NA, nrow(de10)-1)
+thresh[1] = 1+0.5
+thresh[nrow(de10)-1] = nrow(de10)-0.5
+data_jags2 = list(y = as.factor(de10$reduce), x = as.numeric(de10$sh_groups_new),n = nrow(de10), thresh = thresh)
+
+params = c("mu","sigma")
+
+mod2 = jags.model(textConnection(mod_string2), data = data_jags2, n.chains = 2)
+
+```
+
+
+
+
+
+
 

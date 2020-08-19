@@ -46,15 +46,22 @@ Netherlands 2009 added manually "ZA5995_v1-0-0.dta"
 
 Notes:
 
-A. HUNG - can you integrate nl87 and ie87 into the socin file please? I've added the data files, but not recoded them yet. - DONE
+
+--- AWAITING SOLUTIONS ---
+
+A. HUNG - can you integrate nl87 and ie87 into the socin file please? I've added the data files, but not recoded them yet. - Needs occupation recoding before integrating. Problem: 1-digit code to 2-digit.
+   
+--- AWAITING SOLUTIONS ---   
+   
+   
+   
+   
+   
+--- DONE ---   
    
    HUNG - can you follow my coding schemes for 2-digit ISCO and apply them to mothers and fathers in Australia 1987, Italy 87 & 92 & env93, Great Britain 87 & 92 & env93, & Poland 87 please? You will find the hand recodes in the code chunk 'isco88_2'. I haven't finished coding the other countries into 2-digit isco, will finish at some point, although we have most by now. - DONE
    
-   HUNG - we need to get spouse isco and spouse isco88_2digit, can you please add these everywhere? please name them spisco88 and spisco88_2digit. Of course for many countries there will be missing spisco88 in the earlier surveys, but spouse isco will be really important in determining the status of a housewife/partner.
-
-B. Need to use the supplementary file to divide East and West Germany at some point. Or maybe not. If we think of Germany as a political unit where policy change is or is not possible, it makes sense to use all of Germany (whatever that means at the time) to look for majority constellations
-
-C. We should see if there is any way to remove the NA from child, maybe they can safely be recoded to zero? 
+   HUNG - we need to get spouse isco and spouse isco88_2digit, can you please add these everywhere? please name them spisco88 and spisco88_2digit. Of course for many countries there will be missing spisco88 in the earlier surveys, but spouse isco will be really important in determining the status of a housewife/partner. - DONE
 
 D. I changed the variable 'year' to reflect the actual year when the survey was fielded in each country - sometimes it is not the same as 'wave', but having the year accurate as possible makes it better for merging in macro data. 
 
@@ -63,6 +70,21 @@ E. Made a variable 'reduce' that is = to 'incdiff' but has 9 recoded into NA and
 F. Recoded 'wrkst' so that they matched across all surveys (not just full-time, part-time, less than part time). Env00 uses a slightly different list than the others. Now wrkst doesn't have value "4". 
 
 G. Mistake with Australia - it should not have ISCO68 in env93, it is isco88. this explains why so many values go tdropped in the conversion
+
+--- DONE ---
+
+
+
+
+--- TO BE EXECUTED ---
+
+B. Need to use the supplementary file to divide East and West Germany at some point. Or maybe not. If we think of Germany as a political unit where policy change is or is not possible, it makes sense to use all of Germany (whatever that means at the time) to look for majority constellations. 
+
+C. We should see if there is any way to remove the NA from child, maybe they can safely be recoded to zero? 
+
+
+--- TO BE EXECUTED ---
+
 
 
 ## SETUP
@@ -76,7 +98,7 @@ rm(list = ls())
 
 library(pacman)
 
-pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools", "tidylog", "countrycode", "Hmisc")
+pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools", "tidylog", "countrycode", "Hmisc", "ineq")
 
 #remotes::install_github("DiogoFerrari/occupar")
 #remotes::install_github("pdparker/isco88conversion")
@@ -110,7 +132,7 @@ env10 <- read_dta(paste(wd, "ZA5500_v3-0-0.dta",sep=""))
 # Integrate missing countries
 
 ie87 <- read_dta(paste(wd, "ZA1306_v1-0-0.dta", sep=""))
-nl87 <- read_dta(paste(wd, "ZA1680.dta", sep=""))
+nl87 <- read_dta(paste(wd, "ZA1680.dta", sep=""))  
 nl87 <- subset(nl87, nl87$v3 == 7)
 dk99 <- read_dta(paste(wd, "ZA3562_v1-0-0.dta", sep=""))
 ie99 <- read_dta(paste(wd, "ZA3613_v1-0-0.dta", sep=""))
@@ -194,10 +216,16 @@ socin$child <- coalesce(socin$child, socin$hhcycle_us92)
 # Respondent income
 
 temp <- dplyr::select(socin2, AT_RIN87:US_RIN09)
+temp2 <- temp 
 temp <- lapply(temp, function(x) ntile(x, 10)) # deciles
-socin <- cbind(socin,temp)
-socin$rincZ = rowMeans(socin[,which(names(socin)=="AT_RIN87"):which(names(socin)=="US_RIN09")], na.rm = T)
-socin$rincZ = ifelse(socin$rincZ=="NaN",NA,socin$rincZ)
+socin <- bind_cols(socin,temp,temp2)
+socin$rincZ <- rowMeans(socin[,which(names(socin)=="AT_RIN87"):which(names(socin)=="US_RIN09")], na.rm = T)
+socin$rincZ <- ifelse(socin$rincZ=="NaN",NA,socin$rincZ)
+
+# Take the orignal incomes to compute Gini's coefficient
+
+socin$rincO <- rowMeans(socin[,which(names(socin)=="AT_RIN871"):which(names(socin)=="US_RIN091")], na.rm = T)
+socin$rincO <- ifelse(socin$rincO=="NaN",NA,socin$rincO)
 
 
 ## Household income
@@ -1197,7 +1225,7 @@ socin <- socin %>%
 
 # Select relevant variables
 
-socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 ```
 
@@ -1434,6 +1462,7 @@ dk99 <- dk99 %>%
     ),
     rincZ = ntile(rincome, 10), # deciles
     hincZ = ntile(income, 10),
+    rincO = rincome,
     wrkst = ifelse(wrkst == 4, 8, wrkst),
     wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
@@ -1455,13 +1484,14 @@ dk99 <- dk99 %>%
     misco88_2digit = NA_real_,
     m_egp = NA_real_,
     m_egp6 = NA_real_, 
-    m_isei = NA_real_
+    m_isei = NA_real_,
+    spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
   )  
 
 
   
 
-dk99 <- dplyr::select(dk99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit)
+dk99 <- dplyr::select(dk99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit,spisco88_2digit)
 
 # Ireland 1999
 
@@ -1515,6 +1545,7 @@ ie99 <- ie99 %>%
     ),
     rincZ = ntile(rincome, 10),
     hincZ = ntile(income, 10),
+    rincO = rincome,
     wrkst = ifelse(wrkst == 4, 8, wrkst),
     wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
@@ -1530,11 +1561,12 @@ ie99 <- ie99 %>%
     misco88_2digit = NA_real_,
     m_egp = NA_real_,
     m_egp6 = NA_real_, 
-    m_isei = NA_real_
+    m_isei = NA_real_,
+    spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
   )
 
 
-ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit)
+ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 # Netherlands 
 # nelab <- lapply(nl09, attr, "label") 
@@ -1592,6 +1624,7 @@ nl09 <- nl09 %>%
     ),
     rincZ = ntile(nl_rinc, 10),
     hincZ = ntile(nl_inc, 10),
+    rincO = nl_rinc,
     wrkst = ifelse(wrkst == 4, 8, wrkst),
     wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
     egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
@@ -1608,9 +1641,10 @@ nl09 <- nl09 %>%
     m_egp = occupar::isco88toEGP(misco88, n.employees = NULL, self.employed = NULL), # nemploy and selfemp missing (labels unkown) - some might be incorrectly coded.
     m_egp6 = car::recode(m_egp,recodes = egp6_2),
     m_isei = occupar::isco88toISEI92(misco88),
+    spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
   )
 
-nl09 <- dplyr::select(nl09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit)
+nl09 <- dplyr::select(nl09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 
 ## Merge data sets  
@@ -1623,8 +1657,10 @@ mer2$hincZ <- as.vector(mer2$hincZ)
 df <- plyr::rbind.fill(mer2,socin)
 
 df <- df %>%
-  group_by(cntry, year)
-
+  group_by(cntry, year) %>%
+  mutate(
+    rincO = zap_labels(rincO)
+  )
 
 ```
 
@@ -1728,16 +1764,18 @@ env93 <- env93 %>%
 # ISCO68 problems
 
 
-# In Germany, Norway, Czech Republic, BUlgaria, Canada, Israel, New Zealand, and Spain, isco68 appears to be 3-digit, multiply by 10 and add 1.
+# In Germany, Norway, Czech Republic, BUlgaria, Canada, Israel, New Zealand, and Spain, isco68 appears to be 3-digit, multiply by 10 and add 1 to translate to 4-digit. 
 
 
 env93$isco68 <- ifelse(env93$cntry %in% c(276,100,124,376,554,578,705,724), (env93$isco68 * 10)+1, env93$isco68)
 env93$fisco68 <- ifelse(env93$cntry %in% c(276,100,124,376,554,578,705,724), (env93$fisco68 * 10)+1, env93$fisco68)
 env93$misco68 <- ifelse(env93$cntry %in% c(276,100,124,376,554,578,705,724), (env93$misco68 * 10)+1, env93$misco68)
+env93$spisco68 <- ifelse(env93$cntry %in% c(276,100,124,376,554,578,705,724), (env93$spisco68 * 10)+1, env93$spisco68)
   
 
 # Norway: Nordic Standard Classification of Occupation (20: Chief Engineers = 230: Electrical and electronics engineers)
 env93[which(env93$cntry==578),]$isco68 <- car::recode(env93[which(env93$cntry==578),]$isco68, recodes = '20 = 230')
+env93[which(env93$cntry==578),]$spisco68 <- car::recode(env93[which(env93$cntry==578),]$spisco68, recodes = '20 = 230')
 
 # Create Isco88 vector
 
@@ -1745,6 +1783,7 @@ env93[which(env93$cntry==578),]$isco68 <- car::recode(env93[which(env93$cntry==5
 env93$isco88 <- occupar::isco68to88(isco68 = env93$isco68, display.nas = T)
 env93$fisco88 <- occupar::isco68to88(isco68 = env93$fisco68, display.nas = T)
 env93$misco88 <- occupar::isco68to88(isco68 = env93$misco68, display.nas = T)
+env93$spisco88 <- occupar::isco68to88(isco68 = env93$spisco68, display.nas = T)
 
 
 # Slovenia
@@ -1799,6 +1838,21 @@ jp$jp_mocc <- if_else(jp$jp_mocc == 7233 & jp$meducyrsjp > 11, 4211, jp$jp_mocc)
 jp$jp_mocc <- if_else(jp$jp_mocc == 6130 & jp$meducyrsjp < 12, 9211, jp$jp_mocc)
 jp$jp_mocc <- if_else(jp$jp_mocc == 2265 & jp$meducyrsjp < 16, 1229, jp$jp_mocc)
 env93[which(env93$cntry == 392),]$misco88 <- jp$jp_mocc
+
+# Japan - Spouse
+
+env93$jp_socc <- env93$spisco68
+env93$jp_socc <- car::recode(env93$jp_socc, recodes = "7 = 2265; 8 = 2265; 5 = 9322; 4 = 7233; 3 = 5130; 6 = 4115; 1 = 6130; 2 = 7233;
+                            9  = NA; 10= NA; 11 = NA")
+env93[which(env93$cntry == 392),]$spisco88 <- env93[which(env93$cntry == 392),]$jp_socc
+jp_socc <- env93[which(env93$cntry == 392),]$spisco88 
+seducyrsjp <- env93[which(env93$cntry == 392),]$v206
+jp <- as.data.frame(cbind(jp_socc, seducyrsjp))
+jp$jp_socc <- if_else(jp$jp_socc == 4115 & jp$seducyrsjp < 14, 3416, jp$jp_socc)
+jp$jp_socc <- if_else(jp$jp_socc == 7233 & jp$seducyrsjp > 11, 4211, jp$jp_socc)
+jp$jp_socc <- if_else(jp$jp_socc == 6130 & jp$seducyrsjp < 12, 9211, jp$jp_socc)
+jp$jp_socc <- if_else(jp$jp_socc == 2265 & jp$seducyrsjp < 16, 1229, jp$jp_socc)
+env93[which(env93$cntry == 392),]$spisco88 <- jp$jp_socc
 
 
 # Nation-specific Occ recodes
@@ -2021,12 +2075,13 @@ env93 <- env93 %>%
 # Slovenia - Father + Mother
 
 
-# coalesce
+# Coalesce
 
 
 env93$isco88 <- coalesce(env93$isco88,env93$isco88_2)
 env93$fisco88 <- coalesce(env93$fisco88,env93$fisco88_2)
 env93$misco88 <- coalesce(env93$misco88,env93$misco88_2)
+env93$spisco88 <- coalesce(env93$spisco88,env93$spisco88_2)
 
 # ISCO88 to EGP/EGP6 and ISEI
 
@@ -2045,15 +2100,7 @@ env93 <- env93 %>%
 
 
 
-## Earnings - grouped by country, then deciles
 
-env93 <- env93 %>%
-  group_by(cntry) %>%
-  mutate(
-    rincZ = ntile(v231, 10),
-    hincZ = ntile(v253, 10)
-  ) %>%
-  ungroup()
 
 # 2 Digits
 
@@ -2063,13 +2110,24 @@ env93 <- env93 %>%
     isco88_2digit = coalesce(isco88_2digit_it, isco88_2digit_else),
     fisco88_2digit = ifelse(!is.na(fisco88), trunc(fisco88/100), NA),
     misco88_2digit = ifelse(!is.na(misco88), trunc(misco88/100), NA),
-    spisco88_2digit = 
+    spisco88_2digit_else = ifelse(!is.na(spisco88), trunc(spisco88/100), NA),
+    spisco88_2digit = coalesce(spisco88_2digit_gbr, spisco88_2digit_else)
     ) 
-# Truncate isco88 values
+
+## Earnings - grouped by country, then deciles
+
+env93 <- env93 %>%
+  group_by(cntry) %>%
+  mutate(
+    rincZ = ntile(v231, 10),
+    rincO = v231,
+    hincZ = ntile(v253, 10)
+  ) %>%
+  ungroup()
 
 # Select relevant variables 
 
-env93 <- dplyr::select(env93,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, v231, v253, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit))
+env93 <- dplyr::select(env93,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit))
 
 ```
 
@@ -2134,6 +2192,7 @@ env00 <- env00 %>%
     wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
     wrkst = ifelse(v231 == 4, 8, v231),
     isco88 = v233,
+    spisco88 = v234
   )
 # ISCO88 to EGP
 
@@ -2157,6 +2216,7 @@ env00 <- env00 %>%
   group_by(cntry) %>%
   mutate(
     rincZ = ntile(v240, 10),
+    rincO = v240,
     hincZ = ntile(v241, 10)
   ) %>%
   ungroup()
@@ -2175,10 +2235,13 @@ env00 <- env00 %>%
   )
 
 env00 <- env00 %>%
-  mutate(isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA)) # Truncate isco88 values
+  mutate(
+    isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA),
+    spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)  
+  ) # Truncate isco88 values
 
 # Select relevant variables 
-env00 <- dplyr::select(env00,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit,fisco88_2digit,misco88_2digit)) 
+env00 <- dplyr::select(env00,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)) 
 ```
 
 
@@ -2269,11 +2332,14 @@ env10$isei <- occupar::isco88toISEI92(isco88 = env10$isco88)
 ## Respondent's income, scaled.
 
 temp <- dplyr::select(env10, ar_rinc:za_rinc)
+temp2 <- temp
 temp[temp >= 999990] <- NA
 temp <- as.data.frame(lapply(temp, function(x) ntile(x, 10))) # deciles
 env10$rincZ <- rowMeans(temp, na.rm = T)
 env10$rincZ <- ifelse(env10$rincZ == "NaN", NA, env10$rincZ)
 
+env10$rincO <- rowMeans(temp2, na.rm = T)
+env10$rincO <- ifelse(env10$rincO == "NaN", NA, env10$rincO)
 ## Household income, scaled.
 
 temp <- dplyr::select(env10, ar_inc:za_inc)
@@ -2297,11 +2363,14 @@ env10 <- env10 %>%
   )
 
 env10 <- env10 %>%
-  mutate(isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA)) # Truncate isco88 values
+  mutate(
+    isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA),
+    spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
+  ) # Truncate isco88 and spisco88 values
 
 
 # Select relevant variables 
-env10 <- dplyr::select(env10,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit))
+env10 <- dplyr::select(env10,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit))
 
 ```
 ## Merge environment data sets and social inequality cumulative data set and save 
