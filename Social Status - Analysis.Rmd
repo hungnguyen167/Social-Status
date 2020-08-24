@@ -679,7 +679,6 @@ summary(m1)
 
 anova(m1)
 
-library(rjags)
 
 de10 <- subset(df, year == 2010 & cntry == 276)
 
@@ -743,37 +742,101 @@ Let's try a more complicated model using Bayesian estimation, this time an Ordin
 
 ```{r OLR}
 
-## Model setup
+## Model setup 
 
 mod_string2 <- " model {
-  for ( i in 1:n) {
-    y[i] ~ dcat( pr[i,1:n] )
-    pr[i,1] <- pnorm( thresh[1], mu[i], 1/sigma^2)
-    for ( k in 2:(n-1) ) {
-      pr[i,k] <- max( 0, pnorm(thresh[k], mu[i], 1/sigma^2) - pnorm(thresh[k-1], mu[i], 1/sigma^2))
+  for (i in 1:N) {
+    y[i] ~ dcat(p[i,])
+    p[i,1] <- 1 - Q[i,1]
+    for (r in 2:4) {
+      p[i,r] <- Q[i,r-1] - Q[i,r]
     }
-  
-    pr[i,n] <- 1 - pnorm(thresh[n-1], mu[i], 1/sigma^2)
-    mu[i] <- b0 + b1*x[i]
+    p[i,5] <- Q[i,4]
+    for (r in 1:4) {
+      logit(Q[i,r]) <- b1*x[i] - c[r]
+    }
   }
-  b0 ~ dnorm((n+1)/2, 1/n^2)
-  b1 ~ dnorm(0, 1/n^2)
-  sigma ~ dunif(n/1000, n*10)
-  for ( k in 2:(n-2)) {
-    thresh[k] ~ dnorm(k+0.5, 1/2^2)
+  for (i in 1:4) {dc[i] ~ dunif(0, 20)}
+    c[1] <- dc[1]
+  for (i in 2:4) {
+    c[i] <- c[i-1] + dc[i]
   }
+  b1 ~ dnorm(0, 0.001)
+  or <- exp(b1)
 }"
-thresh = rep(NA, nrow(de10)-1)
-thresh[1] = 1+0.5
-thresh[nrow(de10)-1] = nrow(de10)-0.5
-data_jags2 = list(y = as.factor(de10$reduce), x = as.numeric(de10$sh_groups_new),n = nrow(de10), thresh = thresh)
 
-params = c("mu","sigma")
 
-mod2 = jags.model(textConnection(mod_string2), data = data_jags2, n.chains = 2)
+
+data_jags2 = list(y = as.factor(de10$reduce), x = as.factor(de10$sh_groups_new), N = nrow(de10))
+params2 = c("b1", "or","c" )
+
+mod2 <- jags.model(textConnection(mod_string2), data = data_jags2, n.chains = 3) # 3 chains
+## Run the model 
+update(mod2, 1e3)  # Burn-in phase, 1000 iterations
+
+mod_sim2 <- coda.samples(model=mod2, variable.names=params2, n.iter=5e3) # 5000 iterations for each chain
+
+mod_csim2 <- as.mcmc(do.call(rbind, mod_sim2)) # merge the chains
+
+## Convergence checks
+plot(mod_sim2)
+
+gelman.diag(mod_sim2)
+autocorr.diag(mod_sim2)
+effectiveSize(mod_sim2)
+
+
+(pm_params2 = colMeans(mod_csim2))
+
+## Results
+
+summary(mod_sim2)
+
+
+
+# Another model
+
+
+
+mod_string3 <- " model {
+  for (i in 1:N) {
+    y[i] ~ dcat(p[i,1:5])
+    p[i,1] <- pnorm(c[1], mu[i], 1/sigma^2)
+    for (r in 2:4) {
+      p[i,r] <- max(0, pnorm(c[r], mu[i], 1/sigma^2) - pnorm(c[r-1], mu[i], 1/sigma^2))
+    }
+    p[i,5] <- 1 - pnorm(c[4], mu[i], 1/sigma^2)
+    mu[i] <- zbeta0 + zbeta1*zx[i]
+  }
+  zbeta0 ~ dnorm((1+5)/2,1/5^2)
+  zbeta1 ~ dnorm(0,1/5^2)
+  sigma ~ dunif(5/1000,5*10)
+  for (i in 2:3) {c[i] ~ dnorm(i+0.5, 1/2^2)}
+}"
+
+c = rep(NA,4)
+c[1] = 1 + 0.5
+c[4] = 4 + 0.5
+
+
+df_new <- df[complete.cases(df$sh_groups_new),]
+df_new <- df_new[complete.cases(df_new$reduce),]
+
+
+data_jags3 <- list(y = as.factor(df_new$reduce), zx = as.factor(df_new$sh_groups_new), N = nrow(df_new), c = c)
+
+mod3 <- jags.model(textConnection(mod_string3), data = data_jags3, n.chains=3)
+
+params3 = c("zbeta0", "zbeta1", "sigma", "c")
+
+update(mod3,1e3)
+
+mod_sim3 <- coda.samples(model=mod3, variable.names=params3, n.iter=5e3)
+
+summary(mod_sim3)
+
 
 ```
-
 
 
 
