@@ -737,12 +737,12 @@ mean(mod_csim[,3] > mod_csim[,3])
 
 ```
 
-Let's try a more complicated model using Bayesian estimation, this time an Ordinal Logistic Regression
+Let's try a more complicated model using Bayesian estimation, this time an Ordinal Logistic/Probit Regression
 
 
 ```{r OLR}
 
-## Model setup 
+## Model setup - ordinal logit
 
 mod_string2 <- " model {
   for (i in 1:N) {
@@ -794,7 +794,9 @@ summary(mod_sim2)
 
 
 
-# Another model
+# ordered probit regression 
+
+## reduce ~ sh_groups_new * female
 
 
 
@@ -806,12 +808,14 @@ mod_string3 <- " model {
       p[i,r] <- max(0, pnorm(c[r], mu[i], 1/sigma^2) - pnorm(c[r-1], mu[i], 1/sigma^2))
     }
     p[i,5] <- 1 - pnorm(c[4], mu[i], 1/sigma^2)
-    mu[i] <- zbeta0 + zbeta1*zx[i]
+    mu[i] <- zbeta1 + zbeta[2]*zx1[i] + zbeta[3]*zx2[i] + zbeta[4]*zx1[i]*zx2[i]
   }
-  zbeta0 ~ dnorm((1+5)/2,1/5^2)
-  zbeta1 ~ dnorm(0,1/5^2)
+  zbeta1 ~ dnorm(6/2, 1/(5^2))
+  for (j in 2:4) {
+    zbeta[j] ~ dnorm(0,1/(5^2))
+  }
   sigma ~ dunif(5/1000,5*10)
-  for (i in 2:3) {c[i] ~ dnorm(i+0.5, 1/2^2)}
+  for (i in 2:3) {c[i] ~ dnorm(i+0.5, 1/2^2)} #c[1] and c[4] are defined below
 }"
 
 c = rep(NA,4)
@@ -819,22 +823,36 @@ c[1] = 1 + 0.5
 c[4] = 4 + 0.5
 
 
-df_new <- df[complete.cases(df$sh_groups_new),]
-df_new <- df_new[complete.cases(df_new$reduce),]
+# df_new <- df[complete.cases(df$sh_groups_new),]
+# df_new <- df_new[complete.cases(df_new$reduce),]
 
 
-data_jags3 <- list(y = as.factor(df_new$reduce), zx = as.factor(df_new$sh_groups_new), N = nrow(df_new), c = c)
+data_jags3 <- list(y = as.factor(de10$reduce), zx1 = as.factor(de10$sh_groups_new), zx2 = de10$female, N = nrow(de10), c = c)
 
 mod3 <- jags.model(textConnection(mod_string3), data = data_jags3, n.chains=3)
 
-params3 = c("zbeta0", "zbeta1", "sigma", "c")
+params3 = c("zbeta1", "zbeta", "sigma", "c")
 
 update(mod3,1e3)
 
 mod_sim3 <- coda.samples(model=mod3, variable.names=params3, n.iter=5e3)
 
-summary(mod_sim3)
+summary(mod_sim3) #zbeta in sd units (according to Gary King?)
 
+mod_sim3
+mod_csim3 = as.mcmc(do.call(rbind, mod_sim3))
+(pm_params3 = colMeans(mod_csim3))
+mod_csim3 <- as.data.frame(mod_csim3)
+
+
+#Still working on transformation to an interpretable scale
+
+beta <- setNames(data.frame(matrix(ncol=4,nrow=1)),c("beta1","beta2","beta3","beta4"))
+
+beta$beta1 <- mean(mod_csim[,9]) - sum() 
+beta$beta2 <- mean(mod_csim3[,6])/sd(mod_csim3[,6])
+beta$beta3 <- mean(mod_csim3[,7])/sd(mod_csim3[,7])
+beta$beta4 <- mean(mod_csim3[,8])/sd(mod_csim3[,8])
 
 ```
 
