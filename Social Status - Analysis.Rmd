@@ -33,7 +33,7 @@ rm(list = ls())
 
 ```{r setup, include=FALSE}
 library(pacman)
-pacman::p_load("tidyverse","knitr","car","expss","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools","ggplot2","countrycode","rjags")
+pacman::p_load("tidyverse","knitr","car","expss","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools","ggplot2","countrycode","rjags", "ragg")
 
 knitr::opts_chunk$set(message = F, warning = F)
 
@@ -58,6 +58,11 @@ load(paste0(wd,"socstat.Rda"))
 ## Table 1. Cases by Country-Wave
 
 ```{r tbl1, include = T, echo = T}
+# Run this if you still have the old socstat version
+# df$female <- ifelse(df$female == 8, NA, df$female)
+
+
+
 # Cross-tab years and countries
 options(knitr.kable.NA = '')
 tab1 <- df %>%
@@ -65,7 +70,12 @@ tab1 <- df %>%
   dplyr::summarize(n=n()) %>%
   spread(wave, n) %>%
   kable(., col.names = c("Country", "SI_1987", "SI_1992", "EN_1993", "SI_1999", "EN_2000", "SI_2009", "EN_2010"), caption = "Country Sample Size by Wave, ISSP 'Social Inequality (SI) & Environment (EN)", format.args = list(big.mark = ","))
+
 kable_styling(tab1)
+
+
+
+
 ```
 
 
@@ -166,12 +176,15 @@ fig1$country <- ifelse(fig1$cntry  %in% cntry2, fig1$country, NA)
 
 # drop NA countries
 fig1a <- subset(fig1, !is.na(country))
+agg_png(file = "Fig1.png", width = 1200, height = 600, res = 144)
 ggplot(fig1a, aes(x=year, y=reduceM, color=country)) + 
     geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
     geom_point(size=2) +
     geom_line() +
     labs(title = "Support for Redistribution Over Time") +
     ylab(label = "Mean Support")
+invisible(dev.off())
+knitr::include_graphics("Fig1.png")
 
 ```
 
@@ -211,7 +224,7 @@ fig2 <- aggregate(fig2,  by=list(fig2$cyear,fig2$sh_groups_new), FUN=mean, na.rm
 
 fig2de <- subset(fig2, cntry == 276)
 fig2de$sh_groups_new <- as.factor(fig2de$sh_groups_new)
-
+agg_png("Fig2.png", width = 1000, height = 600, res = 144)
 ggplot(fig2de, aes(x=year, y=reduceM, color=sh_groups_new)) + 
     geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
     geom_point(size=2) +
@@ -219,8 +232,11 @@ ggplot(fig2de, aes(x=year, y=reduceM, color=sh_groups_new)) +
     labs(title = "Support for Redistribution Over Time, Germany") +
     ylab(label = "Mean Support") +
     scale_color_hue(labels = c("Capital Accum.", "Mixed Srvc.", "Blue-collar/low", "Soc.Cult. Prof.", "Low Srvc."))
-
+invisible(dev.off())
+knitr::include_graphics("Fig2.png")
 ```
+
+
 ```{r f2de_gender}
 
 fig2g <- df %>%
@@ -228,7 +244,7 @@ fig2g <- df %>%
     mutate(reduceM = mean(reduce, na.rm = T),
            reduceSE = (sd(reduce, na.rm = T)/sqrt(length(which(!is.na(reduce))))))
 
-fig2g <- dplyr::select(fig2g, year, cyear, lab, reduceM, reduceSE, wave, cntry, sh_groups_new, female)
+fig2g <- dplyr::select(fig2g, year, cyear, lab, reduceM, reduceSE, wave, cntry, sh_groups_new, female, ageC)
 fig2g$sh_groups_new_g <- fig2g$sh_groups_new + (5*fig2g$female)
 fig2g <- subset(fig2g, select = -c(sh_groups_new, female))
 
@@ -237,6 +253,10 @@ fig2g <- aggregate(fig2g,  by=list(fig2g$cyear,fig2g$sh_groups_new_g), FUN=mean,
 fig2gde <- subset(fig2g, cntry == 276)
 fig2gde$sh_groups_new <- as.factor(fig2gde$sh_groups_new)
 
+
+
+# Fig 3
+agg_png(file = "Fig3.png", width = 1200, height = 600, res = 144)
 ggplot(fig2gde, aes(x=year, y=reduceM, color=sh_groups_new)) + 
     geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
     geom_point(size=2) +
@@ -244,8 +264,40 @@ ggplot(fig2gde, aes(x=year, y=reduceM, color=sh_groups_new)) +
     labs(title = "Support for Redistribution Over Time, Germany") +
     ylab(label = "Mean Support") +
     scale_color_manual(labels = c("M: Capital Accum.", "M: Mixed Srvc.", "M: Blue-collar/low", "M: Soc.Cult. Prof.", "M: Low Srvc.", "F: Capital Accum.", "F: Mixed Srvc.", "F: Blue-collar/low", "F: Soc.Cult. Prof.", "F: Low Srvc."), values = c("red", "darkorange", "royalblue", "purple", "green", "red3", "darkorange3", "royalblue4", "purple3", "green4"))
+invisible(dev.off())
+knitr::include_graphics("Fig3.png")
 
 
+# Fig 7 
+fig7 <- fig2gde[which(fig2gde$sh_groups_new %in% c(1,5,6,10)),]
+agg_png("Fig7.png", width = 1200, height = 600, res = 144)
+ggplot(fig7, aes(x=year, y=reduceM, color=sh_groups_new)) + 
+    geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
+    geom_point(size=2) +
+    geom_line() +
+    labs(title = "Support for Redistribution Over Time, Germany") +
+    ylab(label = "Mean Support") +
+    scale_color_manual(labels = c("M: Capital Accum.", "M: Low Srvc.", "F: Capital Accum.", "F: Low Srvc."), values = c("red", "green", "red3", "green3"))
+invisible(dev.off())
+knitr::include_graphics("Fig7.png")
+
+
+# Fig 8 
+
+fig8 <- subset(fig2g, cntry == 826)
+fig8$sh_groups_new <- as.factor(fig8$sh_groups_new)
+fig8 <- fig8[which(fig8$sh_groups_new %in% c(1,5,6,10)),]
+
+agg_png("Fig8.png", width = 1200, height = 600, res = 144)
+ggplot(fig8, aes(x=year, y=reduceM, color=sh_groups_new)) + 
+    geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
+    geom_point(size=2) +
+    geom_line() +
+    labs(title = "Support for Redistribution Over Time, Great Britain") +
+    ylab(label = "Mean Support") +
+    scale_color_manual(labels = c("M: Capital Accum.", "M: Low Srvc.", "F: Capital Accum.", "F: Low Srvc."), values = c("red", "green", "red3", "green3"))
+invisible(dev.off())
+knitr::include_graphics("Fig8.png")
 
 ```
 
@@ -259,7 +311,7 @@ Pre- Post- Gini from Solt
 ```{r macro_data}
 # get from github - cwed
 pacman::p_load(readr)
-cwed <- read.csv("https://raw.githubusercontent.com/hungnguyen167/Social-Status/master/cwed-subset.csv?token=AG6CBQYFHE3RYFAXHOMKPTS7IQGHU")
+cwed <- read.csv(paste(wd, "cwed-subset.csv", sep = "/"))
 
 cwed$cntry <- countrycode(cwed$COUNTRY, "country.name", "iso3n")
 cwed$year <- cwed$YEAR
@@ -332,10 +384,12 @@ tab_macro <- tab_macro %>%
   ))
 
 tab_macro$regime <- as.factor(tab_macro$regime)
-
+agg_png("Fig4.png", width = 1000, height = 600, res = 144)
 ggplot(tab_macro, aes(y = TOTGEN, x = range, color = regime)) +
   geom_point() +
   scale_color_manual(labels = c("Scandinavia", "Cntl. Europe", "S. Europe", "East Asia", "English Diaspora"), values = c("red", "green3", "blue", "darkorange",  "darkgreen"))
+invisible(dev.off())
+knitr::include_graphics("Fig4.png")
 
 ```
 
@@ -440,7 +494,6 @@ m1 <- lm(reduce ~ as.factor(sh_groups_new)*hincZ*female, data = df)
 
 summary(m1, scale = T)
 
-df$female <- ifelse(df$female == 8, NA, df$female)
 
 df_g1 <- df[df$sh_groups_new == 1, ]
 
@@ -460,7 +513,13 @@ m3 <- lm(reduce ~ rincZ + female + degree + age2 + age, data = df[df$cntry == 12
 
 summary(m3)
 
+m4 <- lm (reduce ~ female*age*as.factor(sh_groups_new), data = df)
 
+summary(m4)
+
+ggplot(fig2gde, aes(x=age, y=reduceM, color=sh_groups_new))+
+    geom_point(size=2) +
+    geom_line()
 ```
 1 "Capital accumulators" 
 2 "Mixed service functionaires" 
@@ -661,12 +720,6 @@ compareFit(m2, m3)
 ### Hung's corner
 
 ```{r hung}
-# Compute Gini coefficients
-
-gini <- aggregate(df, by = list(df$cntry), function(x) Gini(x))
-gini <- select(gini, Group.1, rincO)
-gini <- rename(gini, cntry = Group.1)
-gini$rincO <- round(gini$rincO, digits = 3)
 
 
 # Bayesian estimation - ANOVA
@@ -680,9 +733,9 @@ summary(m1)
 anova(m1)
 
 
-de10 <- subset(df, year == 2010 & cntry == 276)
+de <- subset(df, cntry == 276)
 
-de10 <- de10[complete.cases(de10$sh_groups_new),]  # get complete cases for the model to work
+de <- de[complete.cases(de$sh_groups_new),]  # get complete cases for the model to work
 
 ## Model 
 mod_string = " model {
@@ -856,6 +909,113 @@ beta$beta4 <- mean(mod_csim3[,8])/sd(mod_csim3[,8])
 
 ```
 
+```{r espanet}
+
+fig5 <- df %>%
+  mutate(ageSH = ifelse(ageC < 40, 0, 1)) %>%
+  group_by(cyear, sh_groups_new, ageSH) %>%
+    mutate(reduceM = mean(reduce, na.rm = T),
+           reduceSE = (sd(reduce, na.rm = T)/sqrt(length(which(!is.na(reduce)))))) %>%
+    dplyr::select(year, cyear, reduceM, reduceSE, wave, cntry, sh_groups_new, female, ageSH)
+
+fig5$sh_groups_new <- fig5$sh_groups_new + (5*fig5$ageSH)
+fig5 <- subset(fig5, select = -c(female,ageSH))
+
+fig5 <- aggregate(fig5, by=list(fig5$cyear,fig5$sh_groups_new), FUN=mean, na.rm=T)
+
+fig5de <- subset(fig5, cntry == 276)
+fig5de$sh_groups_new <- as.factor(fig5de$sh_groups_new)
+fig5de <- fig5de[complete.cases(fig5de$sh_groups_new),]
+fig5de <- fig5de[which(fig2gde$sh_groups_new %in% c(1,5,6,10)),]
+
+# Fig 5 - Run in console
+agg_png("Fig5.png", width = 1200, height = 600, res = 144)
+ggplot(fig5de, aes(x=year, y=reduceM, color=sh_groups_new)) + 
+    geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
+    geom_point(size=2) +
+    geom_line() +
+    labs(title = "Support for Redistribution Over Time, Germany") +
+    ylab(label = "Mean Support") +
+    scale_color_manual(labels = c("Under 40: Capital Accum.", "Under 40: Low Srvc.", "Above 40: Capital Accum.", "Above 40: Low Srvc."), values = c("red", "green", "red3", "green3"))
+invisible(dev.off()) 
+knitr::include_graphics("Fig5.png")
+
+
+
+# Fig 6 - Run in console
+
+
+fig6gb <- subset(fig5, cntry == 840)
+fig6gb <- fig6gb[complete.cases(fig6gb$sh_groups_new),]
+fig6gb$sh_groups_new <- as.factor(fig6gb$sh_groups_new)
+fig6gb <- fig6gb[which(fig6gb$sh_groups_new %in% c(1,5,6,10)),]
+
+
+
+agg_png("Fig6.png", width = 1200, height = 600, res = 144)
+ggplot(fig6gb, aes(x=year, y=reduceM, color=sh_groups_new)) + 
+    geom_errorbar(aes(ymin=reduceM-reduceSE, ymax=reduceM+reduceSE), colour="grey", width = .15) +
+    geom_point(size=2) +
+    geom_line() +
+    labs(title = "Support for Redistribution Over Time, Great Britain") +
+    ylab(label = "Mean Support") +
+    scale_color_manual(labels = c("Under 40: Capital Accum.", "Under 40: Low Srvc.", "Above 40: Capital Accum.", "Above 40: Low Srvc."), values = c("red", "green", "red3", "green3"))
+
+invisible(dev.off()) # optional
+knitr::include_graphics("Fig6.png")
+
+
+
+
+
+
+# Analyses
+df_new <- df %>%
+  mutate(ageSH = ifelse(ageC < 40, 0, 1))
+
+df_new <- df_new[complete.cases(df_new$ageSH),]
+de <- subset(df_new, cntry == 276)
+gb <- subset(df_new, cntry == 840)
+# LM
+m1 <- lm(reduce ~ as.factor(sh_groups_new) + female, data = de)
+summary(m1)
+m2 <- lm(reduce ~ as.factor(sh_groups_new) + ageSH, data = de)
+summary(m2)
+m3 <- lm(reduce ~ as.factor(sh_groups_new)*female + ageSH + educyrs, data = de)
+summary(m3)
+
+
+m4 <- lm(reduce ~ as.factor(sh_groups_new) + female, data = gb)
+summary(m4)
+m5 <- lm(reduce ~ as.factor(sh_groups_new) + ageSH, data = gb)
+summary(m5)
+m6 <- lm(reduce ~ as.factor(sh_groups_new)*female + ageSH + educyrs, data = gb)
+summary(m6)
+
+
+m7 <- lm(reduce ~ as.factor(sh_groups_new) + female, data = df_new)
+summary(m7)
+m8 <- lm(reduce ~ as.factor(sh_groups_new) + ageSH, data = df_new)
+summary(m8)
+m9 <- lm(reduce ~ as.factor(sh_groups_new)*female + ageSH + educyrs, data = df_new)
+summary(m9)
+
+
+
+
+
+library(sjlabelled)
+library(sjmisc)
+library(sjPlot)
+
+tab_model(m1, m2, m3, p.style = "stars", p.threshold = c(0.10, 0.05, 0.01), show.ci = F, rm.terms = c("(Intercept)"), show.loglik = T, show.aic = T, dv.labels = c("M1", "M2","M3"), pred.labels = c("Mixed Service", "Blue collar/Low White", "Semi-Professional", "Low Serivce", "Female", "Over 40", "Education years", "MS*Female", "BC*Female","SP*Female", "LS*Female") ,file = "Table2.html")
+
+tab_model(m4, m5, m6, p.style = "stars", p.threshold = c(0.10, 0.05, 0.01), show.ci = F, rm.terms = c("(Intercept)"), show.loglik = T, show.aic = T, dv.labels = c("M1", "M2","M3"), pred.labels = c("Mixed Service", "Blue collar/Low White", "Semi-Professional", "Low Serivce", "Female", "Over 40", "Education years", "MS*Female", "BC*Female","SP*Female", "LS*Female") ,file = "Table3.html")
+
+tab_model(m7, m8, m9, p.style = "stars", p.threshold = c(0.10, 0.05, 0.01), show.ci = F, rm.terms = c("(Intercept)"), show.loglik = T, show.aic = T, dv.labels = c("M1", "M2","M3"), pred.labels = c("Mixed Service", "Blue collar/Low White", "Semi-Professional", "Low Serivce", "Female", "Over 40", "Education years", "MS*Female", "BC*Female","SP*Female", "LS*Female") ,file = "Table4.html")
+
+
+```
 
 
 

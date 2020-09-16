@@ -153,7 +153,7 @@ socin <- socin %>%
      cntry = v5,
      year = v4,
      wave = v4,
-     female = if_else(sex == 2, 1,0), # female = 1
+     female = ifelse(sex == 9, NA, sex - 1), # female = 1
      ageC = ifelse(age > 75, 75, age), # also a continuous measure
      age = case_when(                 # trim at 75     
        age %in% c(16:24) ~ 1,        # Changed to 7 categories
@@ -1263,7 +1263,7 @@ nl87 <- nl87 %>%
        TRUE ~ NA_real_
      ),
     sex = v83,
-    female = sex - 1,
+    female = ifelse(sex == 9, NA, sex - 1),
     educyrs = v87,
     educyrs = case_when(   
        educyrs > 22 & educyrs < 95 ~ 23, 
@@ -1346,7 +1346,7 @@ ie87 <- ie87 %>%
        TRUE ~ NA_real_
      ),
     sex = v83,
-    female = sex - 1,
+    female = ifelse(sex == 9, NA, sex - 1),
     educyrs = v87,
     educyrs = case_when(   
        educyrs > 22 & educyrs < 95 ~ 23, 
@@ -1432,7 +1432,7 @@ dk99 <- dk99 %>%
        age >= 75 ~ 7,
        TRUE ~ NA_real_
      ),
-    female = sex - 1,
+    female = ifelse(sex == 9, NA, sex - 1),
     educyrs = case_when(   
        educyrs > 22 & educyrs < 95 ~ 23, 
        educyrs == 95 ~ 8, # still in school
@@ -1515,7 +1515,7 @@ ie99 <- ie99 %>%
        age >= 75 ~ 7,
        TRUE ~ NA_real_
      ),
-    female = sex - 1,
+    female = ifelse(sex == 9, NA, sex - 1),
     educyrs = case_when(   
        educyrs > 22 & educyrs < 95 ~ 23, 
        educyrs == 95 ~ 8,
@@ -1589,7 +1589,7 @@ nl09 <- nl09 %>%
        age >= 75 ~ 7,
        TRUE ~ NA_real_
      ),
-    female = sex - 1,
+    female = ifelse(sex == 9, NA, sex - 1),
     educyrs = case_when(   
        educyrs > 22 & educyrs < 95 ~ 23, 
        educyrs == 95 ~ 8,
@@ -1694,7 +1694,7 @@ env93 <- env93 %>%
                           `18` = 554, `19` = 124, `20` = 608, `21` = 376, `22` = 392, `23` = 724),
     year = 1993,
     wave = 1993,
-    female = v200 - 1,
+    female = ifelse(v200 == 9, NA, v200 - 1),
     age = v201,
     incdiff = v6,
     ageC = ifelse(age > 75, 75, age),
@@ -2144,7 +2144,7 @@ env00 <- env00 %>%
                           `26` = 428, `30` = 620, `31` = 152, `32` = 208, `33` = 756, `37` = 246, `38` = 484),
     year = 2000,
     wave = 2000,
-    female = v200 - 1,
+    female = ifelse(v200 == 9, NA, v200 - 1),
     age = v201,
     incdiff = v5,
     ageC = ifelse(age > 75, 75, age), # trim at 75  
@@ -2253,7 +2253,7 @@ env10 <- env10 %>%
     cntry = country,
     year = 2010,
     wave = 2010,
-    female = sex - 1,
+    female = ifelse(sex == 9, NA, sex - 1),
     incdiff = v8,
     ageC = ifelse(age > 75, 75, age), # trim at 75  
     age = case_when(                 # trim at 75     
