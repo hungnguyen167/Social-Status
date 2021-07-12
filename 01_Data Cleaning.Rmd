@@ -59,9 +59,9 @@ A. nl87 and ie87 cannot be integrated into the socin file, eeds occupation recod
 B. Finish recodes in 2019 data, this means remove missing data (e.g., degree), add income, add egp (fix supervision and n.employees variables)
 
 C. There are values of 11 in the socin$wrkst variable, these are probably from a country-specific question and need to be checked
-  
 
 E. We should include the other income differences question for all surveys where it is available, Nate did this for the cumulative file so far as *inclarge*
+=======
    
    
    
@@ -1726,8 +1726,36 @@ socin3 <- socin3 %>%
   ) %>%
   select(incdiff,cntry, year, wave, female, ageC, age, married, educyrs, union, wrkst, isco08, degree)
 # integrate hhcycle from socin2 (US92)
+<<<<<<< HEAD:01_Data Cleaning.Rmd
+=======
 
 
+## Income
+# Is coded in local currency and this really skews the standardization process. Recode into local deciles
+
+# Respondent income
+
+
+
+# Take the orignal incomes to compute Gini's coefficient
+
+
+
+
+## Household income
+
+
+
+# Standarize by country and year
+
+
+
+```
+>>>>>>> 3230780e5011dccda5292229d8d3379eb65c0c69:Social Status - Data Cleaning.Rmd
+
+### Merge
+
+<<<<<<< HEAD:01_Data Cleaning.Rmd
 ## Income
 # Is coded in local currency and this really skews the standardization process. Recode into local deciles
 
@@ -1752,6 +1780,8 @@ socin3 <- socin3 %>%
 
 ### Merge
 
+=======
+>>>>>>> 3230780e5011dccda5292229d8d3379eb65c0c69:Social Status - Data Cleaning.Rmd
 ```{r merge_v, include = TRUE, warning=F}
 ## Merge data sets  
 
