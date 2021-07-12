@@ -13,7 +13,8 @@ pacman::p_load("tidyverse", # suite of packages that all work together
                "tidylog", # a package that outputs a log of data transformations after each command (like what Stata does)
                "equatiomatic", # a package that displays equations from a previously called function
                "kableExtra", # a package for making clean looking tables
-               "jtools") #good for summarizing and visualizing regression results
+               "jtools", #good for summarizing and visualizing regression results
+               "ggpubr")
 ```
 
 Helpful notes from R Studio:
@@ -62,6 +63,7 @@ df %>%
   summarise_all(list(mean, sd), na.rm = T) %>%
   arrange(-reduce_fn1) %>%
   kable(., digits = 2, col.names = c("Country","Incdiff_MEAN","Increduce_MEAN","Incdiff_SD","Increduce_SD"))
+
 ```
 
 ##### T-Test and P-Values
@@ -83,20 +85,29 @@ T-tests and p-values were designed for experiments as a way to test if the contr
 ```{r ttest1}
 t.test(df$reduce[df$cntry == 840],df$reduce[df$country == "Denmark"])
 
+t.test(df$reduce[df$cntry == 840 & !is.na(df$educyrs)],df$reduce[df$cntry == 840 & is.na(df$educyrs)])
+
 ```
-**TIP!** You can add equations in R markdown
+**TIP!** You can add equations in R markdown (help here: https://rpruim.github.io/s341/S19/from-class/MathinRmd.html)
 
 the *t-value* formula when comparing two independent samples 
 
 $$t = \frac {u_{A} - u_{B}} {\sqrt{(\frac {(\sum_{A^2} - \frac {(\sum_{A})^6} {n_{A}}) + (\sum_{B^2} - \frac {(\sum_{B})^6} {n_{B}})} {n_{A}+n_{B}-2}})}*(\frac{1} {n_{A}}+\frac{1} {n_{B}})$$
 
-$(\sum_{A})^2$: Sum of group A, squared .
-$(\sum_{B})^2$: Sum of group B, squared .
-$u_{A}$: Mean of group A 
+$(\sum_{A})^2$: Sum of group A, squared
+
+$(\sum_{B})^2$: Sum of group B, squared
+
+$u_{A}$: Mean of group A
+
 $u_{B}$: Mean of group B 
+
 $\sum_{A^2}$: Sum of the squares of data set A 
+
 $\sum_{B^2}$: Sum of the squares of data set B 
+
 $n_{A}$: Number of cases A
+
 $n_{B}$: Number of cases B
 
 Source: https://www.statisticshowto.com/probability-and-statistics/t-distribution/independent-samples-t-test/
@@ -152,7 +163,9 @@ $\sigma = \sqrt{\frac {\sum_{(x_{i} - \mu)^2}}{N}}$
 This means that the larger the sample, the smaller the standard error
 
 $N$	=	the size of the population
+
 $x_{i}$	=	*each value from the population*
+
 $\mu$	=	the population mean
 
 The *residual* or *error* is the distance of the mean to each observed value and the squared error. We we talk about *sum of squares* it is the sum of the squared residual. Regression analysis seeks to minimize the sum of the squared residual, that is *ordinary least squares* estimation (*OLS*).
@@ -172,14 +185,19 @@ sum_table <- df %>%
 ```
 ```{r ggplot_plot}
 sum_table %>%
-  subset(Country %in% c("United States","Germany","Denmark","Sweden","Japan")) %>%
+  subset(Year %in% c(2009,2010)) %>%
 ggplot(aes(y = Incdiff_MEAN, x = Year, color = Country)) +
   geom_point() +
-  #geom_line() +
-  geom_errorbar(aes(ymin = Incdiff_MEAN-Incdiff_SE, ymax = Incdiff_MEAN+Incdiff_SE)) +
-  geom_smooth(method = 'lm', se = F) +
+  geom_line() +
+  geom_errorbar(aes(ymin = Incdiff_MEAN-Incdiff_SE, ymax = Incdiff_MEAN+Incdiff_SE, width = 0.2)) +
+  #geom_smooth(method = 'lm', se = F) +
   theme_classic()
 ```
+Based on visualization:
+1. How is it that Denmark changed so much in just one year (2000-2001)
+2. Might not be a good idea to pool data because it is an unbalanced-'panel' of countries
+
+
 ##### Latent Variable
 
 A single question is bound to leave a lot of measurement error. For example:
@@ -215,14 +233,36 @@ Lets consider how years of education impacts preferences for redistribution now.
 
 ```{r educ_incdiff}
 df %>%
-  #subset(country == c("United States","Denmark") %>%
-  ggplot(aes(y = redist_scale, 
-             x = educyrs
-             #fill = country
+  subset(country == "United States") %>%
+  ggplot(aes(y = reduce, 
+             x = reduce_large
              )) +
   #geom_point() +
-  geom_jitter(width = 1.5, height = 1.2, size = 0.5) +
+  geom_jitter(size = 0.2) +
+  stat_cor() +
+  xlab("Income differences in [country] are too large") +
+  ylab("Govt should reduce income differences") +
   geom_smooth(method = 'lm')
+
+df %>%
+  subset(country == "Sweden") %>%
+  ggplot(aes(y = reduce, 
+             x = reduce_large
+             )) +
+  #geom_point() +
+  geom_jitter(size = 0.2) +
+    stat_cor() +
+  xlab("Income differences in [country] are too large") +
+  ylab("Govt should reduce income differences") +
+  geom_smooth(method = 'lm')
+
+#             Same (0.05)?       USA         DNK
+# Nate        Y                 0.47 1        0.52     
+# Tom         N 1               0.40 1       0.51
+# Hung        N 1               0.60        0.40
+# Arne        N 1               0.42 2        0.55
+# Soeren      N 1               0.55        0.39
+
 ```
 #### Regression
 
