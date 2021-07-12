@@ -1,0 +1,113 @@
+---
+title: "Learning Regression"
+author: "Nate Breznau"
+date: "7/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+pacman::p_load("tidyverse", # suite of packages that all work together
+               "ggplot2", # recommended plotting package
+               "tidylog", # a package that outputs a log of data transformations after each command (like what Stata does)
+               "equatiomatic", # a package that displays equations from a previously called function
+               "kableExtra", # a package for making clean looking tables
+               "jtools") #good for summarizing and visualizing regression results
+```
+
+Helpful notes from R Studio:
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+### Load Data
+
+These data are a cumulation of all ISSP surveys that asked the question:
+
+*"It is the responsibility of the government to reduce the differences in income between people with high incomes and those with low incomes."*
+
+```{r data}
+load(here::here("data","socstat.Rda"))
+```
+
+#### Descriptive ('Browsing Variables')
+
+Often we look at descriptive statistics before proceeding with analysis.
+
+##### Historgrams of Dependent Variables
+
+Call them "dependent" here because they are our primary variables of interest.
+
+"Don't know" is coded as 8 and has not yet been cleaned from all countries' data.
+
+```{r desc}
+
+hist(df$incdiff)
+hist(df$inclarge)
+#hist(df$reduce)
+#hist(df$reduce_large)
+
+```
+
+##### Summarize by Country
+
+Here learn about the *"pipe"* operator and coding with *dplyr* (part of 'tidyverse')
+
+```{r c_sums}
+df %>%
+  select(country, reduce, reduce_large) %>% # choose variables out of df
+  group_by(country) %>%
+  summarise_all(list(mean, sd), na.rm = T) %>%
+  arrange(-reduce_fn1) %>%
+  kable(., digits = 2, col.names = c("Incdiff_MEAN","Increduce_MEAN","Incdiff_SD","Increduce_SD",))
+```
+
+##### T-Test and P-Values
+
+The surveys in these countries are samples of around 1,000 people per country. Therefore, we don't know if the mean of the *sample* is exactly the same as the mean of the *population*.
+
+It looks like the United States is less supportive of redistribution than Denmark on average. Lets use a t-test to investigate that.
+
+We usually think of p-value as indicating if something is *significantly* different. Here we can interpret it as follows:
+
+1. If all data are taken from *random samples*, and
+2. The redistribution question missing responses are *missing at random*, and
+3. The *data-generating model* is correct
+
+Then, the p-value is the likelihood that the true mean difference between the two samples (two countries here) is *exactly zero*, this is also known as the *null hypothesis*. The lower the p-value, the less likely - known as *null hypothesis significance test* or (*NHST*).
+
+T-tests and p-values were designed for experiments as a way to test if the control and treatment groups have different means (i.e., that they do not have a difference of zero)
+
+```{r ttest1}
+t.test(df$reduce[df$cntry == 840],df$reduce[df$country == "Denmark"])
+```
+##### Regression
+
+We can apply a regression to arrive at the same results. A regression with two intercepts, one for each country will provide the same information.
+
+```{r ttest1_reg}
+df %>%
+  subset(cntry %in% c(840, 208), select = c(reduce, cntry)) %>%
+  lm(reduce ~ factor(cntry), data = .) %>%
+  summary()
+```
+
+##### Visualize Results
+
+jtools package has many useful features for summarizing and visualizing regressions https://cran.r-project.org/web/packages/jtools/vignettes/summ.html
+
+lets add a few more countries to make it interesting
+
+```{r ttest1_viz}
+
+df_ttest <- df %>%
+  subset(country %in% c("United States", "Denmark", "Australia", "Sweden", "Japan"), select = c(reduce, country))
+
+m1 <-  lm(reduce ~ factor(country), data = df_ttest)
+
+plot_summs(m1, plot.distributions = T)
+
+```
+
