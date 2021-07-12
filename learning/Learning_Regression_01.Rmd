@@ -61,12 +61,12 @@ df %>%
   group_by(country) %>%
   summarise_all(list(mean, sd), na.rm = T) %>%
   arrange(-reduce_fn1) %>%
-  kable(., digits = 2, col.names = c("Incdiff_MEAN","Increduce_MEAN","Incdiff_SD","Increduce_SD",))
+  kable(., digits = 2, col.names = c("Country","Incdiff_MEAN","Increduce_MEAN","Incdiff_SD","Increduce_SD"))
 ```
 
 ##### T-Test and P-Values
 
-The surveys in these countries are samples of around 1,000 people per country. Therefore, we don't know if the mean of the *sample* is exactly the same as the mean of the *population*.
+The surveys in these countries are samples of around 1,000 people per country per wave. Therefore, we don't know if the mean of the *sample* is exactly the same as the mean of the *population*.
 
 It looks like the United States is less supportive of redistribution than Denmark on average. Lets use a t-test to investigate that.
 
@@ -78,11 +78,36 @@ We usually think of p-value as indicating if something is *significantly* differ
 
 Then, the p-value is the likelihood that the true mean difference between the two samples (two countries here) is *exactly zero*, this is also known as the *null hypothesis*. The lower the p-value, the less likely - known as *null hypothesis significance test* or (*NHST*).
 
-T-tests and p-values were designed for experiments as a way to test if the control and treatment groups have different means (i.e., that they do not have a difference of zero)
+T-tests and p-values were designed for experiments as a way to test if the control and treatment groups have different means (i.e., that they do not have a difference of zero). This is the *independent samples t-test* because we have two samples rather than the same sample compared at two different time points.
 
 ```{r ttest1}
 t.test(df$reduce[df$cntry == 840],df$reduce[df$country == "Denmark"])
+
 ```
+**TIP!** You can add equations in R markdown
+
+the *t-value* formula when comparing two independent samples 
+
+$$t = \frac {u_{A} - u_{B}} {\sqrt{(\frac {(\sum_{A^2} - \frac {(\sum_{A})^6} {n_{A}}) + (\sum_{B^2} - \frac {(\sum_{B})^6} {n_{B}})} {n_{A}+n_{B}-2}})}*(\frac{1} {n_{A}}+\frac{1} {n_{B}})$$
+
+$(\sum_{A})^2$: Sum of group A, squared .
+$(\sum_{B})^2$: Sum of group B, squared .
+$u_{A}$: Mean of group A 
+$u_{B}$: Mean of group B 
+$\sum_{A^2}$: Sum of the squares of data set A 
+$\sum_{B^2}$: Sum of the squares of data set B 
+$n_{A}$: Number of cases A
+$n_{B}$: Number of cases B
+
+Source: https://www.statisticshowto.com/probability-and-statistics/t-distribution/independent-samples-t-test/
+
+The P-value is calculated from the T-value. 
+
+```{r tp, out.width="150%"}
+knitr::include_graphics(here::here("learning","images","SS02SDlosn1.gif"))
+```
+Source: https://analystnotes.com/cfa-study-notes-the-standard-normal-distribution.html
+
 ##### Regression
 
 We can apply a regression to arrive at the same results. A regression with two intercepts, one for each country will provide the same information.
@@ -107,7 +132,101 @@ df_ttest <- df %>%
 
 m1 <-  lm(reduce ~ factor(country), data = df_ttest)
 
-plot_summs(m1, plot.distributions = T)
+plot_summs(m1, plot.distributions = T 
+           #omit.coefs = F, # note that the intercept is the average of all cases in the sample
+           )
+
+```
+##### Compare by Wave
+
+Are countries really so different? We are comparing many waves (many different samples from different years). To do this we would need to verify that all years are similar.
+
+Here is a ggplot of countries over time to help us check. We also add the standard error. Remember the formula for standard error is:
+
+$SE =  \frac {\sigma}{\sqrt{n}}$
+
+Where
+
+$\sigma = \sqrt{\frac {\sum_{(x_{i} - \mu)^2}}{N}}$
+
+This means that the larger the sample, the smaller the standard error
+
+$N$	=	the size of the population
+$x_{i}$	=	*each value from the population*
+$\mu$	=	the population mean
+
+The *residual* or *error* is the distance of the mean to each observed value and the squared error. We we talk about *sum of squares* it is the sum of the squared residual. Regression analysis seeks to minimize the sum of the squared residual, that is *ordinary least squares* estimation (*OLS*).
+
+```{r ggplot_prep}
+# add SE to summary data, and summarize by country and year
+sum_table <- df %>%
+  select(country, year, reduce, reduce_large) %>% # choose variables out of df
+  group_by(country, year) %>%
+  mutate(n = n()) %>%
+  summarise_all(list(mean, sd), na.rm = T) %>%
+  arrange(-reduce_fn1) %>%
+  setNames(.,c("Country","Year","Incdiff_MEAN","Inclarge_MEAN","N","Incdiff_SD","Inclarge_SD","drop")) %>%
+  select(-drop) %>%
+  mutate(Incdiff_SE = Incdiff_SD/sqrt(N),
+         Inclarge_SE = Inclarge_SD/sqrt(N))
+```
+```{r ggplot_plot}
+sum_table %>%
+  subset(Country %in% c("United States","Germany","Denmark","Sweden","Japan")) %>%
+ggplot(aes(y = Incdiff_MEAN, x = Year, color = Country)) +
+  geom_point() +
+  #geom_line() +
+  geom_errorbar(aes(ymin = Incdiff_MEAN-Incdiff_SE, ymax = Incdiff_MEAN+Incdiff_SE)) +
+  geom_smooth(method = 'lm', se = F) +
+  theme_classic()
+```
+##### Latent Variable
+
+A single question is bound to leave a lot of measurement error. For example:
+- People may misunderstand the question and answer it in a way that does not reflect their preference
+- People may tick the wrong box on accident
+- People change their preferences when asked the same question repeatedly they give different answers in the same survey or in different surveys over time
+- This particular question might capture preferences for redistribution, but what is that? The words used in the question will have slightly different meanings for each respondent
+- The time of day, recent life events or even the survey researcher who is speaking with them can influence responses
+
+Therefore, having more questions that ask about a similar concept or attitude can reduce measurement error.
+
+We assume that individuals have an attitude that can be compared across individuals - here preferences for redistribution. We cannot observe this directly because of the errors associated with survey questions. this means our target measure is a *latent variable* and we want to approximate it using *observed variables* such as multiple questions. Here we have only two, but two is better than one!
+
+```{r scale}
+# get the correlation
+df %>%
+  select(incdiff, inclarge) %>%
+  cor(., use = "pairwise.complete.obs")
+
+# make a scale
+df <- df %>%
+  mutate(incdiff = ifelse(incdiff != 8, incdiff, NA), # remember there were some 8's in the data
+        redist = incdiff + inclarge,
+        redist_scale = scale(incdiff + inclarge))
+
+hist(df$redist)
+
+
+```
+
+
+Lets consider how years of education impacts preferences for redistribution now. Lets look at the data first.
+
+```{r educ_incdiff}
+df %>%
+  #subset(country == c("United States","Denmark") %>%
+  ggplot(aes(y = redist_scale, 
+             x = educyrs
+             #fill = country
+             )) +
+  #geom_point() +
+  geom_jitter(width = 1.5, height = 1.2, size = 0.5) +
+  geom_smooth(method = 'lm')
+```
+#### Regression
+
+```{r reg}
 
 ```
 
