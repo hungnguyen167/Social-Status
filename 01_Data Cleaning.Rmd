@@ -107,7 +107,7 @@ rm(list = ls())
 
 library(pacman)
 
-pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools", "tidylog", "countrycode", "Hmisc", "ineq")
+pacman::p_load("tidyverse","knitr","haven","car","plyr","dplyr", "e1071","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools", "tidylog", "countrycode", "Hmisc", "ineq")
 
 #remotes::install_github("DiogoFerrari/occupar")
 #remotes::install_github("pdparker/isco88conversion")
@@ -1726,8 +1726,6 @@ socin3 <- socin3 %>%
   ) %>%
   select(incdiff,cntry, year, wave, female, ageC, age, married, educyrs, union, wrkst, isco08, degree)
 # integrate hhcycle from socin2 (US92)
-<<<<<<< HEAD:01_Data Cleaning.Rmd
-=======
 
 
 ## Income
