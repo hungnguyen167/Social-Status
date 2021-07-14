@@ -5,6 +5,12 @@ date: "7/12/2021"
 output: html_document
 ---
 
+TO DO:
+
+Nate - use the check_model function with equatiomatic https://easystats.github.io/performance/reference/check_model.html
+
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
