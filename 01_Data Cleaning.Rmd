@@ -1430,6 +1430,7 @@ dk99 <- dk99 %>%
     year = 2000,
     wave = 1999,
     incdiff = v57,
+    inclarge = v56,
     ageC = ifelse(age > 75, 75, age),
     age = case_when(                 # trim at 75     
        age %in% c(16:24) ~ 1,        # Changed to 7 categories
@@ -1500,7 +1501,7 @@ dk99 <- dk99 %>%
 
   
 
-dk99 <- dplyr::select(dk99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit,spisco88_2digit)
+dk99 <- dplyr::select(dk99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit,spisco88_2digit)
 
 # Ireland 1999
 
@@ -1513,6 +1514,7 @@ ie99 <- ie99 %>%
     year = 2001,
     wave = 1999,
     incdiff = v35,
+    inclarge = v34,
     ageC = ifelse(age > 75, 75, age),
     age = case_when(                 # trim at 75     
        age %in% c(16:24) ~ 1,        # Changed to 7 categories
@@ -1575,7 +1577,7 @@ ie99 <- ie99 %>%
   )
 
 
-ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 # Netherlands 
 # nelab <- lapply(nl09, attr, "label") 
@@ -1587,6 +1589,7 @@ nl09 <- nl09 %>%
     year = 2013,
     wave = 2009,
     incdiff = v33,
+    inclarge = v32,
     ageC = ifelse(age > 75, 75, age),
     age = case_when(                 # trim at 75     
        age %in% c(16:24) ~ 1,        # Changed to 7 categories
@@ -1653,135 +1656,149 @@ nl09 <- nl09 %>%
     spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
   )
 
-nl09 <- dplyr::select(nl09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+nl09 <- dplyr::select(nl09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 ```
 
 ### ISSP 2019
 
 ```{r issp2019, include = TRUE, warning=F}
 # ISSP 2019
+colnames(socin3) <- tolower(colnames(socin3))
 socin3 <- socin3 %>% 
   mutate(
-     incdiff = v22,
-     cntry = country,
-     year = DATEYR,
-     wave = 2019,
-     female = ifelse(SEX == -9, NA, SEX - 1), # female = 1
-     ageC = ifelse(AGE > 75, 75, AGE), # also a continuous measure
-     age = case_when(                 # trim at 75     
-       AGE %in% c(16:24) ~ 1,        # Changed to 7 categories
-       AGE %in% c(25:34) ~ 2,
-       AGE %in% c(35:44) ~ 3,
-       AGE %in% c(45:54) ~ 4,
-       AGE %in% c(55:64) ~ 5,
-       AGE %in% c(65:74) ~ 6,
-       AGE >= 75 ~ 7,
+    incdiff = v22,
+    inclarge = v21,
+    cntry = country,
+    year = dateyr,
+    wave = 2019,
+    female = ifelse(sex == -9, NA_real_, sex - 1), # female = 1
+    age = zap_labels(age),
+    ageC = case_when(age >= 75 ~ 75, age == -9 ~ NA_real_, TRUE ~ age), # also a continuous measure
+    age = case_when(                 # trim at 75     
+       ageC %in% c(16:24) ~ 1,        # Changed to 7 categories
+       ageC %in% c(25:34) ~ 2,
+       ageC %in% c(35:44) ~ 3,
+       ageC %in% c(45:54) ~ 4,
+       ageC %in% c(55:64) ~ 5,
+       ageC %in% c(65:74) ~ 6,
+       ageC >= 75 ~ 7,
        TRUE ~ NA_real_
      ),
-     married = case_when( # married = 1. Note: using if_else will confound NA with not married (0), make sure life partners are coded as married
-       MARITAL %in% c(1:2) ~ 1, # widowed = married
-       MARITAL %in% c(3:6) ~ 0, # divorced, separated = not married
+    married = case_when( # married = 1. Note: using if_else will confound NA with not married (0), make sure life partners are coded as married
+       marital %in% c(1:2) ~ 1, # widowed = married
+       marital %in% c(3:6) ~ 0, # divorced, separated = not married
        TRUE ~ NA_real_
      ),
-     educyrs = case_when(                 # years in school, trim at 23 years
-       .$EDUCYRS > 22 & .$EDUCYRS < 95 ~ 23, # 23 = 23+ years in school
-       .$EDUCYRS == 95 ~ 8, # still in school
-       .$EDUCYRS == 96 ~ 13,
-       .$EDUCYRS %in% c(97:99) ~ NA_real_,
-       TRUE ~ as.numeric(as.character(.$EDUCYRS))
+    educyrs = case_when(                 # years in school, trim at 23 years
+       educyrs > 22 & educyrs < 95 ~ 23, # 23 = 23+ years in school
+       educyrs == 95 ~ 8, # still in school
+       educyrs == 96 ~ 13,
+       educyrs %in% c(97:99) ~ NA_real_,
+       TRUE ~ as.numeric(as.character(educyrs))
      ),
      #household income and personal earnings are not comparable: sometimes monthly, sometimes yearly, 
      #in different national currency and not adjusted for inflation
-     # child = case_when(
-     #   HHCHILDR %in% c(1:9) ~ 1,
-     #   HHCHILDR %in% c(-9,-4,0) ~ 0,
-     #   TRUE ~ NA_real_
-     #),
+    child = case_when(
+       hhchildr %in% c(1:9) ~ 1,
+       hhchildr %in% c(-9,-4,0) ~ 0,
+       TRUE ~ NA_real_
+     ),
      union = case_when( # 1 = member
-       UNION %in% c(1,2) ~ 1,
-       UNION %in% c(3,-9,-7,-4) ~ 0,
+       union %in% c(1,2) ~ 1,
+       union %in% c(3,-9,-7,-4) ~ 0,
        TRUE ~ NA_real_
      ),
-# fix later
-          # sparent = case_when(   # single parent
-     #   hhcycle %in% c(2,3,4) ~ 1, # if one is married but living away from their partner (and raising children), count as single parent?
-     #   hhcycle %in% c(1,5:95) ~ 0,
-     #   TRUE ~ NA_real_
-     # ),
-     wrkst = case_when( # different from other years, make similar
-       MAINSTAT == 1 ~ 1,
-       MAINSTAT == 2 ~ 5,
-       MAINSTAT == 3 ~ 6,
-       MAINSTAT == 4 ~ 6,
-       MAINSTAT == 5 ~ 9,
-       MAINSTAT == 6 ~ 7,
-       MAINSTAT == 7 ~ 8,
-       MAINSTAT == 8 ~ 10,
-       MAINSTAT == 9 ~ 10,
+    sparent = case_when(
+      marital %in% c(3:6) & ((hhchildr > 0 & hhchildr < 96) | (hhtodd >0 & hhtodd <96)) ~ 1,
+      marital %in% c(1:2) ~ 0,
+      marital %in% c(3:6) & hhchildr == 0 & hhtodd == 0 ~ 0,
+      TRUE ~ NA_real_
+    ),
+    wrkst = case_when( # different from other years, make similar
+       mainstat == 1 ~ 1,
+       mainstat == 2 ~ 5,
+       mainstat == 3 ~ 6,
+       mainstat == 4 ~ 6,
+       mainstat == 5 ~ 9,
+       mainstat == 6 ~ 7,
+       mainstat == 7 ~ 8,
+       mainstat == 8 ~ 10,
+       mainstat == 9 ~ 10,
        TRUE ~ NA_real_
      ),
-     isco08 = ISCO08,
-     degree = DEGREE,
-     #wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs) # trim workhrs
-  ) %>%
-  select(incdiff,cntry, year, wave, female, ageC, age, married, educyrs, union, wrkst, isco08, degree)
-# integrate hhcycle from socin2 (US92)
-<<<<<<< HEAD:01_Data Cleaning.Rmd
-=======
+    nemploy = ifelse(nsup %in% c(-4,-9), NA_real_, nsup),
+    selfemp = case_when(emprel %in% c(2,3,4) ~ 1, emprel %in% c(-4,-9) ~ NA_real_, TRUE ~ 0),
+    wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs), # trim workhrs,
+    isco88 = occupar::isco08to88(isco08),
+    spisco88 = occupar::isco08to88(spisco08)
+  ) 
+
+# ISCO88 to EGP
+
+socin3$egp <- occupar::isco88toEGP(isco88 = socin3$isco88, n.employees = socin3$nemploy, self.employed = socin3$selfemp)
+
+# EGP to EGP6
+socin3 <- socin3 %>%
+  mutate(
+    egp6 = car::recode(egp, recodes = '"I     Service class I" = "Service I";"II    Service class II" = "Service II"; "III.a Routine non-manual, higher grade" = "Routine"; "III.b Routine non-manual, lower grade" = "Routine"; "IV.a  Self-employed with employees" = "Self"; "IV.b  Self-employed with no empoyees" = "Self"; "IV.c  Self-employed Farmers etc" = "Self"; "V     Manual supervisors/Lower grade technicians" = "Skilled";"VI    Skilled workers" = "Skilled"; "VII.a Unskilled workers" = "Unskilled"; "VII.b Farm labours" = "Unskilled"')
+  )
+
+# ISEI
+socin3$isei <- occupar::isco88toISEI92(isco88 = socin3$isco88)
 
 
-## Income
-# Is coded in local currency and this really skews the standardization process. Recode into local deciles
+## Respondent's income, scaled.
 
-# Respondent income
+temp <- socin3 %>% select(contains("_rinc"))
+temp2 <- temp
+temp[temp >= 999990] <- NA
+temp <- as.data.frame(lapply(temp, function(x) ntile(x, 10))) # deciles
+socin3$rincZ <- rowMeans(temp, na.rm = T)
+socin3$rincZ <- ifelse(socin3$rincZ == "NaN", NA, socin3$rincZ)
+
+socin3$rincO <- rowMeans(temp2, na.rm = T)
+socin3$rincO <- ifelse(socin3$rincO == "NaN", NA, socin3$rincO)
+## Household income, scaled.
+
+temp <- socin3 %>% select(contains("_inc"))
+temp[temp >= 999990] <- NA
+temp <- as.data.frame(lapply(temp, function(x) ntile(x, 10))) # deciles
+socin3$hincZ <- rowMeans(temp, na.rm = T)
+socin3$hincZ <- ifelse(socin3$hincZ == "NaN", NA, socin3$hincZ)
+## Father, mother, and spouse
+
+socin3 <- socin3 %>%
+  mutate(
+    f_egp = NA_real_,
+    f_egp6 = NA_real_,
+    f_isei = NA_real_,
+    m_egp = NA_real_,
+    m_egp6 = NA_real_,
+    m_isei = NA_real_,
+    fisco88_2digit = NA_real_,
+    misco88_2digit = NA_real_
+  )
+
+socin3 <- socin3 %>%
+  mutate(
+    isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA),
+    spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA),
+    hhcycle = NA_real_
+  ) # Truncate isco88 and spisco88 values
 
 
-
-# Take the orignal incomes to compute Gini's coefficient
-
-
-
-
-## Household income
-
-
-
-# Standarize by country and year
+# Select relevant variables 
+socin3 <- dplyr::select(socin3,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit))
 
 
 
 ```
->>>>>>> 3230780e5011dccda5292229d8d3379eb65c0c69:Social Status - Data Cleaning.Rmd
+
 
 ### Merge
 
-<<<<<<< HEAD:01_Data Cleaning.Rmd
-## Income
-# Is coded in local currency and this really skews the standardization process. Recode into local deciles
-
-# Respondent income
 
 
-
-# Take the orignal incomes to compute Gini's coefficient
-
-
-
-
-## Household income
-
-
-
-# Standarize by country and year
-
-
-
-```
-
-### Merge
-
-=======
->>>>>>> 3230780e5011dccda5292229d8d3379eb65c0c69:Social Status - Data Cleaning.Rmd
 ```{r merge_v, include = TRUE, warning=F}
 ## Merge data sets  
 
@@ -1791,7 +1808,9 @@ mer2 <- plyr::rbind.fill(mer1,nl09)
 mer2$rincZ <- as.vector(mer2$rincZ)
 mer2$hincZ <- as.vector(mer2$hincZ)
 df <- plyr::rbind.fill(mer2,socin)
-
+df$rincz <- as.vector(df$rincZ)
+df$hincZ <- as.vector(df$hincZ)
+df <- plyr::rbind.fill(df, socin3)
 df <- df %>%
   group_by(cntry, year) %>%
   mutate(
@@ -1812,7 +1831,7 @@ USA,H: Present or last job - 4-digit ILO/ISCO 1968
 AUS,IRL,SLO,PL:Present or last occupation - *ISCO 1988*   
 RUS: Present main job - *ISCO 1988*
 
-# Missing
+### Missing
 99997. Refused
 99998. Not classifiable; inadequately described, DK
 99999. NA
@@ -1833,6 +1852,7 @@ env93 <- env93 %>%
     female = ifelse(v200 == 9, NA, v200 - 1),
     age = v201,
     incdiff = v6,
+    inclarge = NA_real_,
     ageC = ifelse(age > 75, 75, age),
     age = case_when(                 # trim at 75     
        age %in% c(16:24) ~ 1,        # Changed to 7 categories
@@ -1877,7 +1897,10 @@ env93 <- env93 %>%
     ),
     wrkhrs = v224, 
     wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
-    wrkst = ifelse(v212 == 4, 8, v212)
+    wrkst = ifelse(v212 == 4, 8, v212),
+    selfemp = ifelse(v221 %in% c(0,9), NA_real_, abs(v221-2)), ## self-employed = 1,
+    v222 = zap_labels(v222),
+    nemploy = case_when(v222 == 9996 ~ 0, v222 %in% c(0,9998,9999) ~ NA_real_, TRUE ~ v222)
   )
 # Occupation codes
 
@@ -2223,7 +2246,7 @@ env93$spisco88 <- coalesce(env93$spisco88,env93$spisco88_2)
 
 env93 <- env93 %>%
   mutate(
-    egp  = occupar::isco88toEGP(isco88 = isco88, n.employees = v221, self.employed = v222),
+    egp  = occupar::isco88toEGP(isco88 = isco88, n.employees = nemploy, self.employed = selfemp),
     egp6 = car::recode(egp, recodes = egp6),
     isei = occupar::isco88toISEI92(isco88 = isco88),
     f_egp = occupar::isco88toEGP(fisco88, NULL, NULL),
@@ -2263,7 +2286,7 @@ env93 <- env93 %>%
 
 # Select relevant variables 
 
-env93 <- dplyr::select(env93,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit))
+env93 <- dplyr::select(env93,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit))
 
 ```
 
@@ -2283,6 +2306,7 @@ env00 <- env00 %>%
     female = ifelse(v200 == 9, NA, v200 - 1),
     age = v201,
     incdiff = v5,
+    inclarge = NA_real_,
     ageC = ifelse(age > 75, 75, age), # trim at 75  
     age = case_when(                 # trim at 75     
        age %in% c(16:24) ~ 1,         # Changed to 7 categories
@@ -2328,13 +2352,14 @@ env00 <- env00 %>%
     wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
     wrkst = ifelse(v231 == 4, 8, v231),
     isco88 = v233,
-    spisco88 = v234
+    spisco88 = v234,
+    selfemp = case_when(v236 == 1 ~ 1, v236 %in% c(0,2) ~ 0, TRUE ~ NA_real_),
+    nemploy = case_when(v237 == 9995 ~ 0, v237 %in% c(0,9997,9998,9999) ~ NA_real_)
   )
 # ISCO88 to EGP
 
 
-
-env00$egp <- occupar::isco88toEGP(isco88 = env00$v233, n.employees = env00$v237, self.employed = env00$v236)
+env00$egp <- occupar::isco88toEGP(isco88 = env00$v233, n.employees = env00$nemploy, self.employed = env00$selfemp)
 
 # EGP to EGP6
 env00 <- env00 %>%
@@ -2377,7 +2402,7 @@ env00 <- env00 %>%
   ) # Truncate isco88 values
 
 # Select relevant variables 
-env00 <- dplyr::select(env00,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)) 
+env00 <- dplyr::select(env00,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)) 
 ```
 
 
@@ -2391,6 +2416,7 @@ env10 <- env10 %>%
     wave = 2010,
     female = ifelse(sex == 9, NA, sex - 1),
     incdiff = v8,
+    inclarge = NA_real_,
     ageC = ifelse(age > 75, 75, age), # trim at 75  
     age = case_when(                 # trim at 75     
        age %in% c(16:24) ~ 1,         # Changed to 7 categories
@@ -2421,7 +2447,7 @@ env10 <- env10 %>%
     ),
     selfemp = case_when(
       emprel %in% c(2:4) ~ 1,
-      emprel == 1 ~ 2,
+      emprel == 1 ~ 0,
       TRUE ~ NA_real_
     ),
     union = case_when(
@@ -2448,6 +2474,7 @@ env10 <- env10 %>%
       TRUE ~ NA_real_
     ),
     wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
+    nemploy = ifelse(nemploy %in% c(0,9999), NA_real_, nemploy)
   ) 
 
 # ISCO88 to EGP
@@ -2506,7 +2533,7 @@ env10 <- env10 %>%
 
 
 # Select relevant variables 
-env10 <- dplyr::select(env10,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit))
+env10 <- dplyr::select(env10,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit))
 
 ```
 ## Merge environment data sets and social inequality cumulative data set and save 
@@ -2667,7 +2694,7 @@ save(df, file = here::here("data","socstat.Rda"))
 
 
 
-
+  
 
 
 
