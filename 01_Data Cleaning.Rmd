@@ -1752,7 +1752,7 @@ socin3$isei <- occupar::isco88toISEI92(isco88 = socin3$isco88)
 
 ## Respondent's income, scaled.
 
-temp <- socin3 %>% select(contains("_rinc"))
+temp <- socin3 %>% dplyr::select(contains("_rinc"))
 temp2 <- temp
 temp[temp >= 999990] <- NA
 temp <- as.data.frame(lapply(temp, function(x) ntile(x, 10))) # deciles
@@ -1763,7 +1763,7 @@ socin3$rincO <- rowMeans(temp2, na.rm = T)
 socin3$rincO <- ifelse(socin3$rincO == "NaN", NA, socin3$rincO)
 ## Household income, scaled.
 
-temp <- socin3 %>% select(contains("_inc"))
+temp <- socin3 %>% dplyr::select(contains("_inc"))
 temp[temp >= 999990] <- NA
 temp <- as.data.frame(lapply(temp, function(x) ntile(x, 10))) # deciles
 socin3$hincZ <- rowMeans(temp, na.rm = T)
@@ -2577,8 +2577,8 @@ df$cyear <- (df$cntry*10000)+df$year
 # Country names
 df$country <- countrycode(df$cntry, "iso3n", "country.name")
 # Recode IncDiff
-df$incdiff <- ifelse(df$incdiff == 9, NA, df$incdiff)
-df$inclarge <- ifelse(df$inclarge == 9, NA, df$inclarge)
+df$incdiff <- ifelse(df$incdiff %in% c(8,-8, 9, -9), NA_real_, df$incdiff)
+df$inclarge <- ifelse(df$incdiff %in% c(8,-8, 9, -9), NA_real_, df$inclarge)
 df$reduce <- car::recode(df$incdiff, recodes = '1 = 5; 2 = 4; 3 = 3; 8 = 3; 4 = 2; 5 = 1')
 df$reduce_large <- car::recode(df$inclarge, recodes = '1 = 5; 2 = 4; 3 = 3; 8 = 3; 4 = 2; 5 = 1')
 
