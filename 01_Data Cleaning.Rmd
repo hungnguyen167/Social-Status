@@ -2578,7 +2578,7 @@ df$cyear <- (df$cntry*10000)+df$year
 df$country <- countrycode(df$cntry, "iso3n", "country.name")
 # Recode IncDiff
 df$incdiff <- ifelse(df$incdiff %in% c(8,-8, 9, -9), NA_real_, df$incdiff)
-df$inclarge <- ifelse(df$incdiff %in% c(8,-8, 9, -9), NA_real_, df$inclarge)
+df$inclarge <- ifelse(df$inclarge %in% c(8,-8, 9, -9), NA_real_, df$inclarge)
 df$reduce <- car::recode(df$incdiff, recodes = '1 = 5; 2 = 4; 3 = 3; 8 = 3; 4 = 2; 5 = 1')
 df$reduce_large <- car::recode(df$inclarge, recodes = '1 = 5; 2 = 4; 3 = 3; 8 = 3; 4 = 2; 5 = 1')
 
