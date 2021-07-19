@@ -1,5 +1,0 @@
-TITLE: Your title goes here
-DATA: FILE = "svallfors.dat";
-VARIABLE: 
-NAMES = X v57 v59 v62 r1 r2 r3 v3 v99 v100 v102; 
-MISSING=.;

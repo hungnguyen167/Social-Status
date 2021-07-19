@@ -20,7 +20,9 @@ pacman::p_load("tidyverse", # suite of packages that all work together
                "equatiomatic", # a package that displays equations from a previously called function
                "kableExtra", # a package for making clean looking tables
                "jtools", #good for summarizing and visualizing regression results
-               "ggpubr")
+               "ggpubr",
+               "countrycode", # for automatically recoding country names and codes
+               "lme4") # for multilevel modeling
 ```
 
 Helpful notes from R Studio:
@@ -37,6 +39,10 @@ These data are a cumulation of all ISSP surveys that asked the question:
 
 ```{r data}
 load(here::here("data","socstat.Rda"))
+
+# add country labels
+df <- df %>%
+  mutate(iso3c = countrycode(cntry, "iso3n", "iso3c"))
 ```
 
 #### Descriptive ('Browsing Variables')
@@ -47,7 +53,7 @@ Often we look at descriptive statistics before proceeding with analysis.
 
 Call them "dependent" here because they are our primary variables of interest.
 
-"Don't know" is coded as 8 and has not yet been cleaned from all countries' data.
+
 
 ```{r desc}
 
@@ -57,6 +63,17 @@ hist(df$inclarge)
 #hist(df$reduce_large)
 
 ```
+##### Temporary Fix
+
+```{r}
+df <- df %>%
+  mutate(incdiff = ifelse(incdiff < 1 | incdiff > 5, NA, incdiff),
+         inclarge = ifelse(inclarge < 1 | inclarge > 5, NA, inclarge),
+         reduce = ifelse(reduce < 1 | reduce > 5, NA, reduce),
+         reduce_large = ifelse(reduce_large < 1 | reduce_large > 5, NA, reduce_large))
+```
+
+
 
 ##### Summarize by Country
 
@@ -154,6 +171,7 @@ plot_summs(m1, plot.distributions = T
            )
 
 ```
+
 ##### Compare by Wave
 
 Are countries really so different? We are comparing many waves (many different samples from different years). To do this we would need to verify that all years are similar.
@@ -225,9 +243,10 @@ df %>%
 
 # make a scale
 df <- df %>%
-  mutate(incdiff = ifelse(incdiff != 8, incdiff, NA), # remember there were some 8's in the data
-        redist = incdiff + inclarge,
-        redist_scale = scale(incdiff + inclarge))
+  mutate(
+        redist = reduce + reduce_large,
+        redist_scale = scale(reduce + reduce_large)
+        )
 
 hist(df$redist)
 
@@ -272,7 +291,171 @@ df %>%
 ```
 #### Regression
 
-```{r reg}
+Regression is really just a correlation with an intercept added. It gets more complicated in "multiple" regression where there is more than one X variable. But this is a useful way to think about it.
+
+A regression is an algebraic attempt to populate an equation with values. 
+
+Let's take the example hypothesis *"Does education influence preferences for redistribution?"*
+
+We could write a simply regression formula for this hypothesis as:
+
+$Y_{redist\_prefs} = b_{0}X_{0_{intercept}} + b_{1}X_{1_{yrs\_education}} + e_{Y_{redist\_prefs}}$
+
+In this formula $Y_{redist\_prefs}$ is our dependent variable. Usually we think of things linearly. Therefore we want to know if there is a linear association between $Y$ and our independent variable (our 'test' variable) $X_{1_{yrs\_education}}$. A linear association is $b_{1}$. 
+
+We want to know if $b_{1}$ is different from zero. $b_{1}$ is the slope of a line (like in the above correlation plots). A steeper slope indicates a stronger association. 
+
+The `lm` package is the standard "linear model" package for running regressions.
+
+
+
+```{r reg_ed_redist}
+
+m1 <- lm(redist ~ educyrs, data = df)
+
+summary(m1)
+```
+
+In our above equation we can now have $b_{0}$ = `r round(m1[["coefficients"]][["(Intercept)"]],3)` and $b_{1}$ = `r round(m1[["coefficients"]][["educyrs"]],3)`
+
+How do we interpret this?
+
+
+```{r z_reg_ed_redist}
+m1_z <- lm(scale(redist) ~ scale(educyrs), data = df)
+
+summary(m1_z)
+```
+
+In a single regression (just one independent variable), the standardized coefficient is roughly the same as the correlation.
+
+```{r ed_redist_cor}
+df %>%
+  select(educyrs, redist) %>%
+  cor(use = "pairwise.complete.obs")
+```
+
+##### R-Squared
+
+In the regression equation above we have $e_{Y_{redist\_prefs}}$ which is the "*error term*" or "*residual*". It is everything that the intercept and independent variables cannot explain about the dependent variable. 
+
+We can visualize this:
+
+```{r ed_redist_r}
+df$pred_m1 <- predict(m1, newdata = df)
+df$resid_m1 <- df$redist - df$pred_m1
+# there are far too many points in the dataframe to see in a plot
+# we can take a random sample of our data
+
+# by setting a seed we can ensure that the random sample is reproducible
+set.seed(90210)
+
+df %>%
+  sample_n(5000) %>% # this takes 3000 cases randomly
+  ggplot(aes(x = pred_m1, y = redist)) +
+  geom_point(position = 'jitter', size = 0.2) +
+  geom_smooth(method = 'lm', se = F) + # add regression line
+  stat_cor(label.y.npc = "bottom")  # add correlation to plot
 
 ```
+
+The R-squared is the squared correlation between the predicted values of Y and the actual values of Y. 
+
+##### Regression with Groups
+
+We have many countries and many time points. As careful 'pedantic' social scientists, we should not assume that all groups have a similar association of $Y_{redist\_prefs}$ and $X_{1_{yrs\_education}}$.
+
+Lets start by comparing just two countries, Germany and Sweden. 
+
+*METHOD 1* Run two regressions
+
+```{r groups_red_educ_redist}
+m1_deu <- lm(redist ~ educyrs, data = subset(df, df$iso3c == "DEU"))
+m1_swe <- lm(redist ~ educyrs, data = subset(df, df$iso3c == "SWE"))
+
+summary(m1_deu)
+summary(m1_swe)
+```
+
+Method 1 requires us to manually compare the coefficients. We could do this with a t-test. But, we can also just run a single regression.
+
+*METHOD 2* Single regression with different slopes
+
+Here the regression equation would look like the following:
+
+$Y_{redist\_prefs} = b_{0}X_{0_{intercept}} + b_{1}X_{1_{yrs\_education\_DEU}} + b_{2}X_{2_{yrs\_education\_SWE}} + e_{Y_{redist\_prefs}}$
+
+
+This is most easily achieved with an interaction because X1 = 0 for the country Sweden and X2 = 0 for the country Germany
+
+```{r groups_red_educ_redist2}
+df <- df%>%
+  mutate(sweden = ifelse(iso3c == "SWE",1,0),
+         edu_swe = sweden*educyrs,
+         edu_deu = ifelse(sweden == 0, educyrs, 0)) # make a dummy variable for Sweden
+
+m1_deu_swe <- lm(redist ~ edu_swe + edu_deu, data = subset(df, df$iso3c %in% c("DEU","SWE")))
+
+summary(m1_deu_swe)
+```
+
+Is this the same as running two regressions?
+
+
+*METHOD 3* Single regression with two slopes and two intercepts
+
+To achieve identical results as with the two separate regressions by country, we actually need to allow a different intercept for each country. This equation looks like:
+
+$Y_{redist\_prefs} = b_{01}X_{0_{intercept\_DEU}} + b_{02}X_{0_{intercept\_SWE}}+ b_{11}X_{1_{yrs\_education\_DEU}} + b_{12}X_{1_{yrs\_education\_SWE}} + e_{Y_{redist\_prefs}}$
+
+We have to be careful with this equation. Because all independent variables are added together with + signs, we cannot add both slopes from the separate equations. Instead we start with the slope for one country and then the second slope is the difference for the other country to that slope.
+
+```{r groups_red_educ_redist3}
+m1_deu_swe2 <- lm(redist ~ factor(iso3c)*educyrs, data = subset(df, df$iso3c %in% c("DEU","SWE")))
+
+summary(m1_deu_swe2)
+
+
+
+```
+
+Now when we add the intercepts together we get the intercept for Sweden and we have reproduced the two separate regressoin results.
+
+Is it a good idea to compare two countries this way? What assumption are we making?
+
+Think about the R-squared from the two equations separately
+
+#### Multilevel Modeling
+
+*METHOD 5* Welcome to multilevel modeling!
+
+We want to allow a country-specific error term, because we know that the fit of the predicted values to the actual values of Y is much better.
+
+Now the equation looks like this:
+
+$Y_{redist\_prefs} = b_{01}X_{0_{intercept\_DEU}} + b_{02}X_{0_{intercept\_SWE}}+ b_{11}X_{1_{yrs\_education\_DEU}} + b_{12}X_{1_{yrs\_education\_SWE}} + e_{Y_{01_{redist\_prefs\_DEU}} + e_{Y_{02_{redist\_prefs\_SWE}}}$
+
+```{r groups_red_educ_redist4}
+m1_mlm_deu_swe <- lmer(redist ~ educyrs + (1 | iso3c) + (iso3c | educyrs), data = subset(df, df$iso3c %in% c("DEU","SWE")))
+
+summary(m1_mlm_deu_swe)
+
+# we can extract the coefficients and intercepts for each country
+
+ranef(m1_mlm_deu_swe)$iso3c
+
+```
+
+In the summary we now have only one intercept and one slope. What this model has done is to generate an average intercept and average slope and then identifies germany and sweden as deviations from that average (these are called 'grand mean intercept' and 'grand mean slope').
+
+There is a reason for this:
+
+
+We often want to compare more groups than just two countries. And to do this like Method 4 would require a new intercept and new slope for each country. Imagine comparing 50 countries, what a crazy equation that would produce!
+
+Instead the new equation (which can handle unlimited countries looks like this):
+
+$Y_{ij_{redist\_prefs}} = \gamma_{00}X_{0_{intercept_{grand\_mean}}} + u_{0j}X_{0_{intercept_{j}}} + \gamma_{10_{yrs\_education_{grand\_mean\_slope}}} + u_{1j}X_{1_{yrs\_education_{j\_specific\_slope}}} + e_{ij}$
+
+In multilevel modeling we often use $\gamma$ (gamma) instead of 'b' (beta) to represent coefficients. this is because this equation is actually the product of two equations. The errors are often listed as 'u' but we could also use gamma.
 

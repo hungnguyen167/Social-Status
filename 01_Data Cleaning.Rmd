@@ -7,11 +7,14 @@ output:
 
 "Social Status, Liberalization and Attitudes toward Redistribution"
 
-## ISSP, Social Inequality, Cumulation (1987, 1992, 1999 & 2009)
+## ISSP Data
+
+Social Inequality, Cumulation (1987, 1992, 1999, 2009 & 2009)
+Social Inequality, 2019
+Environment (XXXX, XXXX & XXXX)
 $~$
 $~$
 
-WORKING ON LINE 1698
 
 #### **Nate Breznau, Lisa Heukamp & Hung H.V. Nguyen**
 #### **University of Bremen**
@@ -56,11 +59,11 @@ Notes:
 
 A. nl87 and ie87 cannot be integrated into the socin file, eeds occupation recoding before integrating but the categories are not compatible.
 
-B. Finish recodes in 2019 data, this means remove missing data (e.g., degree), add income, add egp (fix supervision and n.employees variables)
-
 C. There are values of 11 in the socin$wrkst variable, these are probably from a country-specific question and need to be checked
 
 E. We should include the other income differences question for all surveys where it is available, Nate did this for the cumulative file so far as *inclarge*
+
+F. There are still values that fall outside of 0-5 in *incdiff* and *inclarge*
 =======
    
    
