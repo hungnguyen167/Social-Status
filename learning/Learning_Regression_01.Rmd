@@ -348,12 +348,14 @@ df$resid_m1 <- df$redist - df$pred_m1
 # we can take a random sample of our data
 
 # by setting a seed we can ensure that the random sample is reproducible
-set.seed(90210)
+set.seed(90216)
 
 df %>%
   sample_n(5000) %>% # this takes 3000 cases randomly
   ggplot(aes(x = pred_m1, y = redist)) +
-  geom_point(position = 'jitter', size = 0.2) +
+  geom_point(
+    position = 'jitter', 
+    size = 0.2) +
   geom_smooth(method = 'lm', se = F) + # add regression line
   stat_cor(label.y.npc = "bottom")  # add correlation to plot
 
@@ -376,6 +378,15 @@ m1_swe <- lm(redist ~ educyrs, data = subset(df, df$iso3c == "SWE"))
 summary(m1_deu)
 summary(m1_swe)
 ```
+```{r ex}
+df %>%
+  subset(iso3c %in% c("DEU", "SWE")) %>%
+  ggplot(aes(x = educyrs, y = redist, color = iso3c)) +
+  geom_smooth(method = 'lm', se = F) +
+  coord_cartesian(xlim = c(0,10))
+```
+
+
 
 Method 1 requires us to manually compare the coefficients. We could do this with a t-test. But, we can also just run a single regression.
 
@@ -433,7 +444,7 @@ We want to allow a country-specific error term, because we know that the fit of 
 
 Now the equation looks like this:
 
-$Y_{redist\_prefs} = b_{01}X_{0_{intercept\_DEU}} + b_{02}X_{0_{intercept\_SWE}}+ b_{11}X_{1_{yrs\_education\_DEU}} + b_{12}X_{1_{yrs\_education\_SWE}} + e_{Y_{01_{redist\_prefs\_DEU}} + e_{Y_{02_{redist\_prefs\_SWE}}}$
+$Y_{redist\_prefs} = b_{01}X_{0_{intercept\_DEU}} + b_{02}X_{0_{intercept\_SWE}}+ b_{11}X_{1_{yrs\_education\_DEU}} + b_{12}X_{1_{yrs\_education\_SWE}} + e_{Y_{01_{redist\_prefs\_DEU}}} + e_{Y_{02_{redist\_prefs\_SWE}}}$
 
 ```{r groups_red_educ_redist4}
 m1_mlm_deu_swe <- lmer(redist ~ educyrs + (1 | iso3c) + (iso3c | educyrs), data = subset(df, df$iso3c %in% c("DEU","SWE")))

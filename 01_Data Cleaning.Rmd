@@ -64,6 +64,8 @@ C. There are values of 11 in the socin$wrkst variable, these are probably from a
 E. We should include the other income differences question for all surveys where it is available, Nate did this for the cumulative file so far as *inclarge*
 
 F. There are still values that fall outside of 0-5 in *incdiff* and *inclarge*
+
+G. Missing data -9 -8 found in the educyrs variable
 =======
    
    
