@@ -1,0 +1,142 @@
+---
+title: "Learning Regression 02 - Multilevel"
+author: "Nate Breznau"
+date: "7/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+pacman::p_load("tidyverse", # suite of packages that all work together
+               "ggplot2", # recommended plotting package
+               "tidylog", # a package that outputs a log of data transformations after each command (like what Stata does)
+               "equatiomatic", # a package that displays equations from a previously called function
+               "kableExtra", # a package for making clean looking tables
+               "jtools", #good for summarizing and visualizing regression results
+               "ggpubr", # for automatically recoding country names and codes
+               "lme4", # for multilevel modeling
+               "ragg") # for plotting high quality images
+```
+
+
+```{r data}
+load(here::here("data","socstat.Rda"))
+
+```
+### Two-Levels = Two-Results
+
+In two-level multilevel modeling there are really two models happening at once. There are N-models for the N number of levels in multilevel modeling. We will just focus on two for now in the ISSP data, countries and individuals.
+
+Suggested reading:
+
+Snijders, T. A. B., and R. J. Bosker. 1994. “Modeled Variance in Two-Level Models.” Sociological Methods & Research 22(3):342–63. doi: 10.1177/0049124194022003004.
+
+The Snijders and Bosker reading's main purpose is to propose how to measure explained variance in a multilevel model, but we can learn the basics of multlevel modeling by working through it.
+
+The article starts with *"The concept of explained variance is well-known in multiple regression analysis: it gives an answer to the question, how much of the variability of the dependent variable is accounted for by the  linear  regression  on  the  explanatory  variables."
+
+The most common statistic for this is $R^2$. This is the squared correlation of the predicted values with the observed values. Remember our example in [Learning_Regression_01.Rmd](../learning/Learning_Regression_01.Rmd), where we compared two questions about attitudes toward redistribution. Those we used to construct our scale. Here we revisit those two variables across three countries.
+
+Remember also that a standardized regression coefficient is roughly identical to a correlation in a regression with just one independent variable. Therefore we use the following simple equation where we predict support for 'it is the governments responsibility to reduce income differences between those with high and low incomes' (we label this variable *incdiff*) by support for 'there is too much inequality between rich and poor in [this country]' (label is *inclarge*) 
+
+$Y_{i} = B_{0} + B_{1}X_{i} + E_{i}$
+
+Where:
+$Y$ = *incdiff*
+$X$ = *inclarge*
+$i$ = individual survey respondents
+
+And now the regression visualized
+
+```{r reg_all}
+m01 <- lm(incdiff ~ inclarge, data = df) # the regression from the equation above
+summary(m01)
+#create plot with regression line and regression equation and r^2
+ggplot(data=df, aes(x=inclarge, y=incdiff)) +
+        geom_smooth(method="lm") +
+        #geom_point() +
+        xlim(1,5) + # make both axes the same for easier visualization
+        ylim(1,5) +
+        stat_regline_equation(label.x=4.5, label.y=2, hjust = 0) +
+        stat_cor(aes(label=..rr.label..), label.x=4.5, label.y=1.7, hjust = 0) +
+        labs(x = "Gov. should reduce income differences", y = "Inequality btw. rich and poor is too large") +
+        annotate(geom = "text", x = 1.2, y = 4.5, 
+                 label = paste0("Pooled data for ",length(unique(df$iso3c[!is.na(df$inclarge)])),"\ncountries"),
+                 hjust = 0) + #add number of countries to plot
+        theme_classic2()
+```
+
+As we are aware, this regression line (i.e., correlation) is different in different countries. For example the correlation was lower in the US than in Sweden. That means that the $R^2$ is also different because it is really just the correlation (i.e., the regression coefficient $B_{1}$) squared.
+
+But to be clear, $R^2$ is the most common statistic used to identify what Snijders and Bosker refer to as "explained variance" in the first sentence of their article.
+
+Lets look at the association in all 34 countries now. 
+
+```{r reg_each}
+# get all intercepts and slopes
+fitted_models = df %>% # have to use equal sign here because it is a function
+  subset(!is.na(incdiff) & !is.na(inclarge)) %>% # remove missing cases
+  group_by(iso3c) %>% # group by country
+  do(model = lm(incdiff ~ inclarge, data = .)) #run regression for each country
+
+# plot all at once
+
+# make a data frame of all wanted x values
+x <- 1:5
+dfx <- as.data.frame(x)
+
+# now loop to create a plot for each intercept and coefficient from each country's regression
+
+for (j in 1:length(unique(fitted_models$iso3c))){
+  dfx <- df %>% # subset data to only that country and remove missing
+    subset(iso3c == fitted_models$iso3c[j]) %>%
+    subset(!is.na(incdiff) & !is.na(inclarge))
+  
+  plot1 <- ggplot(data = dfx, aes(x = inclarge, y = incdiff)) +
+           geom_smooth(method = 'lm') +
+           xlim(1,5) +
+           ylim(1,5) +
+           annotate(geom = "text", x = 2.5, y = 1.6, label = paste0("y = ",
+                                                                  round(fitted_models$model[[j]]$coefficients[1],1),
+                                                                  " + ",
+                                                                  round(fitted_models$model[[j]]$coefficients[2],2),
+                                                                  "x"),
+                      hjust = 0,
+                      ) +
+           annotate(geom = "text", x = 2.5, y = 1, label = paste("R^2 = ", round(cor(dfx$incdiff, dfx$inclarge)^2,2)),
+                      hjust = 0,
+                      ) +
+           stat_cor(label.x = 2.5, label.y = 1.3, hjust = 0, p.accuracy = 0.001) +
+           labs(title = paste0(fitted_models$iso3c[j])) +
+           theme_classic2() +
+             theme(axis.title = element_blank())
+ 
+assign(paste0("mmm",fitted_models$iso3c[j]), plot1)
+  
+}
+         
+
+```
+
+
+```{r reg_each_plot}
+# now gather all and plot with ggarrange
+
+agg_png(filename = here::here("learning","images","multiplot.png"), res = 72, width = 1200, height = 1200)
+ggarrange(mmmAUS, mmmAUT, mmmBGR, mmmCAN, mmmCHE, mmmCHL, 
+mmmCYP, mmmCZE, mmmDEU, mmmDNK, mmmESP, mmmFIN, mmmFRA, 
+mmmGBR, mmmHRV, mmmHUN, mmmIRL, mmmISR, mmmITA, mmmJPN, 
+mmmLVA, mmmNLD, mmmNOR, mmmNZL, mmmPHL, mmmPOL, mmmPRT, 
+mmmRUS, mmmSVK, mmmSVN, mmmSWE, mmmTHA, mmmUSA, mmmZAF)
+dev.off()
+
+knitr::include_graphics(here::here("learning","images","multiplot.png"))
+```
+
+
+
+$Y_{ij} = B_{0} + B_{1}X_{ij} + E_{ij}$
+
+
+

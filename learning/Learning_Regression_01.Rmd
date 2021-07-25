@@ -21,7 +21,6 @@ pacman::p_load("tidyverse", # suite of packages that all work together
                "kableExtra", # a package for making clean looking tables
                "jtools", #good for summarizing and visualizing regression results
                "ggpubr",
-               "countrycode", # for automatically recoding country names and codes
                "lme4") # for multilevel modeling
 ```
 
@@ -33,16 +32,18 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ### Load Data
 
-These data are a cumulation of all ISSP surveys that asked the question:
+These data are a cumulation of all ISSP surveys that asked the questions:
 
 *"It is the responsibility of the government to reduce the differences in income between people with high incomes and those with low incomes."*
+
+and
+
+*"There is too much inequality between rich and poor in [COUNTRY]"*
 
 ```{r data}
 load(here::here("data","socstat.Rda"))
 
-# add country labels
-df <- df %>%
-  mutate(iso3c = countrycode(cntry, "iso3n", "iso3c"))
+
 ```
 
 #### Descriptive ('Browsing Variables')

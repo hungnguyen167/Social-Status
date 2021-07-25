@@ -2688,7 +2688,10 @@ Save
 
 ```{r save}
 
-# clean up variables
+# add alpha country labels - easier for readers to understand than numbers (i.e., USA = 840 or "USA")
+df <- df %>%
+  mutate(iso3c = countrycode(cntry, "iso3n", "iso3c")) %>%
+  select(year, wave, country, iso3c, cntry, everything())
 
 ## Save df
 save(df, file = here::here("data","socstat.Rda"))
