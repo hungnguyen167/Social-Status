@@ -53,18 +53,29 @@ And now the regression visualized
 m01 <- lm(incdiff ~ inclarge, data = df) # the regression from the equation above
 summary(m01)
 #create plot with regression line and regression equation and r^2
-ggplot(data=df, aes(x=inclarge, y=incdiff)) +
+mmmPOOLED <- ggplot(data=df, aes(x=inclarge, y=incdiff)) +
         geom_smooth(method="lm") +
         #geom_point() +
         xlim(1,5) + # make both axes the same for easier visualization
         ylim(1,5) +
-        stat_regline_equation(label.x=4.5, label.y=2, hjust = 0) +
-        stat_cor(aes(label=..rr.label..), label.x=4.5, label.y=1.7, hjust = 0) +
+        stat_regline_equation(label.x=2.5, label.y=1.6, hjust = 0) +
+        stat_cor(aes(label=..rr.label..), label.x=2.5, label.y=1, hjust = 0) +
         labs(x = "Gov. should reduce income differences", y = "Inequality btw. rich and poor is too large") +
+        annotate(geom = "text", x = 2.5, y = 1.3, label = paste("R = ", round(cor(df$incdiff, df$inclarge, use = "pairwise.complete.obs"),2)),
+                      hjust = 0,
+                      ) +
         annotate(geom = "text", x = 1.2, y = 4.5, 
                  label = paste0("Pooled data for ",length(unique(df$iso3c[!is.na(df$inclarge)])),"\ncountries"),
                  hjust = 0) + #add number of countries to plot
-        theme_classic2()
+        theme_classic2() +
+        theme(
+          axis.title = element_text(size = 8)
+        )
+
+mmmPOOLED +
+  theme(
+    axis.title = element_text(size = 12)
+  )
 ```
 
 As we are aware, this regression line (i.e., correlation) is different in different countries. For example the correlation was lower in the US than in Sweden. That means that the $R^2$ is also different because it is really just the correlation (i.e., the regression coefficient $B_{1}$) squared.
@@ -124,16 +135,93 @@ assign(paste0("mmm",fitted_models$iso3c[j]), plot1)
 # now gather all and plot with ggarrange
 
 agg_png(filename = here::here("learning","images","multiplot.png"), res = 72, width = 1200, height = 1200)
-ggarrange(mmmAUS, mmmAUT, mmmBGR, mmmCAN, mmmCHE, mmmCHL, 
+ggarrange(mmmPOOLED, mmmAUS, mmmAUT, mmmBGR, mmmCAN, mmmCHE, mmmCHL, 
 mmmCYP, mmmCZE, mmmDEU, mmmDNK, mmmESP, mmmFIN, mmmFRA, 
 mmmGBR, mmmHRV, mmmHUN, mmmIRL, mmmISR, mmmITA, mmmJPN, 
 mmmLVA, mmmNLD, mmmNOR, mmmNZL, mmmPHL, mmmPOL, mmmPRT, 
 mmmRUS, mmmSVK, mmmSVN, mmmSWE, mmmTHA, mmmUSA, mmmZAF)
 dev.off()
 
+
 knitr::include_graphics(here::here("learning","images","multiplot.png"))
 ```
 
+
+In the graphs above, the pooled explained variance ($R^2$) is `r round(cor(df$incdiff, df$inclarge, use = "pairwise.complete.obs"),2)`. But in each country this varies considerably. How can we deal with this difference, and how do we know what variance we are explaining in the pooled model? This is the purpose of the Snijders and Bosker paper. To answer this question we need to think of *two-levels of variance*. There is variance that is uniquely attributable to differences between countries, and variance that is uniquely attributable to differences between individuals in each country.
+
+Snijders and Bosker offer Equation 2 as the maximum likelihood estimator that is used to find the regression lines in a multilevel model. A multilevel model is called a "general linear model" instead of "ordinary least squares" because it is not possible to minimize the sum of the squared residual, because there is not one residual! As you can see from the figure above, when we try to estimate a regression that can fit the lines in all these countries at once plus the pooled sample of all countries together this leads to not one set of residuals but there are 35 'residuals', one for each country and 1 overall residual for all the countries pooled together. So this maximum likelihood is trying to minimize the log-likelihood which is a combination of $SS_{w}$ and $SS_{b}$ (don't worry about how this maximum-likelihood equation works for now, that is for another lesson). But what the heck are the $SS_{w}$ and $SS_{b}$? These are the **within-sum-of-squares** and the **between-sum-of-squares**. They are the squared residuals for the **within-variance** and the **between-variance**, trying to maximize the log-likelihood (which has to do with the likelihood of obtaining the observed values in the data using the parameters in the model as predictors).
+
+**Within-variance** and **between-variance** are the fundamental components to understanding multilevel models (level can be group, country, time, etc... any grouping variable that leads to nested data).
+
+### Variance Components
+
+#### Between-Variance
+
+The between-variance is very easy to understand and calculate. This is simply the variance of the mean value of $X$ for each country $j$. We can calculate this by making a new variable with the mean for each country. Then to find the within-variance we subtract that mean from each value in each country so that within countries all values are now **mean-centered**.
+
+```{r wbv}
+
+df <- df %>%
+  group_by(iso3c) %>%
+  # calculate the mean for each country
+  mutate(incdiff_b = mean(incdiff, na.rm = T),
+         inclarge_b = mean(inclarge, na.rm = T)) %>%
+  ungroup() %>%
+  # calculate the mean-centered values by subtracting the means
+  mutate(incdiff_w = incdiff - incdiff_b,
+         inclarge_w = inclarge - inclarge_b)
+
+```
+
+Now we can see the within- and between-variance for each level for the variable *incdiff* and then we can see how much of this is explained by *inclarge*. To do this we need to predict each level's outcomes. 
+
+Here is why I keep telling you to think in terms of two equations!
+
+We calculate two different regressions, one with 34 cases (countries) and the other with all individual cases but mean-centered. 
+
+
+```{r vars}
+# between-regression
+df_b <- df %>%
+  dplyr::select(iso3c, incdiff_b, inclarge_b) %>%
+  group_by(iso3c) %>%
+  summarise_all(mean, na.rm = T)
+
+m02_b <- lm(incdiff_b ~ inclarge_b, data = df_b)
+
+# add predicted values to df_b
+df_b$incdiff_b_hat <- predict(m02_b, newdata = df_b)
+  
+# within-regression
+df_w <- df %>% # need to remove missing cases for predict to work
+  subset(!is.na(incdiff_w) & !is.na(inclarge_w))
+
+# add predicted values to df_w
+m02_w <- lm(incdiff_w ~ inclarge_w, data = df_w)
+
+df_w$incdiff_w_hat <- predict(m02_w, data = df_w)
+  
+# variances
+incdiff_b_var <- round(var(df_b$incdiff_b, na.rm = T),3)
+incdiff_w_var <- round(var(df$incdiff_w, na.rm = T),3)
+incdiff_var <- round(var(df$incdiff, na.rm = T),3)
+
+# variance reduction
+incdiff_b_var_h <- round(var(df_b$incdiff_b - df_b$incdiff_b_hat, na.rm = T),3)
+incdiff_w_var_h <- round(var(df_w$incdiff_w - df_w$incdiff_w_hat, na.rm = T),3)
+
+```
+
+Now we can view the reduction in variance
+
+| Variance Component | Variance | Reduction |
+| ----- | ----- | ----- |
+| incdiff total variance | `r incdiff_var` | NA |
+| incdiff between-variance | `r incdiff_b_var` | NA |
+| incdiff within-variance | `r incdiff_w_var` | NA | 
+| after regression | | |
+NPOTE this is residual variance we need the explained variance reduced!!!!!!
+| incdiff between reduced by inclarge | `r incdiff_b_var_h` | `r paste(round(incdiff_b_var_h/incdiff_b_var,1),"%")` |
 
 
 $Y_{ij} = B_{0} + B_{1}X_{ij} + E_{ij}$
