@@ -231,9 +231,9 @@ Now we can view the reduction in variance
 | incdiff between-variance $Y_{j}$ | `r incdiff_b_var` | -- | -- | *ibid* |
 | incdiff within-variance $Y_{i}$ | `r incdiff_w_var` | -- | -- | *ibid* |
 | after adding *inclarge* as predictor | | | |
-| $\sigma_{ij}$ of $\hat{Y}_{ij}$ (total) | `r incdiff_hat_var` | `r paste(round(incdiff_hat_var/incdiff_var,3)*100,"%")` | `r round(summary(m01)$r.squared,3)` | standard $R^2$ |
-| $\sigma_{j}$ of $\hat{Y}_{j}$ (between) | `r incdiff_b_hat_var` | `r paste(round(incdiff_b_hat_var/incdiff_b_var,3)*100,"%")` | `r round(summary(m02_b)$r.squared,3)` | **Eq. 13** in Snijders and Bosker |
-| $\sigma_{i}$ of $\hat{Y}_{i}$ (within) | `r incdiff_w_hat_var` | `r paste(round(incdiff_w_hat_var/incdiff_w_var,3)*100,"%")` | `r round(summary(m02_w)$r.squared,3)` | ** Eq. 12** in Snijders and Bosker |
+| $\sigma^2_{ij}$ of $\hat{Y}_{ij}$ (total) | `r incdiff_hat_var` | `r paste(round(incdiff_hat_var/incdiff_var,3)*100,"%")` | `r round(summary(m01)$r.squared,3)` | standard $R^2$ |
+| $\sigma^2_{j}$ of $\hat{Y}_{j}$ (between) | `r incdiff_b_hat_var` | `r paste(round(incdiff_b_hat_var/incdiff_b_var,3)*100,"%")` | `r round(summary(m02_b)$r.squared,3)` | **Eq. 13** in Snijders and Bosker |
+| $\sigma^2_{i}$ of $\hat{Y}_{i}$ (within) | `r incdiff_w_hat_var` | `r paste(round(incdiff_w_hat_var/incdiff_w_var,3)*100,"%")` | `r round(summary(m02_w)$r.squared,3)` | ** Eq. 12** in Snijders and Bosker |
 
 The Snijders and Bosker formula allows us to specify a 'residual' for both levels:
 
