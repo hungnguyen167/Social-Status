@@ -108,11 +108,15 @@ df <- df %>%
   group_by(iso3c) %>%
   # calculate the mean for each country
   mutate(incdiff_b = mean(incdiff, na.rm = T),
-         inclarge_b = mean(inclarge, na.rm = T)) %>%
+         inclarge_b = mean(inclarge, na.rm = T),
+         reduce_b = mean(reduce, na.rm = T),
+         reduce_large_b = mean(reduce_large, na.rm = T)) %>%
   ungroup() %>%
   # calculate the mean-centered values by subtracting the means
   mutate(incdiff_w = incdiff - incdiff_b,
-         inclarge_w = inclarge - inclarge_b)
+         inclarge_w = inclarge - inclarge_b,
+         reduce_w = reduce - reduce_b,
+         reduce_large_w = reduce_large - reduce_large_b)
 
 df_na <- df %>%
   subset(!is.na(incdiff) & !is.na(inclarge))
@@ -208,12 +212,13 @@ Example: In the US the public may perceive a high or undesirable amount of incom
 
 ### Multilevel Models
 ```{r mlms}
-M00 <- lmer(incdiff ~ 1 + (1 | iso3c), data = df_na)
-M01 <- lmer(incdiff ~ 1 + inclarge + (1 + inclarge | iso3c), data = df_na)
-M02 <- lmer(incdiff ~ 1 + inclarge*socx + (1 + inclarge | iso3c), data = df_na)
-M03 <- lmer(incdiff ~ 1 + inclarge*gini_disp + (1 + inclarge | iso3c), data = df_na)
+M00 <- lmer(reduce ~ 1 + (1 | iso3c), data = df_na)
+M00.5 <- lmer(reduce ~ 1 + reduce_large + (1 | iso3c), data = df_na)
+M01 <- lmer(reduce ~ 1 + reduce_large + (1 + reduce_large | iso3c), data = df_na)
+M02 <- lmer(reduce ~ 1 + reduce_large*socx + (1 + reduce_large | iso3c), data = df_na)
+M03 <- lmer(reduce ~ 1 + reduce_large*gini_disp + (1 + reduce_large | iso3c), data = df_na)
 
-tab_model(M00, M01, M02, M03, show.ci = F, p.style = "stars")
+tab_model(M00, M00.5, M01, M02, M03, show.ci = F, p.style = "stars")
 
 ```
 
