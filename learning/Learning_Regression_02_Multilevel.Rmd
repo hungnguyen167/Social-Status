@@ -261,7 +261,7 @@ This is easy to calculate using what we just learned. We simply calculate the be
 
 $\rho = \frac{\sigma_{j}} {\sigma_{ij}}$
 
-The rho for the ISSP data we are working with therefore suggests a multilevle model is a good idea because it is `r round(incdiff_b_var/incdiff_var,3)`. In other words, `r paste0(round(incdiff_b_var/incdiff_var*100,3),"%")`  of the total variance occurs between countries.
+The rho for the ISSP data we are working with therefore suggests a multilevel model is a good idea because it is `r round(incdiff_b_var/incdiff_var,3)`. In other words, `r paste0(round(incdiff_b_var/incdiff_var*100,3),"%")`  of the total variance occurs between countries.
 
 
 
