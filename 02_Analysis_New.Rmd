@@ -46,7 +46,8 @@ pacman::p_load("tidyverse",
                "semTools",
                "ggplot2",
                "ragg",
-               "sjPlot")
+               "sjPlot",
+               "lme4")
 
 knitr::opts_chunk$set(message = F, warning = F)
 
