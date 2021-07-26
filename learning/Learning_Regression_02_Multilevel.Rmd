@@ -30,7 +30,7 @@ In two-level multilevel modeling there are really two models happening at once. 
 
 Suggested reading:
 
-Snijders, T. A. B., and R. J. Bosker. 1994. “Modeled Variance in Two-Level Models.” Sociological Methods & Research 22(3):342–63. doi: 10.1177/0049124194022003004.
+Snijders, T. A. B., and R. J. Bosker. 1994. “Modeled Variance in Two-Level Models.” *Sociological Methods & Research* 22(3):342–63. doi: 10.1177/0049124194022003004.
 
 The Snijders and Bosker reading's main purpose is to propose how to measure explained variance in a multilevel model, but we can learn the basics of multlevel modeling by working through it.
 
@@ -44,12 +44,14 @@ $Y_{i} = B_{0} + B_{1}X_{i} + E_{i}$
 
 Where:
 $Y$ = *incdiff*
+
 $X$ = *inclarge*
+
 $i$ = individual survey respondents
 
 And now the regression visualized
 
-```{r reg_all}
+```{r reg_all, message = F, warning = F}
 m01 <- lm(incdiff ~ inclarge, data = df) # the regression from the equation above
 summary(m01)
 #create plot with regression line and regression equation and r^2
@@ -131,7 +133,7 @@ assign(paste0("mmm",fitted_models$iso3c[j]), plot1)
 ```
 
 
-```{r reg_each_plot}
+```{r reg_each_plot, message = F, warning = F}
 # now gather all and plot with ggarrange
 
 agg_png(filename = here::here("learning","images","multiplot.png"), res = 72, width = 1200, height = 1200)
@@ -200,31 +202,66 @@ df_w <- df %>% # need to remove missing cases for predict to work
 m02_w <- lm(incdiff_w ~ inclarge_w, data = df_w)
 
 df_w$incdiff_w_hat <- predict(m02_w, data = df_w)
+
+# add predicted values to df
+df_t <- df %>%
+  subset(!is.na(incdiff) & !is.na(inclarge))
+
+df_t$incdiff_hat <- predict(m01, data = df_t)
   
 # variances
-incdiff_b_var <- round(var(df_b$incdiff_b, na.rm = T),3)
-incdiff_w_var <- round(var(df$incdiff_w, na.rm = T),3)
-incdiff_var <- round(var(df$incdiff, na.rm = T),3)
+incdiff_b_var <- round(var(df_b$incdiff_b, na.rm = T),3) # between variance
+incdiff_w_var <- round(var(df$incdiff_w, na.rm = T),3) # within variance
+incdiff_var <- round(var(df$incdiff, na.rm = T),3) # total variance
+incdiff_b_hat_var <- round(var(df_b$incdiff_b_hat, na.rm = T),3) # predicted values variance
+incdiff_w_hat_var <- round(var(df_w$incdiff_w_hat, na.rm = T),3)
+incdiff_hat_var <- round(var(df_t$incdiff_hat),3)
 
-# variance reduction
-incdiff_b_var_h <- round(var(df_b$incdiff_b - df_b$incdiff_b_hat, na.rm = T),3)
-incdiff_w_var_h <- round(var(df_w$incdiff_w - df_w$incdiff_w_hat, na.rm = T),3)
-
+# residual variance 
+incdiff_b_var_h <- round((incdiff_b_var - incdiff_b_hat_var),3)
+incdiff_w_var_h <- round((incdiff_w_var - incdiff_w_hat_var),3)
+incdiff_var_h <- round((incdiff_var - incdiff_hat_var),3)
 ```
 
 Now we can view the reduction in variance
 
-| Variance Component | Variance | Reduction |
-| ----- | ----- | ----- |
-| incdiff total variance | `r incdiff_var` | NA |
-| incdiff between-variance | `r incdiff_b_var` | NA |
-| incdiff within-variance | `r incdiff_w_var` | NA | 
-| after regression | | |
-NPOTE this is residual variance we need the explained variance reduced!!!!!!
-| incdiff between reduced by inclarge | `r incdiff_b_var_h` | `r paste(round(incdiff_b_var_h/incdiff_b_var,1),"%")` |
+| Variance Component | Variance | Reduction | $R^2$ | Equation |
+| ----- | --- | --- | --- |
+| incdiff total variance $Y_{ij}$ | `r incdiff_var` | -- | -- | standard var calculation |
+| incdiff between-variance $Y_{j}$ | `r incdiff_b_var` | -- | -- | *ibid* |
+| incdiff within-variance $Y_{i}$ | `r incdiff_w_var` | -- | -- | *ibid* |
+| after adding *inclarge* as predictor | | | |
+| $\sigma_{ij}$ of $\hat{Y}_{ij}$ (total) | `r incdiff_hat_var` | `r paste(round(incdiff_hat_var/incdiff_var,3)*100,"%")` | `r round(summary(m01)$r.squared,3)` | standard $R^2$ |
+| $\sigma_{j}$ of $\hat{Y}_{j}$ (between) | `r incdiff_b_hat_var` | `r paste(round(incdiff_b_hat_var/incdiff_b_var,3)*100,"%")` | `r round(summary(m02_b)$r.squared,3)` | **Eq. 13** in Snijders and Bosker |
+| $\sigma_{i}$ of $\hat{Y}_{i}$ (within) | `r incdiff_w_hat_var` | `r paste(round(incdiff_w_hat_var/incdiff_w_var,3)*100,"%")` | `r round(summary(m02_w)$r.squared,3)` | ** Eq. 12** in Snijders and Bosker |
+
+The Snijders and Bosker formula allows us to specify a 'residual' for both levels:
+
+$Y_{ij} = B_{0} + B_{1}X_{ij} + U_{0j} + E_{ij}$
+
+Between residual = $U_{0j}$
+
+Within residual = $E_{ij}$
+
+Total residual = $U_{0j} + E_{ij}$
 
 
-$Y_{ij} = B_{0} + B_{1}X_{ij} + E_{ij}$
+The distribution of variance and variance reduction can be used to answer the following questions
+
+1. Do I need a multilevel model?
+2. How useful is my multilevel model?
+
+### Intra-Class Correlation
+
+A statistic also known as 'rho'
+
+There should be no *rules* in science (IMO), but a general benchmark is that if 5% of the variance in the dependent variable occurs between-groups (i.e., that rho is >= 0.05), then a multilevel model is warranted.
+
+This is easy to calculate using what we just learned. We simply calculate the between-variance as a percentage of the total variance. The formula is simply the between variance as a proportion of the total variance, as follows:
+
+$\rho = \frac{\sigma_{j}} {\sigma_{ij}}$
+
+The rho for the ISSP data we are working with therefore suggests a multilevle model is a good idea because it is `r round(incdiff_b_var/incdiff_var,3)`. In other words, `r paste0(round(incdiff_b_var/incdiff_var*100,3),"%")`  of the total variance occurs between countries.
 
 
 
