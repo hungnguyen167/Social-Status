@@ -78,6 +78,7 @@ mmmPOOLED +
   theme(
     axis.title = element_text(size = 12)
   )
+
 ```
 
 As we are aware, this regression line (i.e., correlation) is different in different countries. For example the correlation was lower in the US than in Sweden. That means that the $R^2$ is also different because it is really just the correlation (i.e., the regression coefficient $B_{1}$) squared.
@@ -106,24 +107,23 @@ for (j in 1:length(unique(fitted_models$iso3c))){
     subset(iso3c == fitted_models$iso3c[j]) %>%
     subset(!is.na(incdiff) & !is.na(inclarge))
   
-  plot1 <- ggplot(data = dfx, aes(x = inclarge, y = incdiff)) +
-           geom_smooth(method = 'lm') +
+  plot1 <- ggplot(data = dfx, aes(x = inclarge, y = incdiff, group = wave, color=as.factor(wave))) +
+           geom_smooth(method = 'lm', se=T) +
            xlim(1,5) +
            ylim(1,5) +
            annotate(geom = "text", x = 2.5, y = 1.6, label = paste0("y = ",
-                                                                  round(fitted_models$model[[j]]$coefficients[1],1),
-                                                                  " + ",
-                                                                  round(fitted_models$model[[j]]$coefficients[2],2),
-                                                                  "x"),
-                      hjust = 0,
-                      ) +
+                                                              round(fitted_models$model[[j]]$coefficients[1],1),
+                                                              " + ",
+                                                              round(fitted_models$model[[j]]$coefficients[2],2),"x"), hjust = 0,) +
            annotate(geom = "text", x = 2.5, y = 1, label = paste("R^2 = ", round(cor(dfx$incdiff, dfx$inclarge)^2,2)),
                       hjust = 0,
                       ) +
            stat_cor(label.x = 2.5, label.y = 1.3, hjust = 0, p.accuracy = 0.001) +
-           labs(title = paste0(fitted_models$iso3c[j])) +
+           labs(title = paste0(fitted_models$iso3c[j]), color='Wave') +
            theme_classic2() +
-             theme(axis.title = element_blank())
+        theme(axis.title = element_blank())
+             #theme(axis.title = element_blank(), legend.key.size = unit(2, 'mm'), legend.direction = "horizontal",legend.position="top", legend.justification="right", legend.margin=margin(0,0,0,0))
+    
  
 assign(paste0("mmm",fitted_models$iso3c[j]), plot1)
   
@@ -141,7 +141,7 @@ ggarrange(mmmPOOLED, mmmAUS, mmmAUT, mmmBGR, mmmCAN, mmmCHE, mmmCHL,
 mmmCYP, mmmCZE, mmmDEU, mmmDNK, mmmESP, mmmFIN, mmmFRA, 
 mmmGBR, mmmHRV, mmmHUN, mmmIRL, mmmISR, mmmITA, mmmJPN, 
 mmmLVA, mmmNLD, mmmNOR, mmmNZL, mmmPHL, mmmPOL, mmmPRT, 
-mmmRUS, mmmSVK, mmmSVN, mmmSWE, mmmTHA, mmmUSA, mmmZAF)
+mmmRUS, mmmSVK, mmmSVN, mmmSWE, mmmTHA, mmmUSA, mmmZAF, common.legend = TRUE)
 dev.off()
 
 

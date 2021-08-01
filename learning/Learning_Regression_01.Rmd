@@ -60,8 +60,8 @@ Call them "dependent" here because they are our primary variables of interest.
 
 hist(df$incdiff)
 hist(df$inclarge)
-#hist(df$reduce)
-#hist(df$reduce_large)
+hist(df$reduce)
+hist(df$reduce_large)
 
 ```
 ##### Temporary Fix
@@ -111,6 +111,41 @@ t.test(df$reduce[df$cntry == 840],df$reduce[df$country == "Denmark"])
 
 t.test(df$reduce[df$cntry == 840 & !is.na(df$educyrs)],df$reduce[df$cntry == 840 & is.na(df$educyrs)])
 
+
+# Soerens take
+
+#Look at the data structure
+head(df)
+
+options(scipen = 999)
+
+## Women and men that do not have a significantly different average support of redistribution
+#create helper dataframe
+overviewOfpValuesMenVSWomen <- data.frame()
+
+#Loop through all countries
+for(countryCode in c(unique(df$cntry))){
+  #tTest for women and men in support for redistribution
+  tTestValues <- t.test(df$reduce[df$cntry == countryCode & df$female==1],df$reduce[df$cntry == countryCode & df$female==0])
+  #create new dataframe with the countryCode and the nullValues  of the tTest for said country
+  loopValues <- data.frame(countryCode = countryCode,nullValue = tTestValues$p.value)
+  #Append the result to a final dataframe with all countryCodes and nullValues
+  overviewOfpValuesMenVSWomen <- rbind(overviewOfpValuesMenVSWomen,loopValues)
+}
+
+tTestValues <- t.test(df$reduce[df$cntry == 840 & df$female==1],df$reduce[df$cntry == 36 & df$female==0])
+ 
+#find countries where the nullValue is 0
+nullHypo_DistSupMenVSWomen <- overviewOfpValuesMenVSWomen %>% filter(nullValue == 0) 
+
+
+## Women and men that do have a significantly different average support of redistribution
+#find a country/countries where the nullValue is above 0.0
+highestDistSupMenVSWomen <- overviewOfpValuesMenVSWomen %>% filter(nullValue >= 0.0) %>% arrange(desc(nullValue))
+
+
+
+
 ```
 **TIP!** You can add equations in R markdown (help here: https://rpruim.github.io/s341/S19/from-class/MathinRmd.html)
 
@@ -152,6 +187,17 @@ df %>%
   subset(cntry %in% c(840, 208), select = c(reduce, cntry)) %>%
   lm(reduce ~ factor(cntry), data = .) %>%
   summary()
+
+
+##Soerens take
+
+#Select support for redistribution with the independent variables countries( USA and Australia),education years and income difference and run a multiple regression
+df %>%
+  subset(cntry %in% c(840, 36), select = c(reduce, cntry,educyrs,incdiff)) %>%
+  lm(reduce ~ factor(cntry) + educyrs + incdiff, data = .) %>%
+  summary()
+
+
 ```
 
 ##### Visualize Results
