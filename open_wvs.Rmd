@@ -1,0 +1,30 @@
+---
+title: "WVS"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Open, aggregate and save WVS data
+
+
+```{r open, echo=FALSE}
+library("data.table")        
+library(tidyverse)
+wvs <- fread("data/WVS_TimeSeries_1981_2020_ascii_v2_0.csv", select = c("S002VS", "COUNTRY_ALPHA", "S020", "E037", "E069_11"))
+wvs <- rename(wvs, wave = S002VS, year = S020, liberal = E037, confidence_gov = E069_11)
+write.csv(wvs, "data/wvs.csv")
+```
+
+Aggregate and save the data
+
+```{r aggregate}
+agg = wvs
+agg <- agg %>%
+  group_by(COUNTRY_ALPHA, year, wave) %>%
+  summarise_at(.vars = names(.)[4:5], .funs = c(mean))
+write.csv(agg, "data/wvs_aggregated.csv")
+
+```
