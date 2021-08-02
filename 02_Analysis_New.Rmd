@@ -7,13 +7,16 @@ output:
 TO DO:
 Hung/Nate - Merge ISSP data from Religion (first check that both redistribution variables are there)
 
-Soeren - update graph to include multiple slopes (in different colors) for within country regressions at different time points
+Soeren - could you add 2019 to the graphs?
+
+
 
 Question - the inclarge question was not asked in the environment module I guess
 
 Nate - get newer measure of socx from OECD, other macro-level variables
 
-Tom - check WVS or other sources of data to see if there is a potential to measure distributive justice norms or individualism-collectivism
+Tom - merge in WVS data file with questions that are probably of interest (liberalism, trust, other individualism/collectivism questions..)
+
 
 ##### ISSP, Social Inequality, Cumulation (1987, 1992, 1999, 2009 & 2019)
 ##### ISSP, Environment, 1993, 2000 & 2010 (not asked)
@@ -70,6 +73,8 @@ socx <- read_csv(here::here("data","socx_oecd.csv"))
 
 # Gini data
 gini <- read_csv(here::here("data","gini_solt.csv"))
+
+# 
 
 ```
 
