@@ -9,9 +9,22 @@ output:
 
 ## ISSP Data
 
-Social Inequality, Cumulation (1987, 1992, 1999, 2009 & 2009)
-Social Inequality, 2019
-Environment (XXXX, XXXX & XXXX)
+#### Social Inequality, Cumulation (1987, 1992, 1999, 2009 & 2019)
+
+*Differences in income in [R's country] are too large* (5 answers)
+
+*It is the responsibility of the government to reduce the differences in income between people with high incomes and those with low incomes* (5 answers)
+
+#### Environment (1993, 2000 & 2010)
+*It is the responsibility of the government to reduce the differences in income between people with high incomes and those with low incomes* (5 answers)
+
+#### Role of Government (1985, 1990, 1996, 2006 & 2016)
+*It is the responsibility of the government to reduce the differences in income between people with high incomes and those with low incomes* (5 answers)
+
+*On the whole, do you think it should or should not be the government's responsibility to: Reduce income differences between rich and poor?* (4 answers)
+
+#### Religion (1991 & 1998)
+*Do you agree that it should be the government's responsibility to reduce income differences between the rich and the poor people?* (4 answers)
 $~$
 $~$
 

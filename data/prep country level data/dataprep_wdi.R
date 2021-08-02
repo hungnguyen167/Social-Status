@@ -9,7 +9,8 @@ wdi <- WDI(indicator = c(
   fem_labour = "SL.TLF.TOTL.FE.ZS",
   pop = "SP.POP.TOTL",
   pop65 = "SP.POP.65UP.TO.ZS",
-  pop_dens = "EN.POP.DNST"
+  pop_dens = "EN.POP.DNST",
+  subs_trans_all = "GB.XPC.TRFT.ZS"
 )) %>%
   mutate(iso3c = countrycode::countrycode(iso2c, "iso2c", "iso3c")) %>%
   drop_na(iso3c) %>%
