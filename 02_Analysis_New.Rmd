@@ -77,6 +77,10 @@ gini <- read_csv(here::here("data","gini_solt.csv"))
 # WVS data aggregated
 wvs <- read_csv(here::here("data","wvs_aggregated.csv"))
 
+# Institutional Logic - welfare state penetration
+gwip <- 
+
+
 ```
 
 ```{r merge}
