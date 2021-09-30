@@ -52,7 +52,8 @@ pacman::p_load("tidyverse",
                "ggplot2",
                "ragg",
                "sjPlot",
-               "lme4")
+               "lme4",
+               "readxl")
 
 knitr::opts_chunk$set(message = F, warning = F)
 
@@ -78,8 +79,10 @@ gini <- read_csv(here::here("data","gini_solt.csv"))
 wvs <- read_csv(here::here("data","wvs_aggregated.csv"))
 
 # Institutional Logic - welfare state penetration
-gwip <- 
-
+#gwip <- 
+  
+# Corruption perceptions
+crpt <- read_csv(here::here("data","crpt.csv"))
 
 ```
 
@@ -109,9 +112,10 @@ gini <- rbind(gini, gini_19, gini_20)
 
 df <- df %>%
   left_join(gini, by = c("iso3c","year")) %>%
-  left_join(socx, by = c("iso3c","year"))
+  left_join(socx, by = c("iso3c","year")) %>%
+  left_join(crpt, by = c("iso3c"))
 
-rm(gini,socx)
+rm(gini,socx,crpt)
 ```
 
 

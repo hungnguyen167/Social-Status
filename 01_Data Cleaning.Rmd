@@ -57,7 +57,7 @@ Notes:
 
 --- AWAITING SOLUTIONS ---
 
-A. nl87 and ie87 cannot be integrated into the socin file, eeds occupation recoding before integrating but the categories are not compatible.
+A. nl87 and ie87 cannot be integrated into the socin file, needs occupation recoding before integrating but the categories are not compatible.
 
 C. There are values of 11 in the socin$wrkst variable, these are probably from a country-specific question and need to be checked
 
