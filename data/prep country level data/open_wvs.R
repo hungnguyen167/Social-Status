@@ -18,4 +18,6 @@ agg <- read_csv(here::here("data","wvs.csv"))
 agg <- agg %>%
   group_by(COUNTRY_ALPHA, year, wave) %>%
   summarise_at(.vars = names(.)[-3:-1], .funs = c(mean))
+agg[agg < 0] <- NA 
 write.csv(agg, "data/wvs_aggregated.csv", row.names = FALSE)
+
