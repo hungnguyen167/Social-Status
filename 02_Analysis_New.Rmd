@@ -5,21 +5,17 @@ output:
     df_print: paged
 ---
 TO DO:
-Hung/Nate - Merge ISSP data from Religion (first check that both redistribution variables are there)
-
 Soeren - could you add 2019 to the graphs?
 
 
 
-Question - the inclarge question was not asked in the environment module I guess
+Question - the inclarge question was not asked in the environment module I guess, so we drop it
 
-Nate - get newer measure of socx from OECD, other macro-level variables
-
-Tom - merge in WVS data file with questions that are probably of interest (liberalism, trust, other individualism/collectivism questions..)
+Nate - get newer measure of socx from OECD, other macro-level variables (GDP in particular)
 
 
 ##### ISSP, Social Inequality, Cumulation (1987, 1992, 1999, 2009 & 2019)
-##### ISSP, Environment, 1993, 2000 & 2010 (not asked)
+##### ISSP, Environment, 1993, 2000 & 2010 (not asked, can't use)
 $~$
 $~$
 
@@ -65,7 +61,7 @@ knitr::opts_chunk$set(message = F, warning = F)
 
 The data cleaning is done in the file "01_Data Cleaning.Rmd" and country-data prepped in folder [prep country level data](../data/prep country level data/).
 
-```{r loaddata}
+```{r loaddata, message = F, warning = F}
 # ISSP Data
 load(here::here("data","socstat.Rda"))
 
@@ -76,17 +72,38 @@ socx <- read_csv(here::here("data","socx_oecd.csv"))
 gini <- read_csv(here::here("data","gini_solt.csv"))
 
 # WVS data aggregated
-wvs <- read_csv(here::here("data","wvs_aggregated.csv"))
+wvs <- read_csv(here::here("data","wvs_aggregated.csv")) %>%
+  mutate(iso3c = COUNTRY_ALPHA,
+         wave = case_when(
+           year %in% c(1980:1989) ~ 1987,
+           year %in% c(1990:1995) ~ 1992,
+           year %in% c(1996:2005) ~ 1999,
+           year %in% c(2006:2015) ~ 2009,
+           year %in% c(2016:2020) ~ 2019,
+           TRUE ~ NA_real_)) %>% # fit years of WVS into nearest wave of ISSP 1987, 1992, 1999, 2009, 2019
+  select(-c(COUNTRY_ALPHA,year)) 
 
 # Institutional Logic - welfare state penetration
 #gwip <- 
+
+# GDP and Democracy v Authoritarian from V-Dem (some interpolation, see Breznau and Lanver 2021)
+gdp <- read_csv(here::here("data","vdem_gdp_pc_INTERPOLATED_consolidated.csv")) %>%
+  mutate(iso3c = iso3) %>%
+  select(-c(iso3, cow_code, country_name))
+regime <- read_csv(here::here("data","vdem_regime__INTERPOLATED_consolidated.csv")) %>%
+  mutate(iso3c = iso3) %>%
+  select(-c(iso3, cow_code, country_name))
   
 # Corruption perceptions
 crpt <- read_csv(here::here("data","crpt.csv"))
 
 ```
 
+
+
 ```{r merge}
+
+# Take averages of social spending and Gini to get the most possible countries
 socx_19 <- socx %>%
   subset(year > 2010) %>%
   group_by(iso3c, year) %>%
@@ -110,10 +127,15 @@ gini_20 <- gini %>%
 socx <- rbind(socx, socx_19, socx_20)
 gini <- rbind(gini, gini_19, gini_20)
 
+# extract WVS vars
+
 df <- df %>%
   left_join(gini, by = c("iso3c","year")) %>%
   left_join(socx, by = c("iso3c","year")) %>%
-  left_join(crpt, by = c("iso3c"))
+  left_join(crpt, by = c("iso3c")) %>%
+  left_join(wvs, by = c("iso3c", "wave")) %>%
+  left_join(gdp, by = c("iso3c", "year")) %>%
+  left_join(regime, by = c("iso3c", "year"))
 
 rm(gini,socx,crpt)
 ```
@@ -171,9 +193,22 @@ df_na <- df_na %>%
          gini_disp = ifelse(iso3c == "PHL" & year == 2019, 42, gini_disp),
          gini_disp = ifelse(iso3c == "JPN" & year == 2019, 35, gini_disp),
          gini_disp = ifelse(iso3c == "ZAF" & year == 2018, 50, gini_disp),
-         gini_disp = ifelse(iso3c == "ZAF" & year == 2019, 50, gini_disp))
+         gini_disp = ifelse(iso3c == "ZAF" & year == 2019, 50, gini_disp),
+         gdp_pc_10k = filled_vdem_gdp_interpol/10000) # make a GDP 10k var
 
 # just take the max value for 2019
+
+# fill in WVS values for missing waves by country
+df_na <- df_na %>%
+  group_by(iso3c) %>%
+  mutate(liberal_i = ifelse(is.na(liberal), mean(liberal, na.rm = T), liberal), 
+         confidence_gov_i = ifelse(is.na(confidence_gov), mean(confidence_gov, na.rm = T), confidence_gov),
+         freedom_gov_i = ifelse(is.na(freedom_gov), mean(freedom_gov, na.rm = T), freedom_gov),
+         democratic_i = ifelse(is.na(democratic), mean(democratic, na.rm = T), democratic),
+         reason_neediness_i = ifelse(is.na(reason_neediness), mean(reason_neediness, na.rm = T), reason_neediness),
+         system_rating_i = ifelse(is.na(system_rating), mean(system_rating, na.rm = T), system_rating),
+         poverty_compare_i = ifelse(is.na(poverty_compare), mean(poverty_compare, na.rm = T), poverty_compare)) %>%
+  ungroup()
 ```
 
 
@@ -194,26 +229,28 @@ tab1 <- df_na %>%
   spread(wave, n) %>%
   kable(., 
         #col.names = c("Country", "SI_1987", "SI_1992", "EN_1993", "SI_1999", "EN_2000", "SI_2009", "EN_2010", "SI_2019"), 
-        caption = "Country Sample Size by Wave, ISSP 'Social Inequality (SI) & Environment (EN)", format.args = list(big.mark = ","))
+        caption = "Country Sample Size by Wave, ISSP 'Social Inequality (SI)", format.args = list(big.mark = ","))
 
 kable_styling(tab1)
-
-
-
-
 ```
 
-## Multilevel Model
+## Macro-Correlations
 
-### Step One - Variance
 
-```{r }
+```{r var_dvs}
+df_macro <- df_na %>%
+  select(iso3c, wave, reduce, reduce_large, gini_disp, gini_mkt, socx, socx_perhead, cpi15_20, liberal_i, confidence_gov_i, democratic_i, gdp_pc_10k, regime)
 
+df_macro_corr <- df_macro %>%
+  select(-c(iso3c, wave)) %>%
+  cor(., use = "pairwise.complete.obs") %>%
+  as.data.frame() %>%
+  round(.,2)
 ```
 
 ### Step Two - Variation incdiff/inclarge
 
-```{r}
+```{r twovar_compare}
 
 ```
 
@@ -221,9 +258,10 @@ kable_styling(tab1)
 
 After observing the variation in the correlation between inclarge and incdiff by country. We suspect that attitudes toward the role of government are in play. We suspect these come from institutionalized norms. 
 
+Theory: individuals have values or follow norms about how much the government should intervene in the socio-economic affairs of individuals, how much the government should protect against social risks and how much the government (society) should share or redistribute based on need. 
+
 Hypothesis: In countries where the government does less redistribution or has a weaker welfare state, the correlation between perceptions of the income gap and the idea that the government is responsible for doing something about it will be smaller.
 
-Theory: individuals have values or follow norms about how much the government should intervene in the socio-economic affairs of individuals, how much the government should protect against social risks and how much the government (society) should share or redistribute based on need. 
 
 Example: In the US the public may perceive a high or undesirable amount of income inequality, but be less likely to agree that the government should do something about it. Whereas in Germany the public may also perceive a high degree of inequality but be more likely to express that the government should do (is responsible) for doing something about it. 
 
