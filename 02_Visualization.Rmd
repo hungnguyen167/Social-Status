@@ -1,0 +1,135 @@
+---
+title: "Attitudes toward Redistribution"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+pacman::p_load("tidyverse", 
+               "ggplot2", # recommended plotting package
+               "tidylog", # a package that outputs a log of data transformations after each command (like what Stata does)
+               "equatiomatic", # a package that displays equations from a previously called function
+               "kableExtra", # a package for making clean looking tables
+               "jtools", #good for summarizing and visualizing regression results
+               "ggpubr", # for automatically recoding country names and codes
+               "lme4", # for multilevel modeling
+               "ragg") # for plotting high quality images
+
+knitr::opts_chunk$set(message = F, warning = F)
+```
+
+
+## Plot Correlations by Country-Wave
+
+### Set up by Wave plot
+
+This is not ideal but it is necessary to get ggarrange to plot all 5 waves in the legend because no single country has all five waves
+
+```{r reg_all, message = F, warning = F}
+m01 <- lm(reduce ~ reduce_large, data = df) # the regression from the equation above
+summary(m01)
+#create plot with regression line and regression equation and r^2
+mmmPOOLED <- ggplot(data=df, aes(x=reduce_large, y=reduce, color = as.character(wave))) +
+  scale_color_manual( breaks = c("1987", "1992", "1999", "2009", "2019"),
+                        values = c("#B8DE29FF", "#29AF7FFF", "#2D708EFF", "#453781FF", "#440154FF")) +
+        geom_smooth(method="lm") +
+        #geom_point() +
+        xlim(1,5) + # make both axes the same for easier visualization
+        ylim(1,5) +
+        #stat_regline_equation(label.x=2.5, label.y=1.6, hjust = 0) +
+        #stat_cor(aes(label=..rr.label..), label.x=2.5, label.y=1, hjust = 0) +
+        labs(x = "Gov. should reduce income differences", y = "Inequality btw. rich and poor is too large") +
+        annotate(geom = "text", x = 2.5, y = 1.3, label = paste("R = ", round(cor(df$reduce, df$reduce_large, use = "pairwise.complete.obs"),2)),
+                      hjust = 0,
+                      ) +
+        annotate(geom = "text", x = 1.2, y = 4.5, 
+                 label = paste0("Pooled data for ",length(unique(df$iso3c[!is.na(df$reduce_large)])),"\ncountries"),
+                 hjust = 0) + #add number of countries to plot
+        theme_classic2() +
+        theme(
+          axis.title = element_text(size = 8)
+        )
+
+mmmPOOLED +
+  theme(
+    axis.title = element_text(size = 12)
+  )
+
+```
+
+As we are aware, this regression line (i.e., correlation) is different in different countries. For example the correlation was lower in the US than in Sweden. That means that the $R^2$ is also different because it is really just the correlation (i.e., the regression coefficient $B_{1}$) squared.
+
+But to be clear, $R^2$ is the most common statistic used to identify what Snijders and Bosker refer to as "explained variance" in the first sentence of their article.
+
+Lets look at the association in all 34 countries now.
+
+### Set up this
+
+```{r reg_each}
+# get all intercepts and slopes
+fitted_models = df_na %>% # have to use equal sign here because it is a function
+  subset(!is.na(reduce) & !is.na(reduce_large)) %>% # remove missing cases
+  group_by(iso3c) %>% # group by country
+  do(model = lm(reduce ~ reduce_large, data = .)) #run regression for each country
+
+# plot all at once
+
+# now loop to create a plot for each intercept and coefficient from each country's regression
+
+for (j in 1:length(unique(fitted_models$iso3c))){
+  dfx <- df_na %>% # subset data to only that country and remove missing
+    subset(iso3c == fitted_models$iso3c[j]) %>% # this is just a shortcut to cycle through each country that has relevant variables
+    subset(!is.na(reduce) & !is.na(reduce_large))
+  
+  plot1 <- ggplot(data = dfx, aes(x = reduce_large, y = reduce, 
+                                  #group = wave, 
+                                  color=as.character(wave))) +
+           geom_smooth(method = 'lm', se=T) +
+           xlim(1,5) +
+           ylim(1,5) +
+    scale_color_manual( breaks = c("1987", "1992", "1999", "2009", "2019"),
+                        values = c("#B8DE29FF", "#29AF7FFF", "#2D708EFF", "#453781FF", "#440154FF")) +
+           annotate(geom = "text", x = 2.5, y = 1.6, label = paste0("y = ",
+                                                              round(fitted_models$model[[j]]$coefficients[1],1),
+                                                              " + ",
+                                                              round(fitted_models$model[[j]]$coefficients[2],2),"x"), hjust = 0,) +
+           annotate(geom = "text", x = 2.5, y = 1, label = paste("R^2 = ", round(cor(dfx$reduce, dfx$reduce_large)^2,2)),
+                      hjust = 0,
+                      ) +
+           stat_cor(label.x = 2.5, label.y = 1.3, hjust = 0, p.accuracy = 0.001) +
+           labs(title = paste0(fitted_models$iso3c[j]), color='Wave') +
+           theme_classic2() +
+        theme(axis.title = element_blank())
+             #theme(axis.title = element_blank(), legend.key.size = unit(2, 'mm'), legend.direction = "horizontal",legend.position="top", legend.justification="right", legend.margin=margin(0,0,0,0))
+    
+ 
+assign(paste0("mmm",fitted_models$iso3c[j]), plot1)
+  
+}
+         
+
+```
+
+### Figure 1
+
+```{r reg_each_plot, message = F, warning = F}
+# now gather all and plot with ggarrange
+
+agg_png(filename = here::here("learning","images","multiplot.png"), res = 72, width = 1200, height = 1200)
+ggarrange(mmmPOOLED, mmmAUS, mmmAUT, mmmBGR, mmmCAN, mmmCHE, mmmCHL, 
+mmmCYP, mmmCZE, mmmDEU, mmmDNK, mmmESP, mmmFIN, mmmFRA, 
+mmmGBR, mmmHRV, mmmHUN, mmmIRL, mmmISR, mmmITA, mmmJPN, 
+mmmLVA, mmmNLD, mmmNOR, mmmNZL, mmmPHL, mmmPOL, mmmPRT, 
+mmmRUS, mmmSVK, mmmSVN, mmmSWE, mmmTHA, mmmUSA, mmmZAF, common.legend = TRUE) 
+  
+dev.off()
+
+
+knitr::include_graphics(here::here("learning","images","multiplot.png"))
+```
+
