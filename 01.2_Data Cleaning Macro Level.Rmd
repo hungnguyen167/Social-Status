@@ -7,16 +7,8 @@ output:
 
 ```{r setup}
 library(pacman)
-pacman::p_load("tidyverse",
-               "knitr",
-               "lavaan",
-               "kableExtra",
-               "semTools",
-               "ggplot2",
-               "ragg",
-               "sjPlot",
-               "lme4",
-               "readxl")
+library(tidyverse) # not loading properly with pacman at the moment... load this way for now
+
 
 knitr::opts_chunk$set(message = F, warning = F)
 ```
@@ -44,8 +36,26 @@ wvs <- read_csv(here::here("data","wvs_aggregated.csv")) %>%
            year %in% c(1996:2005) ~ 1999,
            year %in% c(2006:2015) ~ 2009,
            year %in% c(2016:2020) ~ 2019,
-           TRUE ~ NA_real_)) %>% # fit years of WVS into nearest wave of ISSP 1987, 1992, 1999, 2009, 2019
-  select(-c(COUNTRY_ALPHA,year)) 
+           TRUE ~ NA_real_)) # fit years of WVS into nearest wave of ISSP 1987, 1992, 1999, 2009, 2019
+
+
+wvs <- wvs %>% # create an interpolated version of wvs variables that takes the mean by country to fill in missing - most countries do not change much over time
+  group_by(iso3c) %>%
+  mutate(liberal_ix = mean(liberal, na.rm = T),
+         liberal_redist_ix = mean(liberal_redist, na.rm = T),
+         confidence_gov_ix = mean(confidence_gov, na.rm = T),
+         liberal_i = ifelse(is.na(liberal), liberal_ix, NA),
+         liberal_redist_i = ifelse(is.na(liberal_redist), liberal_redist_ix, NA),
+         confidence_gov_i = ifelse(is.na(confidence_gov), confidence_gov_ix, NA)) %>%
+  select(-c(liberal_ix, liberal_redist_ix, confidence_gov_ix)) %>%
+  ungroup() 
+
+# one WVS with original values, one with imputed values (different merge variables)
+wvs_2 <- wvs %>%
+  select(iso3c, year, liberal_i, liberal_redist_i, confidence_gov_i)
+
+wvs <- wvs %>%
+  select(-c(year, liberal_i, liberal_redist_i, confidence_gov_i))
 
 # Institutional Logic - welfare state penetration
 #gwip <- 
@@ -98,6 +108,7 @@ df <- df %>%
   left_join(socx, by = c("iso3c","year")) %>%
   left_join(crpt, by = c("iso3c")) %>%
   left_join(wvs, by = c("iso3c", "wave")) %>%
+  left_join(wvs_2, by = c("iso3c", "year")) %>%
   left_join(gdp, by = c("iso3c", "year")) %>%
   left_join(regime, by = c("iso3c", "year"))
 
@@ -160,19 +171,7 @@ df_na <- df_na %>%
          gini_disp = ifelse(iso3c == "ZAF" & year == 2019, 50, gini_disp),
          gdp_pc_10k = filled_vdem_gdp_interpol/10000) # make a GDP 10k var
 
-# just take the max value for 2019
 
-# fill in WVS values for missing waves by country
-df_na <- df_na %>%
-  group_by(iso3c) %>%
-  mutate(liberal_i = ifelse(is.na(liberal), mean(liberal, na.rm = T), liberal), 
-         confidence_gov_i = ifelse(is.na(confidence_gov), mean(confidence_gov, na.rm = T), confidence_gov),
-         freedom_gov_i = ifelse(is.na(freedom_gov), mean(freedom_gov, na.rm = T), freedom_gov),
-         democratic_i = ifelse(is.na(democratic), mean(democratic, na.rm = T), democratic),
-         reason_neediness_i = ifelse(is.na(reason_neediness), mean(reason_neediness, na.rm = T), reason_neediness),
-         system_rating_i = ifelse(is.na(system_rating), mean(system_rating, na.rm = T), system_rating),
-         poverty_compare_i = ifelse(is.na(poverty_compare), mean(poverty_compare, na.rm = T), poverty_compare)) %>%
-  ungroup()
 ```
 
 ```{r saveout}

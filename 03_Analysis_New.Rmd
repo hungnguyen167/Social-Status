@@ -4,22 +4,20 @@ output:
   html_document:
     df_print: paged
 ---
+
 TO DO:
-Soeren - could you add 2019 to the graphs?
 
-
-
-Question - the inclarge question was not asked in the environment module I guess, so we drop it
+? - It cannot be that there is only one wave of Netherlands data, something is wrong with our data compile
 
 Nate - get newer measure of socx from OECD, other macro-level variables (GDP in particular)
 
 
 ##### ISSP, Social Inequality, Cumulation (1987, 1992, 1999, 2009 & 2019)
-##### ISSP, Environment, 1993, 2000 & 2010 (not asked, can't use)
+
 $~$
 $~$
 
-#### **Nate Breznau, Lisa Heukamp & Hung H.V. Nguyen**
+#### **Nate Breznau, Lisa Heukamp, Hung H.V. Nguyen, Tom Knuf, Arne Köller, Sören Goldenstein**
 #### **University of Bremen**
 
 _____________________________________________________________________________
@@ -40,22 +38,24 @@ rm(list = ls())
 
 ```{r setup, include=FALSE}
 library(pacman)
-pacman::p_load("tidyverse",
-               "knitr",
-               "lavaan",
-               "kableExtra",
-               "semTools",
-               "ggplot2",
-               "ragg",
-               "sjPlot",
-               "lme4",
-               "readxl")
+pacman::p_load("tidyverse", "ggpubr", "ragg", "kableExtra", "lme4", "sjPlot")
 
 knitr::opts_chunk$set(message = F, warning = F)
 
 ```
 
 
+```{r load dfs}
+df <- readRDS(here::here("data","df.RDS"))
+df_na <- readRDS(here::here("data", "df_na.RDS"))
+
+# The variables names are not intuitive, change them
+df <- df %>%
+  rename(gov_redist = reduce, incdiff_large = reduce_large)
+
+df_na <- df_na %>%
+  rename(gov_redist = reduce, incdiff_large = reduce_large)
+```
 
 
 
@@ -64,10 +64,6 @@ knitr::opts_chunk$set(message = F, warning = F)
 ### Table 1. Cases by Country-Wave
 
 ```{r tbl1, include = T, echo = T}
-# Run this if you still have the old socstat version
-# df$female <- ifelse(df$female == 8, NA, df$female)
-
-
 # Cross-tab years and countries
 options(knitr.kable.NA = '')
 tab1 <- df_na %>%
@@ -75,10 +71,18 @@ tab1 <- df_na %>%
   dplyr::summarize(n=n()) %>%
   spread(wave, n) %>%
   kable(., 
-        #col.names = c("Country", "SI_1987", "SI_1992", "EN_1993", "SI_1999", "EN_2000", "SI_2009", "EN_2010", "SI_2019"), 
+        #col.names = c("Country", "1987", "1992", "1999", "2009", "2019"), 
         caption = "Country Sample Size by Wave, ISSP 'Social Inequality (SI)", format.args = list(big.mark = ","))
 
 kable_styling(tab1)
+```
+### Table 2. Descriptives w/ Question Wording
+
+```{r}
+liberal_redist_label <- "Government should take more responsibility to ensure that everyone is provided for [versus] People should take more responsibility to provide for themselves"
+liberal_label <- "Private ownership of business and industry should be increased [versus] government ownership..."
+confidence_gov_label <- "I am going to name a number of organizations. For each one, could you tell me how much confidence you have in them: is it a great deal of confidence, quite a lot of confidence, not very much confidence or none at all? [the government]"
+democratic_label <- "And how democratically is this country being governed today? Again using a scale from 1 to 10, where 1 means that it is “not at all democratic” and 10 means that it is “completely democratic,” what position would you choose?"
 ```
 
 ## Macro-Correlations
@@ -86,13 +90,67 @@ kable_styling(tab1)
 
 ```{r var_dvs}
 df_macro <- df_na %>%
-  select(iso3c, wave, reduce, reduce_large, gini_disp, gini_mkt, socx, socx_perhead, cpi15_20, liberal_i, confidence_gov_i, democratic_i, gdp_pc_10k, regime)
+  select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, socx_perhead, cpi15_20, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, gdp_pc_10k, regime) %>%
+  group_by(iso3c, wave) %>%
+  summarise_all(mean, na.rm = T) %>%
+  ungroup()
+
+df_macro[df_macro == "NaN"] <- NA
 
 df_macro_corr <- df_macro %>%
   select(-c(iso3c, wave)) %>%
   cor(., use = "pairwise.complete.obs") %>%
   as.data.frame() %>%
   round(.,2)
+```
+
+### Puzzling correlation check
+
+The positive correlation of liberal_redist and gov_redist is puzzling. Why would a country have more support for people (versus the govt) taking more responsibility to provide for their own needs and agree that the government should reduce income differences?
+
+To investigate we plot the countries, and the result makes clear that this variable cannot be coded correctly. There is no way that the USA is the most supportive of all countries of the government (versus people themselves) taking responsibility for providing for their needs. Yet the WVS codebook suggets that lower values are more support of government.
+
+This is now fixed in the source load for the WVS so re-creating the plot will not reveal the error.
+
+```{r invest_corr}
+
+# df_macro %>%
+#   ggplot(aes(y = gov_redist, x = liberal_redist_i)) +
+#   geom_label(aes(label = iso3c))
+
+```
+
+### Fig X. Correlation of Redist Variables and Liberal Values by Country-Wave
+
+#### Setup Fig
+
+```{r figx}
+# get all correlations
+
+c_corrs = df_na %>% # have to use equal sign here because it is a function
+  subset(!is.na(gov_redist) & !is.na(incdiff_large)) %>% # remove missing cases
+  group_by(iso3c, wave) %>% # group by country-wave
+  mutate(gov_redist_Z = scale(gov_redist),
+         incdiff_large_Z = scale(incdiff_large)) %>%
+  do(model = lm(gov_redist_Z ~ incdiff_large_Z, data = .)) #run regression for each country
+
+for (j in 1:96) {
+c_corrs$corr[j] <- c_corrs[[3]][[j]][["coefficients"]][2]
+}
+
+c_corrs <- select(c_corrs, -model)
+# merge with df_macro
+df_macro <- left_join(df_macro, c_corrs, by = c("iso3c", "wave"))
+```
+
+#### Plot
+
+```{r figx2}
+df_macro %>%
+  ggplot() +
+  geom_text(aes(y = corr, x = liberal, label = iso3c), color = "black") +
+  geom_text(aes(y = corr, x = liberal_i, label = iso3c), color = "grey") +
+  theme_classic()
 ```
 
 ### Step Two - Variation incdiff/inclarge
