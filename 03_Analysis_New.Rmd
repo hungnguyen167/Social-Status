@@ -8,6 +8,7 @@ output:
 TO DO:
 
 ? - It cannot be that there is only one wave of Netherlands data, something is wrong with our data compile
+? - Two countries still missing GDP, fill in 
 
 Nate - get newer measure of socx from OECD, other macro-level variables (GDP in particular)
 
@@ -141,6 +142,30 @@ c_corrs$corr[j] <- c_corrs[[3]][[j]][["coefficients"]][2]
 c_corrs <- select(c_corrs, -model)
 # merge with df_macro
 df_macro <- left_join(df_macro, c_corrs, by = c("iso3c", "wave"))
+
+# for plotting lines of best fit
+
+
+# first fill in a few missing gdp
+df_macro <- df_macro %>%
+  group_by(iso3c) %>%
+  mutate(gdp_mean = mean(gdp_pc_10k, na.rm = T),
+         gdp_i = ifelse(is.na(gdp_pc_10k), gdp_mean, gdp_pc_10k)) %>%
+  ungroup()
+
+# create a variable with all values in one, and then split by high and middle income countries
+# need to find a way to adjust for economic growth and unblanaced time points for calculating GDP
+
+df_macro <- df_macro %>%
+  mutate(liberal_all = ifelse(!is.na(liberal), liberal, liberal_i),
+         liberal_high = ifelse(wave < 2009 & gdp_i > 2.5, liberal_all, NA),
+         liberal_high = ifelse(wave >= 2009 & gdp_i > 3.3, liberal_all, liberal_high),
+         liberal_high = ifelse(iso3c %in% c("NZL","JPN","DNK","GBR","CHE","AUT", "FIN","DEU"), liberal_all, liberal_high), # selection criteria performs poorly, do rest by hand here
+         liberal_low = ifelse(is.na(liberal_high), liberal_all, NA),
+         liberal_low = ifelse(iso3c %in% c("HRV","CYP","ITA","SVN","CZE"), NA, liberal_low)) # remove some questionable cases
+
+
+
 ```
 
 #### Plot
@@ -148,8 +173,13 @@ df_macro <- left_join(df_macro, c_corrs, by = c("iso3c", "wave"))
 ```{r figx2}
 df_macro %>%
   ggplot() +
-  geom_text(aes(y = corr, x = liberal, label = iso3c), color = "black") +
-  geom_text(aes(y = corr, x = liberal_i, label = iso3c), color = "grey") +
+  geom_text(aes(y = corr, x = liberal, label = iso3c), color = "black", size = 3) +
+  geom_text(aes(y = corr, x = liberal_i, label = iso3c), color = "grey", size = 2) +
+  geom_smooth(aes(y = corr, x = liberal_all), method = 'lm', se = F, linetype = "dashed", color = "#DCE319FF") +
+  geom_smooth(aes(y = corr, x = liberal_high), method = 'lm', se = F, color = "#20A387FF") +
+  geom_smooth(aes(y = corr, x = liberal_low), method = 'lm', se = F, color = "midnightblue") +
+  labs(x = "Liberal Values, aggregates from WVS\n(government v. individual needs responsibility)",
+       y = "Country-Year Correlation, individuals from ISSP:\n'Government should redistribute' with\n'Differences in income are too large'") +
   theme_classic()
 ```
 
