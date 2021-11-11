@@ -5,8 +5,9 @@ date: "7/25/2021"
 output: html_document
 ---
 
+Data first setup in 01.1 and 01.2 files.
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 
 pacman::p_load("tidyverse", # suite of packages that all work together
                "ggplot2", # recommended plotting package
@@ -19,11 +20,13 @@ pacman::p_load("tidyverse", # suite of packages that all work together
                "ragg") # for plotting high quality images
 ```
 
-
+## Load Data
 ```{r data}
-load(here::here("data","socstat.Rda"))
+df <- readRDS(here::here("data","df.RDS"))
+df_na <- readRDS(here::here("data","df_na.RDS"))
 
 ```
+
 ### Two-Levels = Two-Results
 
 In two-level multilevel modeling there are really two models happening at once. There are N-models for the N number of levels in multilevel modeling. We will just focus on two for now in the ISSP data, countries and individuals.
@@ -38,24 +41,24 @@ The article starts with *"The concept of explained variance is well-known in mul
 
 The most common statistic for this is $R^2$. This is the squared correlation of the predicted values with the observed values. Remember our example in [Learning_Regression_01.Rmd](../learning/Learning_Regression_01.Rmd), where we compared two questions about attitudes toward redistribution. Those we used to construct our scale. Here we revisit those two variables across three countries.
 
-Remember also that a standardized regression coefficient is roughly identical to a correlation in a regression with just one independent variable. Therefore we use the following simple equation where we predict support for 'it is the governments responsibility to reduce income differences between those with high and low incomes' (we label this variable *incdiff*) by support for 'there is too much inequality between rich and poor in [this country]' (label is *inclarge*) 
+Remember also that a standardized regression coefficient is roughly identical to a correlation in a regression with just one independent variable. Therefore we use the following simple equation where we predict support for 'it is the governments responsibility to reduce income differences between those with high and low incomes' (we label this variable *reduce*) by support for 'there is too much inequality between rich and poor in [this country]' (label is *reduce_large*) 
 
 $Y_{i} = B_{0} + B_{1}X_{i} + E_{i}$
 
 Where:
-$Y$ = *incdiff*
+$Y$ = *reduce*
 
-$X$ = *inclarge*
+$X$ = *reduce_large*
 
 $i$ = individual survey respondents
 
 And now the regression visualized
 
 ```{r reg_all, message = F, warning = F}
-m01 <- lm(incdiff ~ inclarge, data = df) # the regression from the equation above
+m01 <- lm(reduce ~ reduce_large, data = df) # the regression from the equation above
 summary(m01)
 #create plot with regression line and regression equation and r^2
-mmmPOOLED <- ggplot(data=df, aes(x=inclarge, y=incdiff)) +
+mmmPOOLED <- ggplot(data=df, aes(x=reduce_large, y=reduce)) +
         geom_smooth(method="lm") +
         #geom_point() +
         xlim(1,5) + # make both axes the same for easier visualization
@@ -63,11 +66,11 @@ mmmPOOLED <- ggplot(data=df, aes(x=inclarge, y=incdiff)) +
         stat_regline_equation(label.x=2.5, label.y=1.6, hjust = 0) +
         stat_cor(aes(label=..rr.label..), label.x=2.5, label.y=1, hjust = 0) +
         labs(x = "Gov. should reduce income differences", y = "Inequality btw. rich and poor is too large") +
-        annotate(geom = "text", x = 2.5, y = 1.3, label = paste("R = ", round(cor(df$incdiff, df$inclarge, use = "pairwise.complete.obs"),2)),
+        annotate(geom = "text", x = 2.5, y = 1.3, label = paste("R = ", round(cor(df$reduce, df$reduce_large, use = "pairwise.complete.obs"),2)),
                       hjust = 0,
                       ) +
         annotate(geom = "text", x = 1.2, y = 4.5, 
-                 label = paste0("Pooled data for ",length(unique(df$iso3c[!is.na(df$inclarge)])),"\ncountries"),
+                 label = paste0("Pooled data for ",length(unique(df$iso3c[!is.na(df$reduce_large)])),"\ncountries"),
                  hjust = 0) + #add number of countries to plot
         theme_classic2() +
         theme(
@@ -89,10 +92,10 @@ Lets look at the association in all 34 countries now.
 
 ```{r reg_each}
 # get all intercepts and slopes
-fitted_models = df %>% # have to use equal sign here because it is a function
-  subset(!is.na(incdiff) & !is.na(inclarge)) %>% # remove missing cases
+fitted_models = df_na %>% # have to use equal sign here because it is a function
+  subset(!is.na(reduce) & !is.na(reduce_large)) %>% # remove missing cases
   group_by(iso3c) %>% # group by country
-  do(model = lm(incdiff ~ inclarge, data = .)) #run regression for each country
+  do(model = lm(reduce ~ reduce_large, data = .)) #run regression for each country
 
 # plot all at once
 
@@ -103,11 +106,11 @@ dfx <- as.data.frame(x)
 # now loop to create a plot for each intercept and coefficient from each country's regression
 
 for (j in 1:length(unique(fitted_models$iso3c))){
-  dfx <- df %>% # subset data to only that country and remove missing
-    subset(iso3c == fitted_models$iso3c[j]) %>%
-    subset(!is.na(incdiff) & !is.na(inclarge))
+  dfx <- df_na %>% # subset data to only that country and remove missing
+    subset(iso3c == fitted_models$iso3c[j]) %>% # this is just a shortcut to cycle through each country
+    subset(!is.na(reduce) & !is.na(reduce_large))
   
-  plot1 <- ggplot(data = dfx, aes(x = inclarge, y = incdiff, group = wave, color=as.factor(wave))) +
+  plot1 <- ggplot(data = dfx, aes(x = reduce_large, y = reduce, group = wave, color=as.factor(wave))) +
            geom_smooth(method = 'lm', se=T) +
            xlim(1,5) +
            ylim(1,5) +
@@ -115,7 +118,7 @@ for (j in 1:length(unique(fitted_models$iso3c))){
                                                               round(fitted_models$model[[j]]$coefficients[1],1),
                                                               " + ",
                                                               round(fitted_models$model[[j]]$coefficients[2],2),"x"), hjust = 0,) +
-           annotate(geom = "text", x = 2.5, y = 1, label = paste("R^2 = ", round(cor(dfx$incdiff, dfx$inclarge)^2,2)),
+           annotate(geom = "text", x = 2.5, y = 1, label = paste("R^2 = ", round(cor(dfx$reduce, dfx$reduce_large)^2,2)),
                       hjust = 0,
                       ) +
            stat_cor(label.x = 2.5, label.y = 1.3, hjust = 0, p.accuracy = 0.001) +
@@ -149,7 +152,7 @@ knitr::include_graphics(here::here("learning","images","multiplot.png"))
 ```
 
 
-In the graphs above, the pooled explained variance ($R^2$) is `r round(cor(df$incdiff, df$inclarge, use = "pairwise.complete.obs"),2)`. But in each country this varies considerably. How can we deal with this difference, and how do we know what variance we are explaining in the pooled model? This is the purpose of the Snijders and Bosker paper. To answer this question we need to think of *two-levels of variance*. There is variance that is uniquely attributable to differences between countries, and variance that is uniquely attributable to differences between individuals in each country.
+In the graphs above, the pooled explained variance ($R^2$) is `r round(cor(df$reduce, df$reduce_large, use = "pairwise.complete.obs"),2)`. But in each country this varies considerably. How can we deal with this difference, and how do we know what variance we are explaining in the pooled model? This is the purpose of the Snijders and Bosker paper. To answer this question we need to think of *two-levels of variance*. There is variance that is uniquely attributable to differences between countries, and variance that is uniquely attributable to differences between individuals in each country.
 
 Snijders and Bosker offer Equation 2 as the maximum likelihood estimator that is used to find the regression lines in a multilevel model. A multilevel model is called a "general linear model" instead of "ordinary least squares" because it is not possible to minimize the sum of the squared residual, because there is not one residual! As you can see from the figure above, when we try to estimate a regression that can fit the lines in all these countries at once plus the pooled sample of all countries together this leads to not one set of residuals but there are 35 'residuals', one for each country and 1 overall residual for all the countries pooled together. So this maximum likelihood is trying to minimize the log-likelihood which is a combination of $SS_{w}$ and $SS_{b}$ (don't worry about how this maximum-likelihood equation works for now, that is for another lesson). But what the heck are the $SS_{w}$ and $SS_{b}$? These are the **within-sum-of-squares** and the **between-sum-of-squares**. They are the squared residuals for the **within-variance** and the **between-variance**, trying to maximize the log-likelihood (which has to do with the likelihood of obtaining the observed values in the data using the parameters in the model as predictors).
 
@@ -166,16 +169,16 @@ The between-variance is very easy to understand and calculate. This is simply th
 df <- df %>%
   group_by(iso3c) %>%
   # calculate the mean for each country
-  mutate(incdiff_b = mean(incdiff, na.rm = T),
-         inclarge_b = mean(inclarge, na.rm = T)) %>%
+  mutate(reduce_b = mean(reduce, na.rm = T),
+         reduce_large_b = mean(reduce_large, na.rm = T)) %>%
   ungroup() %>%
   # calculate the mean-centered values by subtracting the means
-  mutate(incdiff_w = incdiff - incdiff_b,
-         inclarge_w = inclarge - inclarge_b)
+  mutate(reduce_w = reduce - reduce_b,
+         reduce_large_w = reduce_large - reduce_large_b)
 
 ```
 
-Now we can see the within- and between-variance for each level for the variable *incdiff* and then we can see how much of this is explained by *inclarge*. To do this we need to predict each level's outcomes. 
+Now we can see the within- and between-variance for each level for the variable *reduce* and then we can see how much of this is explained by *reduce_large*. To do this we need to predict each level's outcomes. 
 
 Here is why I keep telling you to think in terms of two equations!
 
@@ -185,55 +188,55 @@ We calculate two different regressions, one with 34 cases (countries) and the ot
 ```{r vars}
 # between-regression
 df_b <- df %>%
-  dplyr::select(iso3c, incdiff_b, inclarge_b) %>%
+  dplyr::select(iso3c, reduce_b, reduce_large_b) %>%
   group_by(iso3c) %>%
   summarise_all(mean, na.rm = T)
 
-m02_b <- lm(incdiff_b ~ inclarge_b, data = df_b)
+m02_b <- lm(reduce_b ~ reduce_large_b, data = df_b)
 
 # add predicted values to df_b
-df_b$incdiff_b_hat <- predict(m02_b, newdata = df_b)
+df_b$reduce_b_hat <- predict(m02_b, newdata = df_b)
   
 # within-regression
 df_w <- df %>% # need to remove missing cases for predict to work
-  subset(!is.na(incdiff_w) & !is.na(inclarge_w))
+  subset(!is.na(reduce_w) & !is.na(reduce_large_w))
 
 # add predicted values to df_w
-m02_w <- lm(incdiff_w ~ inclarge_w, data = df_w)
+m02_w <- lm(reduce_w ~ reduce_large_w, data = df_w)
 
-df_w$incdiff_w_hat <- predict(m02_w, data = df_w)
+df_w$reduce_w_hat <- predict(m02_w, data = df_w)
 
 # add predicted values to df
 df_t <- df %>%
-  subset(!is.na(incdiff) & !is.na(inclarge))
+  subset(!is.na(reduce) & !is.na(reduce_large))
 
-df_t$incdiff_hat <- predict(m01, data = df_t)
+df_t$reduce_hat <- predict(m01, data = df_t)
   
 # variances
-incdiff_b_var <- round(var(df_b$incdiff_b, na.rm = T),3) # between variance
-incdiff_w_var <- round(var(df$incdiff_w, na.rm = T),3) # within variance
-incdiff_var <- round(var(df$incdiff, na.rm = T),3) # total variance
-incdiff_b_hat_var <- round(var(df_b$incdiff_b_hat, na.rm = T),3) # predicted values variance
-incdiff_w_hat_var <- round(var(df_w$incdiff_w_hat, na.rm = T),3)
-incdiff_hat_var <- round(var(df_t$incdiff_hat),3)
+reduce_b_var <- round(var(df_b$reduce_b, na.rm = T),3) # between variance
+reduce_w_var <- round(var(df$reduce_w, na.rm = T),3) # within variance
+reduce_var <- round(var(df$reduce, na.rm = T),3) # total variance
+reduce_b_hat_var <- round(var(df_b$reduce_b_hat, na.rm = T),3) # predicted values variance
+reduce_w_hat_var <- round(var(df_w$reduce_w_hat, na.rm = T),3)
+reduce_hat_var <- round(var(df_t$reduce_hat),3)
 
 # residual variance 
-incdiff_b_var_h <- round((incdiff_b_var - incdiff_b_hat_var),3)
-incdiff_w_var_h <- round((incdiff_w_var - incdiff_w_hat_var),3)
-incdiff_var_h <- round((incdiff_var - incdiff_hat_var),3)
+reduce_b_var_h <- round((reduce_b_var - reduce_b_hat_var),3)
+reduce_w_var_h <- round((reduce_w_var - reduce_w_hat_var),3)
+reduce_var_h <- round((reduce_var - reduce_hat_var),3)
 ```
 
 Now we can view the reduction in variance
 
 | Variance Component | Variance | Reduction | $R^2$ | Equation |
 | ----- | --- | --- | --- |
-| incdiff total variance $Y_{ij}$ | `r incdiff_var` | -- | -- | standard var calculation |
-| incdiff between-variance $Y_{j}$ | `r incdiff_b_var` | -- | -- | *ibid* |
-| incdiff within-variance $Y_{i}$ | `r incdiff_w_var` | -- | -- | *ibid* |
-| after adding *inclarge* as predictor | | | |
-| $\sigma^2_{ij}$ of $\hat{Y}_{ij}$ (total) | `r incdiff_hat_var` | `r paste(round(incdiff_hat_var/incdiff_var,3)*100,"%")` | `r round(summary(m01)$r.squared,3)` | standard $R^2$ |
-| $\sigma^2_{j}$ of $\hat{Y}_{j}$ (between) | `r incdiff_b_hat_var` | `r paste(round(incdiff_b_hat_var/incdiff_b_var,3)*100,"%")` | `r round(summary(m02_b)$r.squared,3)` | **Eq. 13** in Snijders and Bosker |
-| $\sigma^2_{i}$ of $\hat{Y}_{i}$ (within) | `r incdiff_w_hat_var` | `r paste(round(incdiff_w_hat_var/incdiff_w_var,3)*100,"%")` | `r round(summary(m02_w)$r.squared,3)` | ** Eq. 12** in Snijders and Bosker |
+| reduce total variance $Y_{ij}$ | `r reduce_var` | -- | -- | standard var calculation |
+| reduce between-variance $Y_{j}$ | `r reduce_b_var` | -- | -- | *ibid* |
+| reduce within-variance $Y_{i}$ | `r reduce_w_var` | -- | -- | *ibid* |
+| after adding *reduce_large* as predictor | | | |
+| $\sigma^2_{ij}$ of $\hat{Y}_{ij}$ (total) | `r reduce_hat_var` | `r paste(round(reduce_hat_var/reduce_var,3)*100,"%")` | `r round(summary(m01)$r.squared,3)` | standard $R^2$ |
+| $\sigma^2_{j}$ of $\hat{Y}_{j}$ (between) | `r reduce_b_hat_var` | `r paste(round(reduce_b_hat_var/reduce_b_var,3)*100,"%")` | `r round(summary(m02_b)$r.squared,3)` | **Eq. 13** in Snijders and Bosker |
+| $\sigma^2_{i}$ of $\hat{Y}_{i}$ (within) | `r reduce_w_hat_var` | `r paste(round(reduce_w_hat_var/reduce_w_var,3)*100,"%")` | `r round(summary(m02_w)$r.squared,3)` | ** Eq. 12** in Snijders and Bosker |
 
 The Snijders and Bosker formula allows us to specify a 'residual' for both levels:
 
@@ -261,7 +264,7 @@ This is easy to calculate using what we just learned. We simply calculate the be
 
 $\rho = \frac{\sigma_{j}} {\sigma_{ij}}$
 
-The rho for the ISSP data we are working with therefore suggests a multilevel model is a good idea because it is `r round(incdiff_b_var/incdiff_var,3)`. In other words, `r paste0(round(incdiff_b_var/incdiff_var*100,3),"%")`  of the total variance occurs between countries.
+The rho for the ISSP data we are working with therefore suggests a multilevel model is a good idea because it is `r round(reduce_b_var/reduce_var,3)`. In other words, `r paste0(round(reduce_b_var/reduce_var*100,3),"%")`  of the total variance occurs between countries.
 
 
 
