@@ -174,10 +174,40 @@ df_na <- df_na %>%
 
 ```
 
+
+
+
 ```{r saveout}
+# The variables names are not intuitive, change them
+df <- df %>%
+  rename(gov_redist = reduce, incdiff_large = reduce_large)
+
+df_na <- df_na %>%
+  rename(gov_redist = reduce, incdiff_large = reduce_large)
+
+# create a variable for the percentage of the population that agrees income gap is too large, but does not agree govt is responsible to reduce it
+#plus a percent agree with gov redist variable
+df_na <- df_na %>%
+  mutate(gap_no_gov = ifelse(incdiff_large > 3 & gov_redist < 4, 100, 0),
+         gov_redist_agree = ifelse(gov_redist > 3, 100, ifelse(gov_redist < 3, 0, NA)),
+         incdiff_large_agree = ifelse(incdiff_large > 3, 100, ifelse(incdiff_large < 3, 0, NA)))
+
+# create a macro-level dataset
+df_macro <- df_na %>%
+  select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, socx_perhead, cpi15_20, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, gdp_pc_10k, regime, gap_no_gov, gov_redist_agree, incdiff_large_agree) %>%
+  group_by(iso3c, wave) %>%
+  summarise_all(mean, na.rm = T) %>%
+  ungroup()
+
+df_macro[df_macro == "NaN"] <- NA
+
+
+
 # full data file
 saveRDS(df, file = here::here("data","df.RDS"))
 # with missing cases removed
 saveRDS(df_na, file = here::here("data","df_na.RDS"))
+# macro
+saveRDS(df_macro, file = here::here("data","df_macro.RDS"))
 ```
 

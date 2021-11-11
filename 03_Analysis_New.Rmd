@@ -50,12 +50,7 @@ knitr::opts_chunk$set(message = F, warning = F)
 df <- readRDS(here::here("data","df.RDS"))
 df_na <- readRDS(here::here("data", "df_na.RDS"))
 
-# The variables names are not intuitive, change them
-df <- df %>%
-  rename(gov_redist = reduce, incdiff_large = reduce_large)
 
-df_na <- df_na %>%
-  rename(gov_redist = reduce, incdiff_large = reduce_large)
 ```
 
 
@@ -90,13 +85,8 @@ democratic_label <- "And how democratically is this country being governed today
 
 
 ```{r var_dvs}
-df_macro <- df_na %>%
-  select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, socx_perhead, cpi15_20, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, gdp_pc_10k, regime) %>%
-  group_by(iso3c, wave) %>%
-  summarise_all(mean, na.rm = T) %>%
-  ungroup()
+# create a variable that captures the percentage of respondents that think income gap is too large but do not agree gov should do something about it
 
-df_macro[df_macro == "NaN"] <- NA
 
 df_macro_corr <- df_macro %>%
   select(-c(iso3c, wave)) %>%
@@ -171,6 +161,7 @@ df_macro <- df_macro %>%
 #### Plot
 
 ```{r figx2}
+agg_png(here::here("results","Fig2.png"), res = 144, height = 800, width = 1000)
 df_macro %>%
   ggplot() +
   geom_text(aes(y = corr, x = liberal, label = iso3c), color = "black", size = 3) +
@@ -178,9 +169,20 @@ df_macro %>%
   geom_smooth(aes(y = corr, x = liberal_all), method = 'lm', se = F, linetype = "dashed", color = "#DCE319FF") +
   geom_smooth(aes(y = corr, x = liberal_high), method = 'lm', se = F, color = "#20A387FF") +
   geom_smooth(aes(y = corr, x = liberal_low), method = 'lm', se = F, color = "midnightblue") +
-  labs(x = "Liberal Values, aggregates from WVS\n(government v. individual needs responsibility)",
-       y = "Country-Year Correlation, individuals from ISSP:\n'Government should redistribute' with\n'Differences in income are too large'") +
+  geom_segment(aes(x = 6.8, xend = 7.2, y = 0.3, yend = 0.3), linetype = "dashed", color = "#DCE319FF", size = 1.1) +
+  geom_segment(aes(x = 6.8, xend = 7.2, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
+  geom_segment(aes(x = 6.8, xend = 7.2, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
+  annotate(geom = "text", x = 6.8, y = 0.34, label = "Fitted Lines", hjust = 0) +
+  annotate(geom = "text", x = 7.3, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
+  annotate(geom = "text", x = 7.3, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
+  annotate(geom = "text", x = 7.3, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
+  labs(x = "LIBERAL VALUES\ngovernment v. individual should beresponsible for needs",
+       y = "CORRELATION within COUNTRY-YEAR\n'Government should redistribute' with\n'Differences in income are too large'",
+       caption = " \nY data from International Social Survey Program\nX data from World Values Surveys\nLight grey countries' values interpolated for X") +
   theme_classic()
+dev.off()
+
+knitr::include_graphics(here::here("results","Fig2.png"))
 ```
 
 ### Step Two - Variation incdiff/inclarge
