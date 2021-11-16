@@ -43,19 +43,16 @@ wvs <- wvs %>% # create an interpolated version of wvs variables that takes the 
   group_by(iso3c) %>%
   mutate(liberal_ix = mean(liberal, na.rm = T),
          liberal_redist_ix = mean(liberal_redist, na.rm = T),
-         confidence_gov_ix = mean(confidence_gov, na.rm = T),
-         liberal_i = ifelse(is.na(liberal), liberal_ix, NA),
-         liberal_redist_i = ifelse(is.na(liberal_redist), liberal_redist_ix, NA),
-         confidence_gov_i = ifelse(is.na(confidence_gov), confidence_gov_ix, NA)) %>%
-  select(-c(liberal_ix, liberal_redist_ix, confidence_gov_ix)) %>%
+         confidence_gov_ix = mean(confidence_gov, na.rm = T)) %>%
   ungroup() 
+
 
 # one WVS with original values, one with imputed values (different merge variables)
 wvs_2 <- wvs %>%
-  select(iso3c, year, liberal_i, liberal_redist_i, confidence_gov_i)
+  select(iso3c, year, liberal_ix, liberal_redist_ix, confidence_gov_ix)
 
 wvs <- wvs %>%
-  select(-c(year, liberal_i, liberal_redist_i, confidence_gov_i))
+  select(-c(year, liberal_ix, liberal_redist_ix, confidence_gov_ix))
 
 # Institutional Logic - welfare state penetration
 #gwip <- 
@@ -67,6 +64,13 @@ gdp <- read_csv(here::here("data","vdem_gdp_pc_INTERPOLATED_consolidated.csv")) 
 regime <- read_csv(here::here("data","vdem_regime__INTERPOLATED_consolidated.csv")) %>%
   mutate(iso3c = iso3) %>%
   select(-c(iso3, cow_code, country_name))
+
+regime <- regime %>% # impute means by country
+  group_by(iso3c) %>%
+  mutate(regime_ix = mean(regime, na.rm = T),
+         regime_i = ifelse(is.na(regime), regime_ix, regime)) %>%
+  ungroup() %>%
+  select(-regime_ix)
   
 # Corruption perceptions
 crpt <- read_csv(here::here("data","crpt.csv"))
@@ -112,6 +116,8 @@ df <- df %>%
   left_join(gdp, by = c("iso3c", "year")) %>%
   left_join(regime, by = c("iso3c", "year"))
 
+
+
 rm(gini,socx,crpt)
 ```
 
@@ -130,7 +136,12 @@ df <- df %>%
   mutate(incdiff_w = incdiff - incdiff_b,
          inclarge_w = inclarge - inclarge_b,
          reduce_w = reduce - reduce_b,
-         reduce_large_w = reduce_large - reduce_large_b)
+         reduce_large_w = reduce_large - reduce_large_b,
+  # fill in missing from wvs
+         liberal_i = ifelse(is.na(liberal), liberal_ix, liberal),
+         liberal_redist_i = ifelse(is.na(liberal_redist), liberal_redist_ix, liberal_redist),
+         confidence_gov_i = ifelse(is.na(confidence_gov), confidence_gov_ix, confidence_gov)) %>%
+  select(-c(confidence_gov_ix, liberal_ix, liberal_redist_ix))
 
 df_na <- df %>%
   subset(!is.na(incdiff) & !is.na(inclarge))
@@ -145,31 +156,9 @@ df_na %>%
   group_by(iso3c, year) %>%
   summarise_all(mean, na.rm = T)
 
-#fill in a few by hand
-df_na <- df_na %>%
-  mutate(socx = ifelse(iso3c == "AUT" & year == 1988, 24, socx),
-         socx = ifelse(iso3c == "BGR" & year == 1993, 25, socx),
-         socx = ifelse(iso3c == "BGR" & year == 1999, 38, socx),
-         socx = ifelse(iso3c == "BGR" & year == 2009, 40, socx),
-         socx = ifelse(iso3c == "CHE" & year == 1987, 10, socx),
-         socx = ifelse(iso3c == "CHE" & year == 2009, 22, socx),
-         socx = ifelse(iso3c == "CYP" & year == 1999, 18, socx),
-         socx = ifelse(iso3c == "CYP" & year == 2009, 25, socx),
-         socx = ifelse(iso3c == "HRV" & year == 2019, 30, socx),
-         socx = ifelse(iso3c == "JPN" & year == 2019, 25, socx),
-         socx = ifelse(iso3c == "NZL" & year == 2020, 25, socx),
-         socx = ifelse(iso3c == "SVN" & year == 2020, 21, socx),
-         socx = ifelse(iso3c == "ZAF" & year == 2018, 25, socx),
-         socx = ifelse(iso3c == "ZAF" & year == 2019, 25, socx),
-         socx = ifelse(iso3c == "HUN" & year == 1987, 20, socx),
-         socx = ifelse(iso3c == "HUN" & year == 1992, 35, socx),
-         socx = ifelse(iso3c == "HUN" & year == 1998, 40, socx),
-         gini_disp = ifelse(iso3c == "PHL" & year == 2019, 42, gini_disp),
-         gini_disp = ifelse(iso3c == "PHL" & year == 2019, 42, gini_disp),
-         gini_disp = ifelse(iso3c == "JPN" & year == 2019, 35, gini_disp),
-         gini_disp = ifelse(iso3c == "ZAF" & year == 2018, 50, gini_disp),
-         gini_disp = ifelse(iso3c == "ZAF" & year == 2019, 50, gini_disp),
-         gdp_pc_10k = filled_vdem_gdp_interpol/10000) # make a GDP 10k var
+
+
+         
 
 
 ```
@@ -190,18 +179,82 @@ df_na <- df_na %>%
 df_na <- df_na %>%
   mutate(gap_no_gov = ifelse(incdiff_large > 3 & gov_redist < 4, 100, 0),
          gov_redist_agree = ifelse(gov_redist > 3, 100, ifelse(gov_redist < 3, 0, NA)),
-         incdiff_large_agree = ifelse(incdiff_large > 3, 100, ifelse(incdiff_large < 3, 0, NA)))
+         incdiff_large_agree = ifelse(incdiff_large > 3, 100, ifelse(incdiff_large < 3, 0, NA)),
+         educyrs = ifelse(educyrs < 0, NA, educyrs),
+         pct_sample_tertiary = ifelse(educyrs > 15, 100, 0), 
+         pct_sample_65older = ifelse(ageC > 64, 100, 0))
 
 # create a macro-level dataset
 df_macro <- df_na %>%
-  select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, socx_perhead, cpi15_20, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, gdp_pc_10k, regime, gap_no_gov, gov_redist_agree, incdiff_large_agree) %>%
+  select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, socx_perhead, cpi15_20, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, filled_vdem_gdp_interpol, regime, gap_no_gov, gov_redist_agree, incdiff_large_agree, pct_sample_tertiary, pct_sample_65older) %>%
   group_by(iso3c, wave) %>%
   summarise_all(mean, na.rm = T) %>%
   ungroup()
 
 df_macro[df_macro == "NaN"] <- NA
 
+# fill in some by hand
+#fill in a few by hand
+# philippines & thailand data https://www.social-protection.org/gimi/WSPDB.action?id=19
+df_macro <- df_macro %>%
+  mutate(socx = ifelse(iso3c == "AUT" & wave == 1987, 24, socx),
+         socx = ifelse(iso3c == "BGR" & wave == 1993, 25, socx),
+         socx = ifelse(iso3c == "BGR" & wave == 1999, 38, socx),
+         socx = ifelse(iso3c == "BGR" & wave == 2009, 40, socx),
+         socx = ifelse(iso3c == "CHE" & wave == 1987, 10, socx),
+         socx = ifelse(iso3c == "CHE" & wave == 2009, 22, socx),
+         socx = ifelse(iso3c == "CHE" & wave == 2019, 20, socx),
+         socx = ifelse(iso3c == "CYP" & wave == 1999, 18, socx),
+         socx = ifelse(iso3c == "CYP" & wave == 2009, 25, socx),
+         socx = ifelse(iso3c == "HRV" & wave == 2019, 30, socx),
+         socx = ifelse(iso3c == "JPN" & wave == 2019, 25, socx),
+         socx = ifelse(iso3c == "NZL" & wave == 2019, 25, socx),
+         socx = ifelse(iso3c == "SVN" & wave == 2019, 21, socx),
+         socx = ifelse(iso3c == "ZAF" & wave == 2019, 25, socx),
+         socx = ifelse(iso3c == "ZAF" & wave == 2019, 25, socx),
+         socx = ifelse(iso3c == "HUN" & wave == 1987, 20, socx),
+         socx = ifelse(iso3c == "HUN" & wave == 1992, 35, socx),
+         socx = ifelse(iso3c == "HUN" & wave == 1998, 40, socx),
+         socx = ifelse(iso3c == "PHL" & wave == 1992, 2, socx),
+         socx = ifelse(iso3c == "PHL" & wave == 1999, 2.5, socx),
+         socx = ifelse(iso3c == "PHL" & wave == 2009, 3, socx),
+         socx = ifelse(iso3c == "PHL" & wave == 2019, 4, socx),
+         socx = ifelse(iso3c == "POL" & wave == 1987, 25, socx),
+         socx = ifelse(iso3c == "RUS" & wave == 1992, 25, socx),
+         socx = ifelse(iso3c == "RUS" & wave == 1999, 23, socx),
+         socx = ifelse(iso3c == "RUS" & wave == 2009, 21.5, socx),
+         socx = ifelse(iso3c == "RUS" & wave == 2019, 20, socx),
+         socx = ifelse(iso3c == "SVK" & wave == 1992, 20, socx),
+         socx = ifelse(iso3c == "SVN" & wave == 1992, 25, socx),
+         socx = ifelse(iso3c == "THA" & wave == 2019, 6, socx),
+         gini_disp = ifelse(iso3c == "PHL" & wave == 2019, 42, gini_disp),
+         gini_disp = ifelse(iso3c == "PHL" & wave == 2019, 42, gini_disp),
+         gini_disp = ifelse(iso3c == "JPN" & wave == 2019, 35, gini_disp),
+         gini_disp = ifelse(iso3c == "ZAF" & wave == 2019, 50, gini_disp),
+         gini_disp = ifelse(iso3c == "ZAF" & wave == 2019, 50, gini_disp),
+         gdp_pc_10k = filled_vdem_gdp_interpol/10000, # make a GDP 10k var
+         gdp_pc_10k = ifelse(iso3c == "CHE" & wave == 2019, 5.6, gdp_pc_10k), # google gdps
+         gdp_pc_10k = ifelse(iso3c == "CHL" & wave == 2019, 1.75, gdp_pc_10k),
+         gdp_pc_10k = ifelse(iso3c == "CZE" & wave == 2019, 2.5, gdp_pc_10k),
+         gdp_pc_10k = ifelse(iso3c == "DEU" & wave == 2019, 4.5, gdp_pc_10k),
+         gdp_pc_10k = ifelse(iso3c == "FIN" & wave == 2019, 4.9, gdp_pc_10k),
+         gdp_pc_10k = ifelse(iso3c == "HRV" & wave == 2019, 1.4, gdp_pc_10k),
+         gdp_pc_10k = ifelse(iso3c == "ITA" & wave == 2019, 3.2, gdp_pc_10k),
+         gdp_pc_10k = ifelse(iso3c == "JPN" & wave == 2019, 4, gdp_pc_10k),
+         gdp_pc_10k = ifelse(iso3c == "NZL" & wave == 2019, 4, gdp_pc_10k),
+         gdp_pc_10k = ifelse(iso3c == "PHL" & wave == 2019, 0.8, gdp_pc_10k),
+         gdp_pc_10k = ifelse(iso3c == "RUS" & wave == 2019, 1.8, gdp_pc_10k),
+         gdp_pc_10k = ifelse(iso3c == "SVN" & wave == 2019, 2.6, gdp_pc_10k),
+         gdp_pc_10k = ifelse(iso3c == "THA" & wave == 2019, 0.9, gdp_pc_10k),
+         socx = ifelse(iso3c == "BGR" & wave == 1992, 38, socx),
+         gdp_pc_10k = ifelse(iso3c == "DNK" & wave == 2019, 5, gdp_pc_10k))
 
+# there is some mismatch when summarizing, fix wvs variables
+
+df_macro <- df_macro %>%
+  mutate(liberal_i = ifelse(is.na(liberal), liberal_i, liberal),
+         confidence_gov_i = ifelse(is.na(confidence_gov), confidence_gov_i, confidence_gov),
+         liberal_redist_i = ifelse(is.na(liberal_redist), liberal_redist_i, liberal_redist))
 
 # full data file
 saveRDS(df, file = here::here("data","df.RDS"))
@@ -209,5 +262,11 @@ saveRDS(df, file = here::here("data","df.RDS"))
 saveRDS(df_na, file = here::here("data","df_na.RDS"))
 # macro
 saveRDS(df_macro, file = here::here("data","df_macro.RDS"))
+```
+
+Colophon
+
+```{r colophon}
+sessionInfo()
 ```
 
