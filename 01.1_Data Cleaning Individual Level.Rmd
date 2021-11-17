@@ -2701,7 +2701,11 @@ save(df, file = here::here("data","socstat.Rda"))
 ```
 
 
+Colophon
 
+```{r colophon}
+sessionInfo()
+```
 
 
 

@@ -47,17 +47,11 @@ knitr::opts_chunk$set(message = F, warning = F)
 
 
 ```{r load dfs}
-df <- readRDS(here::here("data","df.RDS"))
+#df <- readRDS(here::here("data","df.RDS"))
 df_na <- readRDS(here::here("data", "df_na.RDS"))
+df_macro <- readRDS(here::here("data", "df_macro.RDS"))
 
-# The variables names are not intuitive, change them
-df <- df %>%
-  rename(gov_redist = reduce, incdiff_large = reduce_large)
-
-df_na <- df_na %>%
-  rename(gov_redist = reduce, incdiff_large = reduce_large)
 ```
-
 
 
 ## Descriptives
@@ -90,13 +84,8 @@ democratic_label <- "And how democratically is this country being governed today
 
 
 ```{r var_dvs}
-df_macro <- df_na %>%
-  select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, socx_perhead, cpi15_20, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, gdp_pc_10k, regime) %>%
-  group_by(iso3c, wave) %>%
-  summarise_all(mean, na.rm = T) %>%
-  ungroup()
+# create a variable that captures the percentage of respondents that think income gap is too large but do not agree gov should do something about it
 
-df_macro[df_macro == "NaN"] <- NA
 
 df_macro_corr <- df_macro %>%
   select(-c(iso3c, wave)) %>%
@@ -121,7 +110,13 @@ This is now fixed in the source load for the WVS so re-creating the plot will no
 
 ```
 
-### Fig X. Correlation of Redist Variables and Liberal Values by Country-Wave
+### Fig X. Correlation of Redist Variables and Context Vars
+
+After observing the variation in the correlation between inclarge and incdiff by country. We suspect that attitudes toward the role of government are in play. We suspect these come from institutionalized norms. 
+
+Theory: individuals have values or follow norms about how much the government should intervene in the socio-economic affairs of individuals, how much the government should protect against social risks and how much the government (society) should share or redistribute based on need. 
+
+Hypothesis: In countries where the government does less redistribution or has a weaker welfare state, the correlation between perceptions of the income gap and the idea that the government is responsible for doing something about it will be smaller.
 
 #### Setup Fig
 
@@ -164,57 +159,170 @@ df_macro <- df_macro %>%
          liberal_low = ifelse(is.na(liberal_high), liberal_all, NA),
          liberal_low = ifelse(iso3c %in% c("HRV","CYP","ITA","SVN","CZE"), NA, liberal_low)) # remove some questionable cases
 
+# for plotting corruption, generate small variation in CPI for years prior to 2015
+#make a predicted confidence_gov variable
+m_conf <- lm(confidence_gov_i ~ gdp_pc_10k + socx + cpi15_20, data = df_macro)
 
+df_macro$confidence_gov_i_lm <- predict.lm(m_conf, newdata = df_macro)
+
+df_macro <- df_macro %>%
+  mutate(cpi15_20 = ifelse(iso3c == "DNK", 90, cpi15_20),
+         confidence_gov_i_i = ifelse(is.na(confidence_gov), confidence_gov_i_lm, confidence_gov_i))
+
+# make small disturbances to the cpi using the confidence in gov within-country variance
+df_macro <- df_macro %>%
+  mutate(cpi15_20_x = (cpi15_20*confidence_gov_i_i)/2)
+
+m_cpi <- lm(cpi15_20_x ~ factor(iso3c) + confidence_gov_i_i, data = df_macro)
+
+df_macro$cpi15_20_i <- predict.lm(m_cpi, newdata = df_macro)
+
+df_macro <- df_macro %>%
+  mutate(cpi15_20_i = -1*cpi15_20_i + 100, # reverse scale, higher values more corrupt percept
+         cpiZ = scale(cpi15_20_i))
+
+# make high and low corruption perceptions
+df_macro <- df_macro %>%
+  mutate(cpi_low = ifelse(!is.na(liberal_low), cpiZ, NA),
+         cpi_high = ifelse(!is.na(liberal_high), cpiZ, NA))
 
 ```
 
-#### Plot
+
+```{r prep_data}
+df_na <- df_na %>%
+  select(-c(gini_disp, socx)) 
+
+df_macro <- as.data.frame(df_macro)
+
+df_macro_m <- df_macro %>%
+  select(iso3c, wave, cpiZ, liberal_i, gdp_pc_10k, gini_disp, socx, confidence_gov_i_i, cpi15_20_i)
+
+df_na <- df_na %>%
+  left_join(df_macro_m, by = c("iso3c", "wave"))
+```
+#### Plot Liberal Corr
 
 ```{r figx2}
-df_macro %>%
+#agg_png(here::here("results","Fig2.png"), res = 144, height = 800, width = 1000)
+Fig2.1 <- df_macro %>%
   ggplot() +
   geom_text(aes(y = corr, x = liberal, label = iso3c), color = "black", size = 3) +
   geom_text(aes(y = corr, x = liberal_i, label = iso3c), color = "grey", size = 2) +
-  geom_smooth(aes(y = corr, x = liberal_all), method = 'lm', se = F, linetype = "dashed", color = "#DCE319FF") +
+  geom_smooth(aes(y = corr, x = liberal_all), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
   geom_smooth(aes(y = corr, x = liberal_high), method = 'lm', se = F, color = "#20A387FF") +
   geom_smooth(aes(y = corr, x = liberal_low), method = 'lm', se = F, color = "midnightblue") +
-  labs(x = "Liberal Values, aggregates from WVS\n(government v. individual needs responsibility)",
-       y = "Country-Year Correlation, individuals from ISSP:\n'Government should redistribute' with\n'Differences in income are too large'") +
+  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
+  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
+  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
+  # annotate(geom = "text", x = 6.8, y = 0.34, label = "Fitted Lines", hjust = 0) +
+  # annotate(geom = "text", x = 7.3, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
+  # annotate(geom = "text", x = 7.3, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
+  # annotate(geom = "text", x = 7.3, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
+  labs(x = "LIBERAL VALUES\nWorld Values Survey data\ngovernment v. individual responsible for needs",
+       y = "CORRELATION within COUNTRY-YEAR\n'Government should redistribute' with\n'Differences in income are too large'",
+       caption = " \n \n \n ") +
+  theme_classic()
+#dev.off()
+
+#knitr::include_graphics(here::here("results","Fig2.png"))
+```
+
+#### Plot Corrupt / Corr
+
+```{r figx3}
+#agg_png(here::here("results","Fig3.png"), res = 144, height = 800, width = 1000)
+Fig2.2 <- df_macro %>%
+  ggplot() +
+  geom_text(aes(y = corr, x = cpiZ, label = iso3c), color = "black", size = 3) +
+  geom_smooth(aes(y = corr, x = cpiZ), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
+  geom_smooth(aes(y = corr, x = cpi_high), method = 'lm', se = F, color = "#20A387FF") +
+  geom_smooth(aes(y = corr, x = cpi_low), method = 'lm', se = F, color = "midnightblue") +
+  geom_segment(aes(x = -2, xend = -1.7, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
+  geom_segment(aes(x = -2, xend = -1.7, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
+  geom_segment(aes(x = -2, xend = -1.7, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
+  annotate(geom = "text", x = -2, y = 0.34, label = "Fitted Lines", hjust = 0) +
+  annotate(geom = "text", x = -1.6, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
+  annotate(geom = "text", x = -1.6, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
+  annotate(geom = "text", x = -1.6, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
+  labs(x = "CORRUPTION PERCEPTIONS INDEX (CPI)\nTransparency International data\n ",
+       y = "",
+       caption = " \nY data from International Social Survey Program\ngrey countries in left-panel interpolated with country-means\nwithin-country CPI disturbance generated by authors") +
+  theme_classic()
+#dev.off()
+
+#knitr::include_graphics(here::here("results","Fig3.png"))
+```
+### Plot Arranged Figure
+
+```{r fig2}
+agg_png(filename = here::here("results","Fig2.png"), res = 144, width = 1500, height = 800)
+ggarrange(Fig2.1, Fig2.2, widths = c(1,1.15))
+dev.off()
+
+knitr::include_graphics(here::here("results","Fig2.png"))
+```
+
+
+### Moderation Models
+
+This is a cross-level interaction as macro moderator affects the micro association.
+
+
+
+```{r mod_models}
+
+m00 <- lmer(gov_redist ~ 1 + incdiff_large + (1 | iso3c) + (1 | wave), data = df_na) # baseline
+m01 <- lmer(gov_redist ~ 1 + incdiff_large + cpiZ + (1 | iso3c) + (1 | wave), data = df_na) # with main effects
+m02 <- lmer(gov_redist ~ 1 + incdiff_large + cpiZ + (1 | iso3c) + (incdiff_large | wave), data = df_na) # random-slopes
+m03 <- lmer(gov_redist ~ 1 + incdiff_large + cpiZ + cpiZ*incdiff_large  + (1 | iso3c) + (1 | wave), data = df_na) # moderation
+
+```
+
+```{r mod_tab}
+tab_model(m00, m01, m02, m03, show.ci = F, show.aic = T, show.loglik = T, show.icc = T, p.style = "stars")
+```
+
+### Plot Margins
+
+corruption = -1, 0, 1
+incdiff_large = 3
+
+1.41 + incdiff_large*0.58 + cpiZ*-1 + incdiff_large*cpiZ*-0.08
+
+```{r marginal_effects}
+
+marg_df = as.data.frame(matrix(nrow = 5, ncol = 9))
+colnames(marg_df) <- c("cpiZ", "incdiff_large_3", "incdiff_large_4", "b_incd", "b_cpiZ", "b_incXc", "marginal_effect_3", "marginal_effect_4", "margin")
+
+marg_df$cpiZ <- c(-2,-1,0,1,2)
+marg_df$incdiff_large_3 <- c(3,3,3,3,3)
+marg_df$incdiff_large_4 <- c(4,4,4,4,4)
+marg_df$b_incd <- c(0.58,0.58,0.58,0.58,0.58)
+marg_df$b_cpiZ <- c(0.32,0.32,0.32,0.32,0.32)
+marg_df$b_incXc <- c(-0.08,-0.08,-0.08,-0.08,-0.08)
+
+marg_df <- marg_df %>%
+  mutate(marginal_effect_3 = incdiff_large_3*b_incd + cpiZ*b_cpiZ + cpiZ*incdiff_large_3*b_incXc,
+         marginal_effect_4 = incdiff_large_4*b_incd + cpiZ*b_cpiZ + cpiZ*incdiff_large_4*b_incXc,
+         margin = marginal_effect_4-marginal_effect_3)
+
+```
+
+
+```{r margin_plot}
+marg_df %>%
+  ggplot(aes(x = cpiZ, y = margin)) +
+  geom_bar(stat = 'identity') +
+  labs(x = "Corruption Perceptions, Standardized",
+       y = "Statistical Effect of X1 (Inc. Diff's too Large)\non Y (Gov. Should Reduce Inc. Diff's)",
+       title = "The Moderating Impact of Percieved Corruption by Country") +
   theme_classic()
 ```
 
-### Step Two - Variation incdiff/inclarge
 
-```{r twovar_compare}
+Colophon
 
+```{r colophon}
+sessionInfo()
 ```
-
-### Theory
-
-After observing the variation in the correlation between inclarge and incdiff by country. We suspect that attitudes toward the role of government are in play. We suspect these come from institutionalized norms. 
-
-Theory: individuals have values or follow norms about how much the government should intervene in the socio-economic affairs of individuals, how much the government should protect against social risks and how much the government (society) should share or redistribute based on need. 
-
-Hypothesis: In countries where the government does less redistribution or has a weaker welfare state, the correlation between perceptions of the income gap and the idea that the government is responsible for doing something about it will be smaller.
-
-
-Example: In the US the public may perceive a high or undesirable amount of income inequality, but be less likely to agree that the government should do something about it. Whereas in Germany the public may also perceive a high degree of inequality but be more likely to express that the government should do (is responsible) for doing something about it. 
-
-### Multilevel Models
-```{r mlms}
-M00 <- lmer(reduce ~ 1 + (1 | iso3c), data = df_na)
-M00.5 <- lmer(reduce ~ 1 + reduce_large + (1 | iso3c), data = df_na)
-M01 <- lmer(reduce ~ 1 + reduce_large + (1 + reduce_large | iso3c), data = df_na)
-M02 <- lmer(reduce ~ 1 + reduce_large*socx + (1 + reduce_large | iso3c), data = df_na)
-M03 <- lmer(reduce ~ 1 + reduce_large*gini_disp + (1 + reduce_large | iso3c), data = df_na)
-
-tab_model(M00, M00.5, M01, M02, M03, show.ci = F, p.style = "stars")
-
-```
-
-### Plot SOCX and slope
-
-```{r}
-
-```
-
