@@ -109,8 +109,23 @@ gini <- rbind(gini, gini_19, gini_20)
 
 df <- df %>%
   left_join(gini, by = c("iso3c","year")) %>%
-  left_join(socx, by = c("iso3c","year")) %>%
-  left_join(crpt, by = c("iso3c")) %>%
+  left_join(socx, by = c("iso3c","year")) 
+
+
+df <- df %>%
+  left_join(crpt, by = c("iso3c")) 
+
+# the WVS has repeated years, collapse them
+
+wvs <- wvs %>%
+  group_by(iso3c, wave) %>%
+  summarise_all(mean, na.rm = T)
+
+wvs_2 <- wvs_2 %>%
+  group_by(iso3c, year) %>%
+  summarise_all(mean, na.rm = T)
+
+df <- df %>%
   left_join(wvs, by = c("iso3c", "wave")) %>%
   left_join(wvs_2, by = c("iso3c", "year")) %>%
   left_join(gdp, by = c("iso3c", "year")) %>%
