@@ -47,7 +47,7 @@ knitr::opts_chunk$set(message = F, warning = F)
 
 
 ```{r load dfs}
-#df <- readRDS(here::here("data","df.RDS"))
+df <- readRDS(here::here("data","df.RDS"))
 df_na <- readRDS(here::here("data", "df_na.RDS"))
 df_macro <- readRDS(here::here("data", "df_macro.RDS"))
 
@@ -268,20 +268,61 @@ knitr::include_graphics(here::here("results","Fig2.png"))
 
 This is a cross-level interaction as macro moderator affects the micro association.
 
+Create a wrapper for lmer models
+```{r}
 
+mod_models <- function(df, dv, main_iv, value_var, add_vars=NULL, return_tab = TRUE, ...) {
+    if (is.null(add_vars)){
+        df_new <- df %>%
+          select(iso3c, wave, dv, main_iv, value_var)
+    }
+    else {
+        df_new <- df %>%
+          select(iso3c, wave, dv, main_iv, value_var, all_of(add_vars))
+    }
+    
 
-```{r mod_models}
+    ## baseline model
+    m00 <- lmer(get(dv) ~  1 + get(main_iv)+ (1 | iso3c) + (1 | wave), data = df_new)
+    # with main effects
+    m01 <- lmer(get(dv) ~  1 + get(main_iv) + get(value_var) + (1 | iso3c) + (1 | wave), data = df_new) 
+    # random-slopes
+    m02 <- lmer(get(dv) ~  1 + get(main_iv) + get(value_var) + (1 | iso3c) + (get(main_iv) | wave), 
+                data = df_new)
+    # moderation
+    m03 <- lmer(get(dv) ~  1 + get(main_iv) + get(value_var) + get(value_var)*get(main_iv)  + 
+                  (1 | iso3c) + (1 | wave), data = df_new) 
+    ## moderation with additional variables
+    if (!is.null(add_vars)) {
+        m04 <- lmer(get(dv) ~  1 + get(main_iv) + get(value_var) + get(value_var)*get(main_iv)  + 
+                  (1 | iso3c) + (1 | wave) + ., data = df_new)
+         tab_temp <- tab_model(m00, m01, m02, m03, m04, show.ci = F, show.aic = T, 
+                               show.loglik = T, show.icc = T, p.style = "stars", ...)
+    }
+    else {
+        tab_temp <- tab_model(m00, m01, m02, m03, show.ci = F, show.aic = T, 
+                               show.loglik = T, show.icc = T, p.style = "stars", ...)
+    }
+    
+    
+  
+    return(tab_temp)
+}
 
-m00 <- lmer(gov_redist ~ 1 + incdiff_large + (1 | iso3c) + (1 | wave), data = df_na) # baseline
-m01 <- lmer(gov_redist ~ 1 + incdiff_large + cpiZ + (1 | iso3c) + (1 | wave), data = df_na) # with main effects
-m02 <- lmer(gov_redist ~ 1 + incdiff_large + cpiZ + (1 | iso3c) + (incdiff_large | wave), data = df_na) # random-slopes
-m03 <- lmer(gov_redist ~ 1 + incdiff_large + cpiZ + cpiZ*incdiff_large  + (1 | iso3c) + (1 | wave), data = df_na) # moderation
+## Test the function. It works!
+
+tab <- mod_models(df_na, "gov_redist", "incdiff_large", "cpiZ")
+```
+
+Try three different "value" variables
+
+```{r}
+tab_cpi <- mod_models(df_na, "gov_redist", "incdiff_large", "cpiZ")
+tab_liberal <- mod_models(df_na, "gov_redist", "incdiff_large", "liberal_redist")
+tab_confidence <- mod_models(df_na, "gov_redist", "incdiff_large", "confidence_gov")
 
 ```
 
-```{r mod_tab}
-tab_model(m00, m01, m02, m03, show.ci = F, show.aic = T, show.loglik = T, show.icc = T, p.style = "stars")
-```
 
 ### Plot Margins
 
