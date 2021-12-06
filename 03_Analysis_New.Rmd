@@ -271,17 +271,10 @@ This is a cross-level interaction as macro moderator affects the micro associati
 Create a wrapper for lmer models
 ```{r}
 
-mod_models <- function(df, dv, main_iv, value_var, add_vars=NULL, return_tab = TRUE, ...) {
-    if (is.null(add_vars)){
-        df_new <- df %>%
+mod_models <- function(df, dv, main_iv, value_var, return_mod=FALSE, ...) {
+    df_new <- df %>%
           select(iso3c, wave, dv, main_iv, value_var)
-    }
-    else {
-        df_new <- df %>%
-          select(iso3c, wave, dv, main_iv, value_var, all_of(add_vars))
-    }
-    
-
+   
     ## baseline model
     m00 <- lmer(get(dv) ~  1 + get(main_iv)+ (1 | iso3c) + (1 | wave), data = df_new)
     # with main effects
@@ -292,35 +285,71 @@ mod_models <- function(df, dv, main_iv, value_var, add_vars=NULL, return_tab = T
     # moderation
     m03 <- lmer(get(dv) ~  1 + get(main_iv) + get(value_var) + get(value_var)*get(main_iv)  + 
                   (1 | iso3c) + (1 | wave), data = df_new) 
-    ## moderation with additional variables
-    if (!is.null(add_vars)) {
-        m04 <- lmer(get(dv) ~  1 + get(main_iv) + get(value_var) + get(value_var)*get(main_iv)  + 
-                  (1 | iso3c) + (1 | wave) + ., data = df_new)
-         tab_temp <- tab_model(m00, m01, m02, m03, m04, show.ci = F, show.aic = T, 
-                               show.loglik = T, show.icc = T, p.style = "stars", ...)
+    
+    if (return_mod == TRUE ) {
+        return(m01,m02,m03)
     }
+
     else {
         tab_temp <- tab_model(m00, m01, m02, m03, show.ci = F, show.aic = T, 
                                show.loglik = T, show.icc = T, p.style = "stars", ...)
+        return(tab_temp)
+
     }
-    
-    
-  
-    return(tab_temp)
+        
 }
 
-## Test the function. It works!
-
-tab <- mod_models(df_na, "gov_redist", "incdiff_large", "cpiZ")
 ```
 
 Try three different "value" variables
 
 ```{r}
-tab_cpi <- mod_models(df_na, "gov_redist", "incdiff_large", "cpiZ")
-tab_liberal <- mod_models(df_na, "gov_redist", "incdiff_large", "liberal_redist")
-tab_confidence <- mod_models(df_na, "gov_redist", "incdiff_large", "confidence_gov")
 
+tab_cpi <- mod_models(df_na, "gov_redist", "incdiff_large", "cpiZ", dv.labels = c("M1", "M2", "M3","M4"),
+           pred.labels = c("Intercept", "incdiff_large", "cpiZ", "incdiff_large*cpiZ")) ## low level of abstraction
+tab_conf <- mod_models(df_na, "gov_redist", "incdiff_large", "confidence_gov",dv.labels = c("M1", "M2", "M3","M4"),
+           pred.labels = c("Intercept", "incdiff_large", "conf", "incdiff_large*conf")) ## medium level of abstraction
+tab_lib <- mod_models(df_na, "gov_redist", "incdiff_large", "liberal_redist",dv.labels = c("M1", "M2", "M3","M4"),
+           pred.labels = c("Intercept", "incdiff_large", "lib", "incdiff_large*lib")) ## high level of abstraction
+
+```
+
+```{r}
+knitr::knit_print(tab_cpi)
+knitr::knit_print(tab_conf)
+knitr::knit_print(tab_lib)
+
+```
+
+Correlation table of the three value variables
+
+```{r}
+df_libvars <- df_na[,c("cpiZ", "confidence_gov", "liberal_redist")]
+cor_mat <- cor(df_libvars, use = "complete.obs")
+round(cor_mat,2)
+```
+Correlation table of value variables + other control variables
+
+```{r}
+df_cvars <- df_na[,c("cpiZ", "confidence_gov", "liberal_redist","regime", "socx", "gdp_pc_10k")]
+cor_mat_2 <- cor(df_cvars, use = "complete.obs")
+round(cor_mat_2, 2)
+```
+
+M03 models with control variables. Regime and gdp_pc_10k are highly correlated. One would cancel out the effect of another. 
+
+```{r}
+mwc_01 <- lmer(gov_redist ~  1 + incdiff_large + cpiZ + cpiZ*incdiff_large  + 
+                  (1 | iso3c) + (1 | wave) + regime + socx, data = df_na) 
+mwc_02 <- lmer(gov_redist ~  1 + incdiff_large + confidence_gov + confidence_gov*incdiff_large  + 
+                  (1 | iso3c) + (1 | wave) + regime + socx, data = df_na) 
+
+mwc_03 <- lmer(gov_redist ~  1 + incdiff_large + liberal_redist + liberal_redist*incdiff_large  + 
+                  (1 | iso3c) + (1 | wave) + regime + socx, data = df_na) 
+```
+
+```{r}
+tab_model(mwc_01, mwc_02,mwc_03)
 ```
 
 
