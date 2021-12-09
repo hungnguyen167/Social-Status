@@ -323,14 +323,14 @@ knitr::knit_print(tab_lib)
 
 Correlation table of the three value variables
 
-```{r}
+```{r cor_1}
 df_libvars <- df_na[,c("cpiZ", "confidence_gov", "liberal_redist")]
 cor_mat <- cor(df_libvars, use = "complete.obs")
 round(cor_mat,2)
 ```
 Correlation table of value variables + other control variables
 
-```{r}
+```{r cor_2}
 df_cvars <- df_na[,c("cpiZ", "confidence_gov", "liberal_redist","regime", "socx", "gdp_pc_10k")]
 cor_mat_2 <- cor(df_cvars, use = "complete.obs")
 round(cor_mat_2, 2)
@@ -338,7 +338,7 @@ round(cor_mat_2, 2)
 
 M03 models with control variables. Regime and gdp_pc_10k are highly correlated. One would cancel out the effect of another. 
 
-```{r}
+```{r wc}
 mwc_01 <- lmer(gov_redist ~  1 + incdiff_large + cpiZ + cpiZ*incdiff_large  + 
                   (1 | iso3c) + (1 | wave) + regime + socx, data = df_na) 
 mwc_02 <- lmer(gov_redist ~  1 + incdiff_large + confidence_gov + confidence_gov*incdiff_large  + 
@@ -348,8 +348,16 @@ mwc_03 <- lmer(gov_redist ~  1 + incdiff_large + liberal_redist + liberal_redist
                   (1 | iso3c) + (1 | wave) + regime + socx, data = df_na) 
 ```
 
+Print out the table
 ```{r}
-tab_model(mwc_01, mwc_02,mwc_03)
+tab_wc <- tab_model(mwc_01, mwc_02,mwc_03)
+knitr::knit_print(tab_wc)
+```
+
+Let's see how it would work with a Bayesian setting
+
+```{r bayes}
+
 ```
 
 
