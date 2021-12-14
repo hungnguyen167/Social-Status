@@ -39,10 +39,11 @@ summary(m01)
 
 ```{r corall, message = F, warning = F}
 #create plot with regression line and regression equation and r^2
-mmmPOOLED <- ggplot(data=df, aes(x=incdiff_large, y=gov_redist, color = as.character(wave))) +
-  scale_color_manual( breaks = c("1987", "1992", "1999", "2009", "2019"),
-                        values = c("#B8DE29FF", "#29AF7FFF", "#2D708EFF", "#453781FF", "#440154FF")) +
-        geom_smooth(method="lm") +
+mmmPOOLED <- ggplot() + geom_smooth(data=df, aes(x=incdiff_large, y=gov_redist, color = as.character(wave)), size=1, se=F, method="lm", linetype=0) +
+  geom_smooth(data=df, aes(x=incdiff_large, y=gov_redist, color = "Pooled"),se=T, size=1, method="lm") +
+  scale_color_manual( breaks = c("1987", "1992", "1999", "2009", "2019","Pooled"),
+                        values = c("#B8DE29FF", "#29AF7FFF", "#2D708EFF", "#453781FF", "#440154FF","#c83349ff")) +
+        
         #geom_point() +
         xlim(1,5) + # make both axes the same for easier visualization
         ylim(1,5) +
@@ -58,12 +59,12 @@ mmmPOOLED <- ggplot(data=df, aes(x=incdiff_large, y=gov_redist, color = as.chara
         theme_classic2() +
         theme(
           axis.title = element_text(size = 8)
-        )
+        ) 
 
 mmmPOOLED +
-  theme(
-    axis.title = element_text(size = 12)
-  )
+  theme( axis.title = element_text(size = 12), 
+    legend.position="none")
+
 
 ```
 
