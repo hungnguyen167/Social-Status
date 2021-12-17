@@ -49,10 +49,10 @@ wvs <- wvs %>% # create an interpolated version of wvs variables that takes the 
 
 # one WVS with original values, one with imputed values (different merge variables)
 wvs_2 <- wvs %>%
-  select(iso3c, year, liberal_ix, liberal_redist_ix, confidence_gov_ix)
+  dplyr::select(iso3c, year, liberal_ix, liberal_redist_ix, confidence_gov_ix)
 
 wvs <- wvs %>%
-  select(-c(year, liberal_ix, liberal_redist_ix, confidence_gov_ix))
+  dplyr::select(-c(year, liberal_ix, liberal_redist_ix, confidence_gov_ix))
 
 # Institutional Logic - welfare state penetration
 #gwip <- 
@@ -60,20 +60,45 @@ wvs <- wvs %>%
 # GDP and Democracy v Authoritarian from V-Dem (some interpolation, see Breznau and Lanver 2021)
 gdp <- read_csv(here::here("data","vdem_gdp_pc_INTERPOLATED_consolidated.csv")) %>%
   mutate(iso3c = iso3) %>%
-  select(-c(iso3, cow_code, country_name))
+  dplyr::select(-c(iso3, cow_code, country_name))
 regime <- read_csv(here::here("data","vdem_regime__INTERPOLATED_consolidated.csv")) %>%
   mutate(iso3c = iso3) %>%
-  select(-c(iso3, cow_code, country_name))
+  dplyr::select(-c(iso3, cow_code, country_name))
 
 regime <- regime %>% # impute means by country
   group_by(iso3c) %>%
   mutate(regime_ix = mean(regime, na.rm = T),
          regime_i = ifelse(is.na(regime), regime_ix, regime)) %>%
   ungroup() %>%
-  select(-regime_ix)
+  dplyr::select(-regime_ix)
   
 # Corruption perceptions
 crpt <- read_csv(here::here("data","crpt.csv"))
+
+# Immigration
+immigration_wb <- read_csv(here::here("data","API_SM.POP.TOTL.ZS_DS2_en_csv_v2_3363225.csv"), skip = 4, col_select = -c("Country Name","Indicator Name","Indicator Code"))
+
+immigration_wb <- immigration_wb %>%
+  mutate(iso3c = `Country Code`) %>%
+  dplyr::select(-`Country Code`)
+
+colnames(immigration_wb)[1:61] <- paste0("pct_fb_W",colnames(immigration_wb)[1:61])
+
+imm_long <- reshape(as.data.frame(immigration_wb), sep = "_W", times = c(1960:2020), idvar = "iso3c", direction = "long", varying = list(1:61), timevar = "year")
+
+# fill in average scores between observations
+imm_long <- imm_long[2:4]
+imm_long <- imm_long %>%
+  group_by(iso3c) %>%
+  mutate(pct_fb = ifelse(year == 1960, 0, pct_fb_W1960),
+         pct_fb = ifelse(year == 2015 & is.na(pct_fb), lag(pct_fb, 5), pct_fb),
+         pct_fb = ifelse(year == 2020, lag(pct_fb, 5), pct_fb),
+         pct_fb_front = zoo::na.locf(pct_fb, fromLast = F, na.rm = T),
+         pct_fb_back = zoo::na.locf(pct_fb, fromLast = T, na.rm = T)) %>%
+  rowwise() %>%
+  mutate(pct_fb_i = mean(c(pct_fb_back,pct_fb_front), na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::select(iso3c, year, pct_fb_i)
 
 ```
 
@@ -109,7 +134,8 @@ gini <- rbind(gini, gini_19, gini_20)
 
 df <- df %>%
   left_join(gini, by = c("iso3c","year")) %>%
-  left_join(socx, by = c("iso3c","year")) 
+  left_join(socx, by = c("iso3c","year")) %>%
+  left_join(imm_long, by = c("iso3c", "year"))
 
 
 df <- df %>%
@@ -134,6 +160,7 @@ df <- df %>%
 
 
 rm(gini,socx,crpt)
+rm(imm_long)
 ```
 
 
@@ -156,7 +183,7 @@ df <- df %>%
          liberal_i = ifelse(is.na(liberal), liberal_ix, liberal),
          liberal_redist_i = ifelse(is.na(liberal_redist), liberal_redist_ix, liberal_redist),
          confidence_gov_i = ifelse(is.na(confidence_gov), confidence_gov_ix, confidence_gov)) %>%
-  select(-c(confidence_gov_ix, liberal_ix, liberal_redist_ix))
+  dplyr::select(-c(confidence_gov_ix, liberal_ix, liberal_redist_ix))
 
 df_na <- df %>%
   subset(!is.na(incdiff) & !is.na(inclarge))
@@ -201,7 +228,7 @@ df_na <- df_na %>%
 
 # create a macro-level dataset
 df_macro <- df_na %>%
-  select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, socx_perhead, cpi15_20, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, filled_vdem_gdp_interpol, regime, gap_no_gov, gov_redist_agree, incdiff_large_agree, pct_sample_tertiary, pct_sample_65older) %>%
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, socx_perhead, cpi15_20, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, filled_vdem_gdp_interpol, regime, gap_no_gov, gov_redist_agree, incdiff_large_agree, pct_sample_tertiary, pct_sample_65older, pct_fb_i) %>%
   group_by(iso3c, wave) %>%
   summarise_all(mean, na.rm = T) %>%
   ungroup()

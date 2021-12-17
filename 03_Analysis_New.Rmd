@@ -208,7 +208,7 @@ df_macro <- df_macro %>%
          noconf_govZ_hi = ifelse(!is.na(liberal_high), noconf_govZ, NA),
          gdp_lo = ifelse(!is.na(liberal_low), gdp_pc_10k, NA),
          gdp_hi = ifelse(!is.na(liberal_high), gdp_pc_10k, NA)) %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, liberal, liberal_i, liberal_high, liberal_low, liberal_all, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i_i, cpi15_20, cpi15_20_i, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_all, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i_i, cpi15_20, cpi15_20_i, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
 
 # add variance objects, defunkt
 cpiZ_var <- as.numeric(var(df_macro$cpiZ, na.rm = T))
@@ -223,7 +223,8 @@ df_na <- df_na %>%
   ungroup()
 
 df_na <- df_na %>%
-  mutate(incdiff_large_w = incdiff_large - incdiff_large_b)
+  mutate(incdiff_large_w = incdiff_large - incdiff_large_b,
+         iso3c_wave = paste(iso3c,wave, sep = "_"))
 
 ```
 
@@ -385,168 +386,170 @@ mod_models <- function(df, dv, main_iv, value_var, return_mod=FALSE, ...) {
 
 # all models, make sure the model with the MOST variables is last
 # using "get(x)" here doesn't work because the variables names are  wrong for postestimation commands, do by hand
+```
 
-
+### All Plausible Models
+```{r}
 ### These do not need to be in the list, they don't have interactions, only for model fit comparison
 
 ## Original (no "i")
 
-M2.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + (1 | iso3c) + (1 | wave), data = df_na)
+M2.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M2.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + (1 | iso3c) + (1 | wave), data = df_na)
+M2.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M2.03 <- lmer(gov_redist ~ incdiff_large + libZ + (1 | iso3c) + (1 | wave), data = df_na)
+M2.03 <- lmer(gov_redist ~ incdiff_large + libZ + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
 ## Imputed ("i")
 
-M2.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + (1 | iso3c) + (1 | wave), data = df_na)
+M2.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M2.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + (1 | iso3c) + (1 | wave), data = df_na)
+M2.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M2.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + (1 | iso3c) + (1 | wave), data = df_na)
+M2.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
 ## Original within/between
-M2.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + (1 | iso3c) + (1 | wave), data = df_na)
+M2.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M2.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + (1 | iso3c) + (1 | wave), data = df_na)
+M2.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M2.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + (1 | iso3c) + (1 | wave), data = df_na)
+M2.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
 ## Imputed within/between
 
-M2.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + (1 | iso3c) + (1 | wave), data = df_na)
+M2.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M2.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + (1 | iso3c) + (1 | wave), data = df_na)
+M2.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M2.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + (1 | iso3c) + (1 | wave), data = df_na)
+M2.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
 # random-slope for incdiff_large by country
-M3.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + (incdiff_large | iso3c) + (1 | wave), data = df_na)
+M3.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + (incdiff_large | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M3.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + (incdiff_large | iso3c) + (1 | wave), data = df_na)
+M3.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + (incdiff_large | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M3.03 <- lmer(gov_redist ~ incdiff_large + libZ + (incdiff_large | iso3c) + (1 | wave), data = df_na)
+M3.03 <- lmer(gov_redist ~ incdiff_large + libZ + (incdiff_large | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M3.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + (incdiff_large | iso3c) + (1 | wave), data = df_na)
+M3.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + (incdiff_large | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M3.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + (incdiff_large | iso3c) + (1 | wave), data = df_na)
+M3.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + (incdiff_large | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M3.05i <- lmer(gov_redist ~ incdiff_large + libZ_i + (incdiff_large | iso3c) + (1 | wave), data = df_na)
+M3.05i <- lmer(gov_redist ~ incdiff_large + libZ_i + (incdiff_large | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M3.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + (incdiff_large_w | iso3c) + (1 | wave), data = df_na)
+M3.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + (incdiff_large_w | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M3.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + (incdiff_large_w | iso3c) + (1 | wave), data = df_na)
+M3.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + (incdiff_large_w | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M3.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + (incdiff_large_w | iso3c) + (1 | wave), data = df_na)
+M3.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + (incdiff_large_w | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M3.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + (incdiff_large_w | iso3c) + (1 | wave), data = df_na)
+M3.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + (incdiff_large_w | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M3.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + (incdiff_large_w | iso3c) + (1 | wave), data = df_na)
+M3.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + (incdiff_large_w | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M3.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + (incdiff_large_w | iso3c) + (1 | wave), data = df_na)
+M3.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + (incdiff_large_w | iso3c) + (1 | iso3c_wave), data = df_na)
 
 # interaction models for plotting
-M_4.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + (1 | iso3c) + (1 | wave), data = df_na)
+M_4.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
 ### socx control
 
-M_5.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_5.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_5.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_5.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_5.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_5.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_5.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_5.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_5.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_5.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_5.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_5.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + socx + (1 | iso3c) + (1 | wave), data = df_na)
+M_5.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
 ## gini
 
-M_6.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_6.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_6.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_6.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_6.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_6.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_6.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_6.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_6.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_6.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_6.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_6.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | wave), data = df_na)
+M_6.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
 # gdp
 
-M_7.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_7.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_7.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_7.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_7.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_7.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_7.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_7.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_7.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_7.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_7.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_7.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | wave), data = df_na)
+M_7.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
 model_list <- mget(ls(pattern = "M_"))
 ```
@@ -622,7 +625,7 @@ df_margins[m, "Model"] <- rownames(df_x)
 
 df_margins[2:ncol(df_margins)] <- round(df_margins[2:ncol(df_margins)], 4)
 
-# margins command takes too long, although it gives AMEs, but we don't need them here
+# we should compare with AMEs, they might be very different results
 #test <- margins(M_4.1, at = list(incdiff_large = c(3,4),
 #                                 noconf_govZ = c(-1,1)))
 
