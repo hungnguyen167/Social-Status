@@ -79,7 +79,7 @@ kable_styling(tab1)
 ```
 ### Table 2. Descriptives w/ Question Wording
 
-```{r}
+```{r wording}
 liberal_redist_label <- "Government should take more responsibility to ensure that everyone is provided for [versus] People should take more responsibility to provide for themselves"
 liberal_label <- "Private ownership of business and industry should be increased [versus] government ownership..."
 confidence_gov_label <- "I am going to name a number of organizations. For each one, could you tell me how much confidence you have in them: is it a great deal of confidence, quite a lot of confidence, not very much confidence or none at all? [the government]"
@@ -124,130 +124,15 @@ Theory: individuals have values or follow norms about how much the government sh
 
 Hypothesis: In countries where the government does less redistribution or has a weaker welfare state, the correlation between perceptions of the income gap and the idea that the government is responsible for doing something about it will be smaller.
 
-#### Setup Fig
 
-```{r figx}
-# get all correlations
-
-c_corrs = df_na %>% # have to use equal sign here because it is a function
-  subset(!is.na(gov_redist) & !is.na(incdiff_large)) %>% # remove missing cases
-  group_by(iso3c, wave) %>% # group by country-wave
-  mutate(gov_redist_Z = scale(gov_redist),
-         incdiff_large_Z = scale(incdiff_large)) %>%
-  do(model = lm(gov_redist_Z ~ incdiff_large_Z, data = .)) #run regression for each country
-
-for (j in 1:96) {
-c_corrs$corr[j] <- c_corrs[[3]][[j]][["coefficients"]][2]
-}
-
-c_corrs <- dplyr::select(c_corrs, -model)
-# merge with df_macro
-df_macro <- left_join(df_macro, c_corrs, by = c("iso3c", "wave"))
-
-# for plotting lines of best fit
-
-
-# first fill in a few missing gdp
-df_macro <- df_macro %>%
-  group_by(iso3c) %>%
-  mutate(gdp_mean = mean(gdp_pc_10k, na.rm = T),
-         gdp_i = ifelse(is.na(gdp_pc_10k), gdp_mean, gdp_pc_10k)) %>%
-  ungroup()
-
-# create a variable with all values in one, and then split by high and middle income countries
-# need to find a way to adjust for economic growth and unblanaced time points for calculating GDP
-
-df_macro <- df_macro %>%
-  mutate(liberal_all = ifelse(!is.na(liberal), liberal, liberal_i),
-         liberal_high = ifelse(wave < 2009 & gdp_i > 2.5, liberal_all, NA),
-         liberal_high = ifelse(wave >= 2009 & gdp_i > 3.3, liberal_all, liberal_high),
-         liberal_high = ifelse(iso3c %in% c("NZL","JPN","DNK","GBR","CHE","AUT", "FIN","DEU"), liberal_all, liberal_high), # selection criteria performs poorly, do rest by hand here
-         liberal_low = ifelse(is.na(liberal_high), liberal_all, NA),
-         liberal_low = ifelse(iso3c %in% c("HRV","CYP","ITA","SVN","CZE"), NA, liberal_low)) # remove some questionable cases
-
-# for plotting corruption, generate small variation in CPI for years prior to 2015
-#make a predicted confidence_gov variable
-m_conf <- lm(confidence_gov_i ~ gdp_pc_10k + socx + cpi15_20, data = df_macro)
-
-df_macro$confidence_gov_i_lm <- predict.lm(m_conf, newdata = df_macro)
-
-df_macro <- df_macro %>%
-  mutate(cpi15_20 = ifelse(iso3c == "DNK", 90, cpi15_20),
-         confidence_gov_i_i = ifelse(is.na(confidence_gov), confidence_gov_i_lm, confidence_gov_i))
-
-# make small disturbances to the cpi using the confidence in gov within-country variance
-df_macro <- df_macro %>%
-  mutate(cpi15_20_x = (cpi15_20*confidence_gov_i_i)/2)
-
-m_cpi <- lm(cpi15_20_x ~ factor(iso3c) + confidence_gov_i_i, data = df_macro)
-
-df_macro$cpi15_20_ix <- predict.lm(m_cpi, newdata = df_macro)
-
-m_cpi2 <- lm(cpi15_20 ~ cpi15_20_x, data = df_macro)
-
-df_macro$cpi15_20_ixx <- predict.lm(m_cpi2, newdata = df_macro)
-
-df_macro <- df_macro %>%
-  mutate(cpi15_20_i = ifelse(!is.na(cpi15_20), cpi15_20, cpi15_20_ixx),
-         cpiZ_i = -1*as.numeric(scale(cpi15_20_i)), # make higher scores = more corrupt percept
-         cpiZ = -1*as.numeric(scale(cpi15_20)),
-         libZ_i = as.numeric(scale(liberal_redist_i)),
-         libZ = as.numeric(scale(liberal_redist)),
-         noconf_govZ_i = -1*as.numeric(scale(confidence_gov_i_i)),
-         noconf_govZ = -1*as.numeric(scale(confidence_gov)))
-
-# make high and low corruption perceptions and noconf
-df_macro <- df_macro %>%
-  mutate(noconf_govZ_i = ifelse(noconf_govZ_i < -2, -2, noconf_govZ_i), # two far outliers
-         noconf_govZ_i = ifelse(noconf_govZ_i > 2, 2, noconf_govZ_i),
-         noconf_govZ = ifelse(noconf_govZ < -2, -2, noconf_govZ),
-         noconf_govZ = ifelse(noconf_govZ > 2, 2, noconf_govZ),
-         cpi_low = ifelse(!is.na(liberal_low), cpiZ, NA),
-         cpi_high = ifelse(!is.na(liberal_high), cpiZ, NA),
-         noconf_govZ_low = ifelse(!is.na(liberal_low), noconf_govZ, NA),
-         noconf_govZ_hi = ifelse(!is.na(liberal_high), noconf_govZ, NA),
-         gdp_lo = ifelse(!is.na(liberal_low), gdp_pc_10k, NA),
-         gdp_hi = ifelse(!is.na(liberal_high), gdp_pc_10k, NA)) %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_all, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i_i, cpi15_20, cpi15_20_i, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
-
-# add variance objects, defunkt
-cpiZ_var <- as.numeric(var(df_macro$cpiZ, na.rm = T))
-confidence_gov_var <- var(df_macro$noconf_govZ, na.rm = T)
-liberal_redist_var <- var(df_macro$libZ, na.rm = T)
-dv_var <- var(df_na$gov_redist, na.rm = T)
-
-# create within and between values
-df_na <- df_na %>%
-  group_by(iso3c,wave) %>%
-  mutate(incdiff_large_b = mean(incdiff_large, na.rm = T)) %>%
-  ungroup()
-
-df_na <- df_na %>%
-  mutate(incdiff_large_w = incdiff_large - incdiff_large_b,
-         iso3c_wave = paste(iso3c,wave, sep = "_"))
-
-```
-
-
-```{r prep_data}
-df_na <- df_na %>%
-  dplyr::select(-c(gini_disp, socx)) 
-
-df_macro <- as.data.frame(df_macro)
-
-df_macro_m <- df_macro %>%
-  dplyr::select(iso3c, wave, cpiZ, cpiZ_i, libZ, libZ_i, gdp_pc_10k, gini_disp, socx, noconf_govZ, noconf_govZ_i)
-
-df_na <- df_na %>%
-  left_join(df_macro_m, by = c("iso3c", "wave"))
-```
 #### Plot Liberal Corr
 
 ```{r figx2}
 #agg_png(here::here("results","Fig2.png"), res = 144, height = 800, width = 1000)
 Fig2.1 <- df_macro %>%
   ggplot() +
-  geom_text(aes(y = corr, x = liberal, label = iso3c), color = "black", size = 3) +
+  geom_text(aes(y = corr, x = liberal_high, label = iso3c), color = "#20A387FF", size = 3) +
+  geom_text(aes(y = corr, x = liberal_low, label = iso3c), color = "midnightblue", size = 3) +
   geom_text(aes(y = corr, x = liberal_i, label = iso3c), color = "grey", size = 2) +
   geom_smooth(aes(y = corr, x = liberal_all), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
   geom_smooth(aes(y = corr, x = liberal_high), method = 'lm', se = F, color = "#20A387FF") +
@@ -659,10 +544,10 @@ j = ifelse(m %in% c(seq(from = 1, to = 100, by = 6)), "noconf_govZ",
 
   df_margins[m, "coef_delta"] <- df_margins[m, "coef_hi"] - df_margins[m, "coef_lo"]
   df_margins[m, "coef_se"] <- margs[1, "std.error"]
-  # use 4* SE under the assumption that two standard errors should not cross the effect, and that this should be true for both coefficients (the standard errors are not that different across the spectrum so just using the first one should be fine)
-  df_margins[m, "coef_lo95"] <-  df_margins[m, "coef_delta"] - (4*(margs[m, "std.error"] ))
-  df_margins[m, "coef_hi95"] <-  df_margins[m, "coef_delta"] + (4*(margs[m, "std.error"]))
- df_margins[m, "main_iv"] <- j
+
+  df_margins[m, "coef_lo95"] <-  df_margins[m, "coef_delta"] - (1.96*(df_margins[m, "coef_se"] ))
+  df_margins[m, "coef_hi95"] <-  df_margins[m, "coef_delta"] + (1.96*(df_margins[m, "coef_se"]))
+  df_margins[m, "main_iv"] <- j
 }
 
 
@@ -699,7 +584,7 @@ df_margins$count <- seq.int(nrow(df_margins))
 
 ```{r fig1_main}
 # for plotting a circle
-dat = data.frame(x=runif(1), y=runif(1))
+#dat = data.frame(x=runif(1), y=runif(1))
 
 #agg_png(filename = here::here("results/Fig1.png"), width = 800, height = 500, res = 144)
 
@@ -713,7 +598,7 @@ ggplot() +
 
 
 
-
+################# Ignore this code, its for reminder
 #+ 
   geom_point(aes(x = count, y = est_sig_scl, color = sig_group), shape = "|", size = 3) +
   scale_color_manual(values = c("#E6AB02","NA", "#7570B3"), labels = c("Negative","Not sig.","Positive"," ")) +

@@ -298,6 +298,129 @@ df_macro <- df_macro %>%
          confidence_gov_i = ifelse(is.na(confidence_gov), confidence_gov_i, confidence_gov),
          liberal_redist_i = ifelse(is.na(liberal_redist), liberal_redist_i, liberal_redist))
 
+#### Setup Fig
+```
+
+
+
+```{r figx}
+# get all correlations
+
+c_corrs = df_na %>% # have to use equal sign here because it is a function
+  subset(!is.na(gov_redist) & !is.na(incdiff_large)) %>% # remove missing cases
+  group_by(iso3c, wave) %>% # group by country-wave
+  mutate(gov_redist_Z = scale(gov_redist),
+         incdiff_large_Z = scale(incdiff_large)) %>%
+  do(model = lm(gov_redist_Z ~ incdiff_large_Z, data = .)) #run regression for each country
+
+for (j in 1:96) {
+c_corrs$corr[j] <- c_corrs[[3]][[j]][["coefficients"]][2]
+}
+
+c_corrs <- dplyr::select(c_corrs, -model)
+# merge with df_macro
+df_macro <- left_join(df_macro, c_corrs, by = c("iso3c", "wave"))
+
+# for plotting lines of best fit
+
+
+# first fill in a few missing gdp
+df_macro <- df_macro %>%
+  group_by(iso3c) %>%
+  mutate(gdp_mean = mean(gdp_pc_10k, na.rm = T),
+         gdp_i = ifelse(is.na(gdp_pc_10k), gdp_mean, gdp_pc_10k)) %>%
+  ungroup()
+
+# create a variable with all values in one, and then split by high and middle income countries
+# need to find a way to adjust for economic growth and unblanaced time points for calculating GDP
+
+df_macro <- df_macro %>%
+  mutate(liberal_all = ifelse(!is.na(liberal), liberal, liberal_i),
+         liberal_high = ifelse(wave < 2009 & gdp_i > 2.5, liberal_all, NA),
+         liberal_high = ifelse(wave >= 2009 & gdp_i > 3.3, liberal_all, liberal_high),
+         liberal_high = ifelse(iso3c %in% c("NZL","JPN","DNK","GBR","CHE","AUT", "FIN","DEU"), liberal_all, liberal_high), # selection criteria performs poorly, do rest by hand here
+         liberal_low = ifelse(is.na(liberal_high), liberal_all, NA),
+         liberal_low = ifelse(iso3c %in% c("HRV","CYP","ITA","SVN","CZE"), NA, liberal_low)) # remove some questionable cases
+
+# for plotting corruption, generate small variation in CPI for years prior to 2015
+#make a predicted confidence_gov variable
+m_conf <- lm(confidence_gov_i ~ gdp_pc_10k + socx + cpi15_20, data = df_macro)
+
+df_macro$confidence_gov_i_lm <- predict.lm(m_conf, newdata = df_macro)
+
+df_macro <- df_macro %>%
+  mutate(cpi15_20 = ifelse(iso3c == "DNK", 90, cpi15_20),
+         confidence_gov_i_i = ifelse(is.na(confidence_gov), confidence_gov_i_lm, confidence_gov_i))
+
+# make small disturbances to the cpi using the confidence in gov within-country variance
+df_macro <- df_macro %>%
+  mutate(cpi15_20_x = (cpi15_20*confidence_gov_i_i)/2)
+
+m_cpi <- lm(cpi15_20_x ~ factor(iso3c) + confidence_gov_i_i, data = df_macro)
+
+df_macro$cpi15_20_ix <- predict.lm(m_cpi, newdata = df_macro)
+
+m_cpi2 <- lm(cpi15_20 ~ cpi15_20_x, data = df_macro)
+
+df_macro$cpi15_20_ixx <- predict.lm(m_cpi2, newdata = df_macro)
+
+df_macro <- df_macro %>%
+  mutate(cpi15_20_i = ifelse(!is.na(cpi15_20), cpi15_20, cpi15_20_ixx),
+         cpiZ_i = -1*as.numeric(scale(cpi15_20_i)), # make higher scores = more corrupt percept
+         cpiZ = -1*as.numeric(scale(cpi15_20)),
+         libZ_i = as.numeric(scale(liberal_redist_i)),
+         libZ = as.numeric(scale(liberal_redist)),
+         noconf_govZ_i = -1*as.numeric(scale(confidence_gov_i_i)),
+         noconf_govZ = -1*as.numeric(scale(confidence_gov)))
+
+# make high and low corruption perceptions and noconf
+df_macro <- df_macro %>%
+  mutate(noconf_govZ_i = ifelse(noconf_govZ_i < -2, -2, noconf_govZ_i), # two far outliers
+         noconf_govZ_i = ifelse(noconf_govZ_i > 2, 2, noconf_govZ_i),
+         noconf_govZ = ifelse(noconf_govZ < -2, -2, noconf_govZ),
+         noconf_govZ = ifelse(noconf_govZ > 2, 2, noconf_govZ),
+         cpi_low = ifelse(!is.na(liberal_low), cpiZ, NA),
+         cpi_high = ifelse(!is.na(liberal_high), cpiZ, NA),
+         noconf_govZ_low = ifelse(!is.na(liberal_low), noconf_govZ, NA),
+         noconf_govZ_hi = ifelse(!is.na(liberal_high), noconf_govZ, NA),
+         gdp_lo = ifelse(!is.na(liberal_low), gdp_pc_10k, NA),
+         gdp_hi = ifelse(!is.na(liberal_high), gdp_pc_10k, NA)) %>%
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_all, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i_i, cpi15_20, cpi15_20_i, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
+
+# add variance objects, defunkt
+cpiZ_var <- as.numeric(var(df_macro$cpiZ, na.rm = T))
+confidence_gov_var <- var(df_macro$noconf_govZ, na.rm = T)
+liberal_redist_var <- var(df_macro$libZ, na.rm = T)
+dv_var <- var(df_na$gov_redist, na.rm = T)
+
+# create within and between values
+df_na <- df_na %>%
+  group_by(iso3c,wave) %>%
+  mutate(incdiff_large_b = mean(incdiff_large, na.rm = T)) %>%
+  ungroup()
+
+df_na <- df_na %>%
+  mutate(incdiff_large_w = incdiff_large - incdiff_large_b,
+         iso3c_wave = paste(iso3c,wave, sep = "_"))
+
+```
+
+
+```{r prep_data}
+df_na <- df_na %>%
+  dplyr::select(-c(gini_disp, socx)) 
+
+df_macro <- as.data.frame(df_macro)
+
+df_macro_m <- df_macro %>%
+  dplyr::select(iso3c, wave, cpiZ, cpiZ_i, libZ, libZ_i, gdp_pc_10k, gini_disp, socx, noconf_govZ, noconf_govZ_i)
+
+df_na <- df_na %>%
+  left_join(df_macro_m, by = c("iso3c", "wave"))
+```
+
+```{r save}
+
 # full data file
 saveRDS(df, file = here::here("data","df.RDS"))
 # with missing cases removed
