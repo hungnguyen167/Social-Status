@@ -53,9 +53,9 @@ knitr::opts_chunk$set(message = F, warning = F)
 
 
 ```{r load dfs}
-df <- readRDS(here::here("data","df.RDS"))
+#df <- readRDS(here::here("data","df.RDS"))
 df_na <- readRDS(here::here("data", "df_na.RDS"))
-df_macro <- readRDS(here::here("data", "df_macro.RDS"))
+#df_macro <- readRDS(here::here("data", "df_macro.RDS"))
 
 ```
 
@@ -274,10 +274,11 @@ mod_models <- function(df, dv, main_iv, value_var, return_mod=FALSE, ...) {
 ```
 
 ### All Plausible Models
-```{r}
-### These do not need to be in the list, they don't have interactions, only for model fit comparison
 
-## Original (no "i")
+#### Not for specification curve, no interaction
+
+These do not need to be in the list, they don't have interactions, only for model fit comparison
+
 
 M2.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
@@ -333,407 +334,75 @@ M3.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + (incd
 
 M3.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + (incdiff_large_w | iso3c) + (1 | iso3c_wave), data = df_na)
 
-# interaction models for plotting
-M_4.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
 
-M_4.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
+#### Moderation models, for specification curve
 
-M_4.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
+Selection point. If we've run the models and the margins command before then this will not be necessary. 
 
-M_4.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
+NOTE: that if we make changes to the models we have to turn off the selector and re-run, or delete the df_ame file, or the if selection won't work!
 
-M_4.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
+```{r ameload}
+if (file.exists(here::here("data", "df_ame.RDS"))) { 
+  # select if this margins datafile is already there
 
-M_4.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
+   df_ame <- readRDS(here::here("data", "df_ame.RDS"))
 
-M_4.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
+    } else 
+ { source(here::here("data", "Models_nomain.R"))
+   model_list <- mget(ls(pattern = "M_"))
+   #model_list_lm <- mget(ls(pattern = "L_"))
+#########
+   # Compile all M_ models margins (multilevel)   
+   df_ame <- as.data.frame(matrix(nrow = length(model_list), ncol = 3))
 
-M_4.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_4.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_4.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_4.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_4.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-### socx control
-
-M_5.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_5.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_5.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_5.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_5.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_5.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_5.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_5.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_5.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_5.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_5.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_5.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + socx + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-## gini
-
-M_6.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_6.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_6.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_6.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_6.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_6.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_6.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_6.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_6.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_6.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_6.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_6.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + gini_disp + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-# gdp
-
-M_7.01 <- lmer(gov_redist ~ incdiff_large + noconf_govZ + noconf_govZ*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_7.02 <- lmer(gov_redist ~ incdiff_large + cpiZ + cpiZ*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_7.03 <- lmer(gov_redist ~ incdiff_large + libZ + libZ*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_7.04i <- lmer(gov_redist ~ incdiff_large + noconf_govZ_i + noconf_govZ_i*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_7.05i <- lmer(gov_redist ~ incdiff_large + cpiZ_i + cpiZ_i*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_7.06i <- lmer(gov_redist ~ incdiff_large + libZ_i + libZ_i*incdiff_large + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_7.07wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ + noconf_govZ*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_7.08wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ + cpiZ*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_7.09wb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ + libZ*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_7.10iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_7.11iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + cpiZ_i + cpiZ_i*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-M_7.12iwb <- lmer(gov_redist ~ incdiff_large_b + incdiff_large_w + libZ_i + libZ_i*incdiff_large_w + gdp_pc_10k + (1 | iso3c) + (1 | iso3c_wave), data = df_na)
-
-model_list <- mget(ls(pattern = "M_"))
-```
-
-
-```{r combine_results}
-# all 'fixed' effects, note number of columns has to be changed if new variables are added
-df_margins <- as.data.frame(matrix(nrow = 1:length(model_list), ncol = 22))
-colnames(df_margins) <- c("Model", "Int", "incdiff_large", "incdiff_large_b", "incdiff_large_w", "mod", "control", "interaction", "Int_se","incdiff_large_se", "incdiff_large_b_se", "incdiff_large_w_se", "mod_se", "control_se", "interaction_se", "main_iv", "coef_lo", "coef_hi", "coef_delta", "coef_se", "coef_lo95", "coef_hi95")
-
-  len <- length(t(sapply(tail(model_list, n=1), fixef)))
-
-for (m in 1:length(model_list)) {
-  
-  df_x <- as.matrix(t(sapply(model_list[m], fixef)))
-  df_xs <- as.matrix(t(sapply(model_list[m], se.fixef)))
-  
-  # get standardized naming in margins output
-  colnames(df_x) <- gsub(".*:.*", "interaction", colnames(df_x))
-  colnames(df_x) <- gsub("lib.*|cpi.*|noconf.*", "mod", colnames(df_x))
-  colnames(df_x) <- gsub("socx.*|gdp.*|gini.*", "control", colnames(df_x))
-  colnames(df_xs) <- gsub(".*:.*", "interaction", colnames(df_xs))
-  colnames(df_xs) <- gsub("lib.*|cpi.*|noconf.*", "mod", colnames(df_xs))
-  colnames(df_xs) <- gsub("socx.*|gdp.*|gini.*", "control", colnames(df_xs))  
-  
-  # replace values from margins command in df_margins
-df_margins[m, "Int"] <- df_x[1, "(Intercept)"]
-
-if ("incdiff_large" %in%  colnames(df_x)) {
-df_margins[m, "incdiff_large"] <- df_x[1, "incdiff_large"]
-}
-
-if ("incdiff_large_b" %in% colnames(df_x)) { 
-df_margins[m, "incdiff_large_b"] <- df_x[1, "incdiff_large_b"]
-}
-
-if ("incdiff_large_w" %in% colnames(df_x) ) {
-df_margins[m, "incdiff_large_w"] <- df_x[1, "incdiff_large_w"]
-}
-
-df_margins[m, "interaction"] <- df_x[1, "interaction"]
-
-if ("control"  %in%  colnames(df_x)) {
-df_margins[m, "control"] <- df_x[1, "control"]
-}
-
-df_margins[m, "mod"] <- df_x[1, "mod"]
-
-df_margins[m, "Int_se"] <- df_xs[1, "(Intercept)"]
-
-if ("incdiff_large" %in% colnames(df_xs) ) {
-df_margins[m, "incdiff_large_se"] <- df_xs[1, "incdiff_large"]
-}
-
-if ("incdiff_large_b" %in% colnames(df_xs) ) { 
-df_margins[m, "incdiff_large_b_se"] <- df_xs[1, "incdiff_large_b"]
-}
-
-if ("incdiff_large_w" %in% colnames(df_xs) ) {
-df_margins[m, "incdiff_large_w_se"] <- df_xs[1, "incdiff_large_w"]
-}
-
-df_margins[m, "interaction_se"] <- df_xs[1, "interaction"]
-
-if ("control" %in%  colnames(df_xs) ) {
-df_margins[m, "control_se"] <- df_xs[1, "control"]
-}
-
-df_margins[m, "mod_se"] <- df_xs[1, "mod"]
-
-df_margins[m, "Model"] <- rownames(df_x)
-}
-
-df_margins[2:ncol(df_margins)] <- round(df_margins[2:ncol(df_margins)], 4)
-
-# we should compare with AMEs, they might be very different results
-#test <- margins(M_4.1, at = list(incdiff_large = c(3,4),
-#                                 noconf_govZ = c(-1,1)))
-
-# get model names to call models instead of list (lists are really hard to work with sometimes)
+colnames(df_ame) <- c("Model", "mod_b", "mod_se")
 
 model_names <- names(model_list)
 
-
 for (m in 1:length(model_list)) {
-j = ifelse(m %in% c(seq(from = 1, to = 100, by = 6)), "noconf_govZ",
-    ifelse(m %in% c(seq(from = 2, to = 100, by = 6)), "cpiZ", 
-    ifelse(m %in% c(seq(from = 3, to = 100, by = 6)), "libZ",
-    ifelse(m %in% c(seq(from = 4, to = 100, by = 6)), "noconf_govZ_i", 
-    ifelse(m %in% c(seq(from = 5, to = 100, by = 6)), "cpiZ_i", "libZ_i")))))
   
   mn <- as.name(model_names[m])
-  if (grepl("incdiff_large_w", as.character(model_list[[m]]@call[2]), fixed = TRUE)) {
-  margs <- ggpredict(get(mn), c("incdiff_large_w", j))
-  }
   
-  else {
-  margs <- ggpredict(get(mn), c("incdiff_large", j))
-  }
-
-
-  # calculate effect of incdiff_large at low and high values of mod
-  df_margins[m, "coef_lo"] <- margs[4, "predicted"] - margs[1, "predicted"]
-  df_margins[m, "coef_hi"] <- margs[6, "predicted"] - margs[3, "predicted"]
-  # calculate range as SE
-  # largest possible
-
-  df_margins[m, "coef_delta"] <- df_margins[m, "coef_hi"] - df_margins[m, "coef_lo"]
-  df_margins[m, "coef_se"] <- margs[1, "std.error"]
-
-  df_margins[m, "coef_lo95"] <-  df_margins[m, "coef_delta"] - (1.96*(df_margins[m, "coef_se"] ))
-  df_margins[m, "coef_hi95"] <-  df_margins[m, "coef_delta"] + (1.96*(df_margins[m, "coef_se"]))
-  df_margins[m, "main_iv"] <- j
+  df_ame[m,1] <- paste(as.character(model_list[[m]][["call"]]), sep = "", collapse = "")
+  
+  temp <- as.data.frame(get(mn)[["coefficients"]])
+  
+  temp <- temp[grepl('cpiZ|noconf_govZ|libZ|incdiff_large', rownames(temp)), 1:2]
+  
+  df_ame[m,"mod_b"] <- temp[grepl(":", rownames(temp)),1]
+  df_ame[m, "mod_se"] <- temp[grepl(":", rownames(temp)),2]
+  
 }
 
+saveRDS(df_ame, here::here("data", "df_ame.RDS"))
 
-
-df_margins <- df_margins %>%
-  mutate(moderation = "Yes", # only needed if we add in M2/M3 where mod is "no"
-         controls = c(rep("None", 12), rep("socx", 12), rep("gini_disp", 12), rep("gdppc10k", 12))) # this command has to be changed by hand when adding new models
-
-# what we want to know is 
-# A) is the main effect of the moderator significant?
-# B) is the interaction significant
-df_margins <- df_margins %>%
-  mutate(mod_main_sig = ifelse(abs(mod)/mod_se > 1.96, 1, 0),
-         int_sig = ifelse(abs(interaction)/interaction_se > 1.96, 1, 0),
-         #var_interact = (interaction_se^2)*43, #sample size is number of countries now
-         #marginal_effect_se = sqrt(var_main_iv + var_interact + 2*incdiffB_interB_cov),
-  )
-
-
+}
 ```
 
+#### Get model specifications
 
-```{r prepp}
-#prep data for spec curve
-df_margins <- df_margins %>%
-  arrange(main_iv,coef_delta)
+```{r ameclean}
+df_ame <- df_ame %>%
+  mutate(mod_var = ifelse(grepl("noconf_govZ", Model, fixed = T), "No_confidence", 
+                   ifelse(grepl("cpiZ", Model), "Corruption_percept", "Liberal_values")),
+         mod_imputed = ifelse(grepl("_i", df_ame$Model), "Yes", "No"),
+         ri_cyear = ifelse(grepl("iso3c_year", df_ame$Model), "Yes", "No"),
+         ri_country = ifelse(grepl("iso3c)", df_ame$Model), "Yes", "No"),
+         estimation = ifelse(grepl("lmer", df_ame$Model), "GLM", "OLS"),
+         control = ifelse(grepl("gdp", df_ame$Model), "GDPpc",
+                   ifelse(grepl("gini", df_ame$Model), "Gini_disp",
+                   ifelse(grepl("socx", df_ame$Model), "SocX",
+                   ifelse(grepl("pct_fb", df_ame$Model), "Pct_F_Born", "None")))),
+         gdp_m_interaction = ifelse(grepl(":gdp_pc_10k_C", df_ame$Model), "Yes", "No")
+         )
 
-df_margins$count <- seq.int(nrow(df_margins))
-
-
-```
-
-## Specification Curve
-
-```{r fig1_main}
-# for plotting a circle
-#dat = data.frame(x=runif(1), y=runif(1))
-
-#agg_png(filename = here::here("results/Fig1.png"), width = 800, height = 500, res = 144)
-
-
-df_margins %>%
-ggplot() +
-  #geom_errorbar(aes(ymin = lb, ymax = ub), color = "thistle1") +
-  geom_point(aes(x = count, y = coef_delta), color = "#7570B3", shape = "|", size = 2, show.legend =F) +
-  geom_errorbar(aes(x = count, ymin = coef_lo95, ymax = coef_hi95), color = "grey")
-
-
-
-
-################# Ignore this code, its for reminder
-#+ 
-  geom_point(aes(x = count, y = est_sig_scl, color = sig_group), shape = "|", size = 3) +
-  scale_color_manual(values = c("#E6AB02","NA", "#7570B3"), labels = c("Negative","Not sig.","Positive"," ")) +
-  #geom_vline(xintercept = 1214, color = "grey", linetype = "dashed") +
-  #geom_vline(xintercept = 52, color = "grey", linetype = "dashed") +
-  #ylim(-1.8, 1.8) +
-  annotate(geom = "text", x = 340, y = 1.45, label = "NEGATIVE (95% CI)", color = "#E6AB02", fontface = "bold", size = 3) +
-  annotate(geom = "text", x = 940, y = 1.45, label = "POSITIVE (95% CI)", color = "#7570B3", fontface = "bold", size = 3) +
-  annotate(geom = "text", x = 640, y = 1.45, label = "NOT STAT.\nSIGNIFICANT", fontface = "bold", color = "grey55", size = 3) +
-  #annotate(geom = "text", x = 680, y = -1.5, label = "grey indicates not sig.\ndifferent from zero", color = "grey55", size = 3) +
-  geom_vline(xintercept = -30) +
-  annotate(geom = "segment", x = -35, xend = -25, y = -1.1, yend = -1.1, color = "white", size = 2) +
-  annotate(geom = "segment", x = -35, xend = -25, y = 1.1, yend = 1.1, color = "white", size = 2) +
-  annotate(geom = "segment", x = -38, xend = -22, y = 1.12, yend = 1.18, color = "black", size = 0.5) +
-  annotate(geom = "segment", x = -38, xend = -22, y = -1.18, yend = -1.12, color = "black", size = 0.5) +
-  labs(color = "Effect at 95% CI", x = "Models Ordered by AME", y = "Average Marginal Effect (AME)") +
-  geom_point(aes(x=340, y=-2), data=dat, size=18, shape=1, color="#E6AB02") +
-  geom_point(aes(x=640, y=-2), data=dat, size=26, shape=1, color="grey55") +
-  geom_point(aes(x=940, y=-2), data=dat, size=14, shape=1, color="#7570B3") +
-  annotate("text", x=340, y=-2, label = paste(sig_neg), color="#E6AB02", fontface = "bold") +
-  annotate("text", x=640, y=-2, label = paste(ns), color="grey55", fontface = "bold") +
-  annotate("text", x=940, y=-2, label = paste(sig_pos), color="#7570B3", fontface = "bold") +
-  annotate("text", x=640, y=-1.1, label = "Weighted % of Distribution:", color="grey20", size = 2.5, fontface = 3) +
-  annotate("text", x=640, y=0.5, label = "Point Estimates:", color="grey20", size = 2.5, fontface = 3) +
-  scale_y_continuous(labels = c("-0.50","-0.05","0.00","0.05","0.50"), breaks = c(-1.75, -1, 0, 1, 1.75), limits = c(-2.6,1.8)) +
-  coord_cartesian(xlim = c(-15,1255), clip = "off") +
-  scale_x_continuous(expand = c(0,15)) +
-  theme_classic() +
-  guides(color = guide_legend(override.aes = list(size=7, color=c("#E6AB02","grey55", "#7570B3","NA")))) +
-  theme(
-    legend.key.size = unit(2,"line"),
-    legend.position = "none",
-    #axis.title.x = element_blank()
-    axis.line.y = element_blank(),
-    )
-dev.off()
-
-knitr::include_graphics(here::here("results/Fig1.png"))
-```
-
-Try three different "value" variables
-
-```{r}
-
-tab_cpi <- mod_models(df_na, "gov_redist", "incdiff_large", "cpiZ", dv.labels = c("M1", "M2", "M3","M4"),
-           pred.labels = c("Intercept", "incdiff_large", "cpiZ", "incdiff_large*cpiZ")) ## low level of abstraction
-tab_conf <- mod_models(df_na, "gov_redist", "incdiff_large", "noconf_govZ",dv.labels = c("M1", "M2", "M3","M4"),
-           pred.labels = c("Intercept", "incdiff_large", "conf", "incdiff_large*conf")) ## medium level of abstraction
-tab_lib <- mod_models(df_na, "gov_redist", "incdiff_large", "libZ",dv.labels = c("M1", "M2", "M3","M4"),
-           pred.labels = c("Intercept", "incdiff_large", "lib", "incdiff_large*lib")) ## high level of abstraction
-
+df_ame <- df_ame %>%
+  arrange(mod_b) %>%
+  mutate(count = row_number())
 ```
 
 
 
-```{r}
-
-knitr::knit_print(tab_conf)
-knitr::knit_print(tab_lib)
-knitr::knit_print(tab_cpi)
-
-```
-
-Correlation table of the three value variables
-
-```{r cor_1}
-df_libvars <- df_na[,c("cpiZ", "noconf_govZ", "libZ")]
-cor_mat <- cor(df_libvars, use = "complete.obs")
-round(cor_mat,2)
-```
-Correlation table of value variables + other control variables
-
-```{r cor_2}
-df_cvars <- df_na[,c("cpiZ", "noconf_govZ", "libZ","regime", "socx", "gdp_pc_10k")]
-cor_mat_2 <- cor(df_cvars, use = "complete.obs")
-round(cor_mat_2, 2)
-```
-
-
-```{r get_coeff}
-
-```
-
-
-Alternative Models
-
-With macro controls
-
-Bayesian
-
-With 
-
-```{r bayes}
-
-```
-
-
-### Plot Margins
-
-#### Single case
-corruption = -1, 0, 1
-incdiff_large = 3
-
-1.41 + incdiff_large*0.58 + cpiZ*-1 + incdiff_large*cpiZ*-0.08
-
-```{r marginal_effects}
-
-marginal_func <- function(moderator,)
-marg_df = as.data.frame(matrix(nrow = 5, ncol = 9))
-colnames(marg_df) <- c("cpiZ", "incdiff_large_3", "incdiff_large_4", "b_incd", "b_cpiZ", "b_incXc", "marginal_effect_3", "marginal_effect_4", "margin")
-
-marg_df$cpiZ <- c(-1,0,1)
-marg_df$incdiff_large_3 <- c(3,3,3)
-marg_df$incdiff_large_4 <- c(4,4,4)
-marg_df$b_incd <- c(tab_cpi)
-marg_df$b_cpiZ <- c(0.32,0.32,0.32)
-marg_df$b_incXc <- c(-0.08,-0.08,-0.08)
-
-marg_df <- marg_df %>%
-  mutate(marginal_effect_3 = incdiff_large_3*b_incd + cpiZ*b_cpiZ + cpiZ*incdiff_large_3*b_incXc,
-         marginal_effect_4 = incdiff_large_4*b_incd + cpiZ*b_cpiZ + cpiZ*incdiff_large_4*b_incXc,
-         margin = marginal_effect_4-marginal_effect_3)
-
-```
-
-
-```{r margin_plot}
-marg_df %>%
-  ggplot(aes(x = cpiZ, y = margin)) +
-  geom_bar(stat = 'identity') +
-  labs(x = "Corruption Perceptions, Standardized",
-       y = "Statistical Effect of X1 (Inc. Diff's too Large)\non Y (Gov. Should Reduce Inc. Diff's)",
-       title = "The Moderating Impact of Percieved Corruption by Country") +
-  theme_classic()
-```
 
 
 Colophon

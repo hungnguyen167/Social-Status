@@ -289,6 +289,7 @@ df_macro <- df_macro %>%
          gdp_pc_10k = ifelse(iso3c == "SVN" & wave == 2019, 2.6, gdp_pc_10k),
          gdp_pc_10k = ifelse(iso3c == "THA" & wave == 2019, 0.9, gdp_pc_10k),
          socx = ifelse(iso3c == "BGR" & wave == 1992, 38, socx),
+         socx = ifelse(iso3c == "HUN" & wave == 1999, 30, socx),
          gdp_pc_10k = ifelse(iso3c == "DNK" & wave == 2019, 5, gdp_pc_10k))
 
 # there is some mismatch when summarizing, fix wvs variables
@@ -340,7 +341,8 @@ df_macro <- df_macro %>%
          liberal_high = ifelse(wave >= 2009 & gdp_i > 3.3, liberal_all, liberal_high),
          liberal_high = ifelse(iso3c %in% c("NZL","JPN","DNK","GBR","CHE","AUT", "FIN","DEU"), liberal_all, liberal_high), # selection criteria performs poorly, do rest by hand here
          liberal_low = ifelse(is.na(liberal_high), liberal_all, NA),
-         liberal_low = ifelse(iso3c %in% c("HRV","CYP","ITA","SVN","CZE"), NA, liberal_low)) # remove some questionable cases
+         liberal_low = ifelse(iso3c %in% c("HRV","CYP","ITA","SVN","CZE"), NA, liberal_low),
+         gdp_di = ifelse(!is.na(liberal_high), 1, 0)) # remove some questionable cases
 
 # for plotting corruption, generate small variation in CPI for years prior to 2015
 #make a predicted confidence_gov variable
@@ -368,14 +370,14 @@ df_macro <- df_macro %>%
   mutate(cpi15_20_i = ifelse(!is.na(cpi15_20), cpi15_20, cpi15_20_ixx),
          cpiZ_i = -1*as.numeric(scale(cpi15_20_i)), # make higher scores = more corrupt percept
          cpiZ = -1*as.numeric(scale(cpi15_20)),
-         libZ_i = as.numeric(scale(liberal_redist_i)),
-         libZ = as.numeric(scale(liberal_redist)),
+         libZ_i = as.numeric(scale(liberal_i)),
+         libZ = as.numeric(scale(liberal)),
          noconf_govZ_i = -1*as.numeric(scale(confidence_gov_i_i)),
          noconf_govZ = -1*as.numeric(scale(confidence_gov)))
 
 # make high and low corruption perceptions and noconf
 df_macro <- df_macro %>%
-  mutate(noconf_govZ_i = ifelse(noconf_govZ_i < -2, -2, noconf_govZ_i), # two far outliers
+  mutate(noconf_govZ_i = ifelse(noconf_govZ_i < -2, -2, noconf_govZ_i), # too far outliers
          noconf_govZ_i = ifelse(noconf_govZ_i > 2, 2, noconf_govZ_i),
          noconf_govZ = ifelse(noconf_govZ < -2, -2, noconf_govZ),
          noconf_govZ = ifelse(noconf_govZ > 2, 2, noconf_govZ),
@@ -385,7 +387,7 @@ df_macro <- df_macro %>%
          noconf_govZ_hi = ifelse(!is.na(liberal_high), noconf_govZ, NA),
          gdp_lo = ifelse(!is.na(liberal_low), gdp_pc_10k, NA),
          gdp_hi = ifelse(!is.na(liberal_high), gdp_pc_10k, NA)) %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_all, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i_i, cpi15_20, cpi15_20_i, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_all, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i_i, cpi15_20, cpi15_20_i, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
 
 # add variance objects, defunkt
 cpiZ_var <- as.numeric(var(df_macro$cpiZ, na.rm = T))
@@ -413,10 +415,22 @@ df_na <- df_na %>%
 df_macro <- as.data.frame(df_macro)
 
 df_macro_m <- df_macro %>%
-  dplyr::select(iso3c, wave, cpiZ, cpiZ_i, libZ, libZ_i, gdp_pc_10k, gini_disp, socx, noconf_govZ, noconf_govZ_i)
+  dplyr::select(iso3c, wave, cpiZ, cpiZ_i, libZ, libZ_i, gdp_di, gdp_pc_10k, gini_disp, socx, noconf_govZ, noconf_govZ_i)
+
+# check that all macro variables are centered, ideal for MLM
+df_macro_m$gdp_pc_10k_C <- df_macro_m$gdp_pc_10k - mean(df_macro_m$gdp_pc_10k, na.rm = T)
+df_macro_m$gini_disp_C <- df_macro_m$gini_disp - mean(df_macro_m$gini_disp, na.rm = T)
+df_macro_m$socx_C <- df_macro_m$socx - mean(df_macro_m$socx, na.rm = T)
+
 
 df_na <- df_na %>%
   left_join(df_macro_m, by = c("iso3c", "wave"))
+
+df_na$incdiff_large_C <- df_na$incdiff_large - mean(df_na$incdiff_large, na.rm = T)
+df_na$gov_redist_C <- df_na$gov_redist - mean(df_na$gov_redist, na.rm = T)
+
+
+df_na$pct_fb_i_C <- df_na$pct_fb_i - mean(df_na$pct_fb_i, na.rm = T)
 ```
 
 ```{r save}

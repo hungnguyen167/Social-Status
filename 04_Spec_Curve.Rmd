@@ -1,0 +1,80 @@
+---
+title: "Attitudes toward Redistribution"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+$~$
+$~$
+
+#### **Nate Breznau, Lisa Heukamp, Hung H.V. Nguyen, Tom Knuf, Arne Köller, Sören Goldenstein**
+#### **University of Bremen**
+
+_____________________________________________________________________________
+
+$~$
+$~$
+
+
+
+```{r, include = F}
+rm(list = ls())
+```
+
+
+```{r setup, include=FALSE}
+library(pacman)
+pacman::p_load("tidyverse", "ggpubr", 
+               "ragg", "kableExtra", 
+               "lme4", 
+               "sjPlot",
+               "arm",
+               "margins",
+               "ggeffects")
+
+knitr::opts_chunk$set(message = F, warning = F)
+
+```
+
+
+```{r load dfs}
+#df <- readRDS(here::here("data","df.RDS"))
+df_ame <- readRDS(here::here("data", "df_ame.RDS"))
+#df_macro <- readRDS(here::here("data", "df_macro.RDS"))
+
+```
+
+
+
+#### Plot Specification Curve
+
+```{r fig1_main}
+# for plotting a circle
+#dat = data.frame(x=runif(1), y=runif(1))
+
+#agg_png(filename = here::here("results/Fig1.png"), width = 800, height = 500, res = 144)
+
+
+df_ame %>%
+ggplot() +
+  #geom_errorbar(aes(ymin = lb, ymax = ub), color = "thistle1") +
+  geom_point(aes(x = count, y = mod_b), color = "#7570B3", shape = "|", size = 3, show.legend =F) +
+  geom_errorbar(aes(x = count, ymin = mod_b-(1.96*mod_se), ymax = mod_b+(1.96*mod_se)), color = "grey") +
+  labs(#color = "Effect at 95% CI", 
+    x = "Models Ordered by Moderation Coefficient (Y11)", y = "Moderation Coefficient")
+
+
+
+
+```
+
+
+
+
+Colophon
+
+```{r colophon}
+sessionInfo()
+```
