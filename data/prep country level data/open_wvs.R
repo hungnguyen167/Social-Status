@@ -2,18 +2,23 @@
 
 
 ## R Open, aggregate and save WVS data
-
-
-
 pacman::p_load("data.table","tidyverse")
+library("haven")
+library("labelled")
+library("dplyr")
 
-wvs <- fread(here::here("data","prep country level data", "WVS_TimeSeries_1981_2020_ascii_v2_0.csv"), select = c("S002VS", "COUNTRY_ALPHA", "S020", "E037", "E036", "E069_11", "E119", "E236", "E131", "E112", "E130"))
+wvs <-  read_dta("WVS_Trend_v2_0.dta",encoding="UTF-8",col_select=c("S002VS", "COW_NUM", "S009","S020", "E037", "E036", "E069_11", "E119", "E236", "E112"))
+evs <- read_dta("ZA7503_v2-0-0.dta",encoding="UTF-8",col_select=c("S002vs", "COW_NUM", "S009","S020", "E037", "E036", "E069_11", "E119", "E236", "E112"))
+evs <- rename(evs, S002VS = S002vs)
+# needed due to haven-library bug when using rbind
+wvs <- remove_labels(wvs)
+ivs <- rbind(evs,wvs)
 
-wvs <- rename(wvs, wave = S002VS, year = S020, liberal = E036, liberal_redist = E037,
+ivs <- rename(ivs, wave = S002VS, COUNTRY_ALPHA=S009, year = S020, liberal = E036, liberal_redist = E037,
               confidence_gov = E069_11, system_rating = E112, freedom_gov = E119, 
-              democratic = E236, reason_neediness = E131, poverty_compare = E130)
+              democratic = E236)
 
-wvs <- wvs %>%
+ivs <- ivs %>%
   mutate(
          confidence_gov = -1*(confidence_gov - 5),
          liberal = -1*(liberal - 11), # Nate discovered an error in the WVS data, they are reverse coded  
@@ -22,21 +27,18 @@ wvs <- wvs %>%
          confidence_gov = ifelse(confidence_gov < 1 | confidence_gov > 4, NA, confidence_gov),
          liberal_redist = ifelse(liberal_redist < 1 | liberal_redist > 10, NA, liberal_redist))
 
-write.csv(wvs, "data/wvs.csv", row.names = FALSE)
+saveRDS(ivs, here::here("data","ivs.rds"))
 
-
-
-agg <- read_csv(here::here("data","wvs.csv"))
+agg <- readRDS(here::here("data","ivs.rds"))
 agg[agg < 0] <- NA 
 agg <- agg %>%
   group_by(COUNTRY_ALPHA, year) %>%
   summarise_all(mean, na.rm = T) %>%
   ungroup() %>%
   as.data.frame()
-agg[agg == "NaN"] <- NA
+agg[agg == NaN] <- NA
 
 # obtain all possible country-year rows even if listwise missing, for later interpolation and merging functions
 agg <- complete(agg, COUNTRY_ALPHA, year = 1981:2020)
 
-write.csv(agg, "data/wvs_aggregated.csv", row.names = FALSE)
-
+saveRDS(ivs, here::here("data","ivs_aggregated.rds"))
