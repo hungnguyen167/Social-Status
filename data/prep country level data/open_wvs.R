@@ -1,8 +1,7 @@
 # "WVS" WVS_TimeSeries_1981_2020_ascii_v2_0.csv downloaded from https://www.worldvaluessurvey.org/WVSDocumentationWVL.jsp
 
 
-## R Open, aggregate and save WVS data
-pacman::p_load("data.table","tidyverse")
+## R Open, aggregate and save WVS and EVS data and combine into IVS
 library("haven")
 library("labelled")
 library("dplyr")
@@ -10,7 +9,7 @@ library("dplyr")
 wvs <-  read_dta("WVS_Trend_v2_0.dta",encoding="UTF-8",col_select=c("S002VS", "COW_NUM", "S009","S020", "E037", "E036", "E069_11", "E119", "E236", "E112"))
 evs <- read_dta("ZA7503_v2-0-0.dta",encoding="UTF-8",col_select=c("S002vs", "COW_NUM", "S009","S020", "E037", "E036", "E069_11", "E119", "E236", "E112"))
 evs <- rename(evs, S002VS = S002vs)
-# needed due to haven-library bug when using rbind
+# needed due to bug in haven-library when using rbind
 wvs <- remove_labels(wvs)
 ivs <- rbind(evs,wvs)
 
@@ -39,6 +38,7 @@ agg <- agg %>%
 agg[agg == NaN] <- NA
 
 # obtain all possible country-year rows even if listwise missing, for later interpolation and merging functions
+library(tidyr)
 agg <- complete(agg, COUNTRY_ALPHA, year = 1981:2020)
 
 saveRDS(ivs, here::here("data","ivs_aggregated.rds"))
