@@ -1,0 +1,42 @@
+---
+title: "Attitudes toward Redistribution"
+output:
+  html_document:
+    df_print: paged
+---
+
+This file complements Fig 2 (cross country-wave correlation comparison), by testing the model fit indices for a constrained model where the correlation is fixed across all country waves (M1), and a free model where it varies (M2).
+
+```{r setup}
+pacman::p_load("lavaan",
+               "tidyverse")
+
+df_na <- readRDS(here::here("data", "df_na.RDS"))
+
+```
+
+## M1 - Fixed
+```{r m1}
+M1 <- '
+      redist =~ gov_redist + a*incdiff_large'
+
+M1_fit <- cfa(M1,
+              data = df_na,
+              group = "iso3c_wave")
+```
+## M2 - Varying by country-wave
+```{r m2}
+M2 <- '
+      redist =~ gov_redist + incdiff_large'
+
+M2_fit <- cfa(M2,
+              data = df_na,
+              group = "iso3c_wave")
+```
+
+## Fit Comparison
+```{r fit}
+
+M1_fit_out <- summary(M1_fit)
+```
+

@@ -21,6 +21,18 @@ The data cleaning is done in the file "01.1_Data Cleaning Individual Level.Rmd" 
 # ISSP Data
 load(here::here("data","socstat.Rda"))
 
+# create unique wave-year identifier
+df <- df %>%
+  mutate(iso3c_wave = paste(iso3c,wave, sep = "_"))
+
+# remove DV NA
+df_na <- df %>%
+  subset(!is.na(incdiff) & !is.na(inclarge))
+
+# check that data are correct
+# df_sum <- df %>% count(cyear)
+# Yes, wave counts look good
+
 # Social spending data
 socx <- read_csv(here::here("data","socx_oecd.csv"))
 
@@ -36,23 +48,26 @@ wvs <- read_csv(here::here("data","wvs_aggregated.csv")) %>%
            year %in% c(1996:2005) ~ 1999,
            year %in% c(2006:2015) ~ 2009,
            year %in% c(2016:2020) ~ 2019,
-           TRUE ~ NA_real_)) # fit years of WVS into nearest wave of ISSP 1987, 1992, 1999, 2009, 2019
+           TRUE ~ NA_real_),
+         iso3c_wave = paste(iso3c,wave, sep = "_")) # fit years of WVS into nearest wave of ISSP 1987, 1992, 1999, 2009, 2019
+```
 
-
+### Wrangling/interpolation
+```{r loaddata2, message = F, warning = F}
 wvs <- wvs %>% # create an interpolated version of wvs variables that takes the mean by country to fill in missing - most countries do not change much over time
   group_by(iso3c) %>%
   mutate(liberal_ix = mean(liberal, na.rm = T),
          liberal_redist_ix = mean(liberal_redist, na.rm = T),
          confidence_gov_ix = mean(confidence_gov, na.rm = T)) %>%
-  ungroup() 
+  ungroup()
 
 
 # one WVS with original values, one with imputed values (different merge variables)
 wvs_2 <- wvs %>%
-  dplyr::select(iso3c, year, liberal_ix, liberal_redist_ix, confidence_gov_ix)
+  dplyr::select(iso3c_wave, liberal_ix, liberal_redist_ix, confidence_gov_ix)
 
 wvs <- wvs %>%
-  dplyr::select(-c(year, liberal_ix, liberal_redist_ix, confidence_gov_ix))
+  dplyr::select(-c(iso3c_wave, year, liberal_ix, liberal_redist_ix, confidence_gov_ix))
 
 # Institutional Logic - welfare state penetration
 #gwip <- 
@@ -73,7 +88,7 @@ regime <- regime %>% # impute means by country
   dplyr::select(-regime_ix)
   
 # Corruption perceptions
-crpt <- read_csv(here::here("data","crpt.csv"))
+crpt <- readRDS(here::here("data","cpi.RDS"))
 
 # Immigration
 immigration_wb <- read_csv(here::here("data","API_SM.POP.TOTL.ZS_DS2_en_csv_v2_3363225.csv"), skip = 4, col_select = -c("Country Name","Indicator Name","Indicator Code"))
@@ -99,23 +114,21 @@ imm_long <- imm_long %>%
   mutate(pct_fb_i = mean(c(pct_fb_back,pct_fb_front), na.rm = T)) %>%
   ungroup() %>%
   dplyr::select(iso3c, year, pct_fb_i)
-
 ```
 
+### Interpolate after 2018
 
-
-```{r merge}
-
+```{r loaddata3, message = F, warning = F}
 # Take averages of social spending and Gini to get the most possible countries
 socx_19 <- socx %>%
   subset(year > 2010) %>%
-  group_by(iso3c, year) %>%
+  group_by(iso3c) %>%
   summarise_all(mean, na.rm = T) %>%
   mutate(year = 2019)
 
 socx_20 <- socx %>%
   subset(year > 2010) %>%
-  group_by(iso3c, year) %>%
+  group_by(iso3c) %>%
   summarise_all(mean, na.rm = T) %>%
   mutate(year = 2020)
 
@@ -127,19 +140,25 @@ gini_20 <- gini %>%
   subset(year == 2017) %>%
   mutate(year = 2020)
 
+socx <- socx %>% subset(year < 2019)
+
 socx <- rbind(socx, socx_19, socx_20)
 gini <- rbind(gini, gini_19, gini_20)
 
-# extract WVS vars
-
-df <- df %>%
-  left_join(gini, by = c("iso3c","year")) %>%
-  left_join(socx, by = c("iso3c","year")) %>%
-  left_join(imm_long, by = c("iso3c", "year"))
+```
 
 
-df <- df %>%
-  left_join(crpt, by = c("iso3c")) 
+
+```{r merge}
+
+# first merges
+
+df_na <- left_join(df_na, gini, by = c("iso3c","year"))
+df_na <- left_join(df_na, socx, by = c("iso3c","year"))
+df_na <- left_join(df_na, imm_long, by = c("iso3c","year"))
+df_na <- left_join(df_na, crpt, by = c("iso3c_wave"))
+
+
 
 # the WVS has repeated years, collapse them
 
@@ -148,14 +167,13 @@ wvs <- wvs %>%
   summarise_all(mean, na.rm = T)
 
 wvs_2 <- wvs_2 %>%
-  group_by(iso3c, year) %>%
+  group_by(iso3c_wave) %>%
   summarise_all(mean, na.rm = T)
 
-df <- df %>%
-  left_join(wvs, by = c("iso3c", "wave")) %>%
-  left_join(wvs_2, by = c("iso3c", "year")) %>%
-  left_join(gdp, by = c("iso3c", "year")) %>%
-  left_join(regime, by = c("iso3c", "year"))
+df_na <- left_join(df_na, wvs, by = c("iso3c", "wave"))
+df_na <- left_join(df_na, wvs_2, by = "iso3c_wave")
+df_na <- left_join(df_na, gdp, by = c("iso3c", "year"))
+df_na <- left_join(df_na, regime, by = c("iso3c", "year"))
 
 
 
@@ -166,7 +184,7 @@ rm(imm_long)
 
 ```{r wrangle}
 # make a complete data frame
-df <- df %>%
+df_na <- df_na %>%
   group_by(iso3c) %>%
   # calculate the mean for each country
   mutate(incdiff_b = mean(incdiff, na.rm = T),
@@ -185,8 +203,7 @@ df <- df %>%
          confidence_gov_i = ifelse(is.na(confidence_gov), confidence_gov_ix, confidence_gov)) %>%
   dplyr::select(-c(confidence_gov_ix, liberal_ix, liberal_redist_ix))
 
-df_na <- df %>%
-  subset(!is.na(incdiff) & !is.na(inclarge))
+
 ```
 
 There is some missing data
@@ -199,10 +216,6 @@ df_na %>%
   summarise_all(mean, na.rm = T)
 
 
-
-         
-
-
 ```
 
 
@@ -210,8 +223,6 @@ df_na %>%
 
 ```{r saveout}
 # The variables names are not intuitive, change them
-df <- df %>%
-  rename(gov_redist = reduce, incdiff_large = reduce_large)
 
 df_na <- df_na %>%
   rename(gov_redist = reduce, incdiff_large = reduce_large)
@@ -228,7 +239,7 @@ df_na <- df_na %>%
 
 # create a macro-level dataset
 df_macro <- df_na %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, socx_perhead, cpi15_20, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, filled_vdem_gdp_interpol, regime, gap_no_gov, gov_redist_agree, incdiff_large_agree, pct_sample_tertiary, pct_sample_65older, pct_fb_i) %>%
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, socx_perhead, cpi, cpi_ii, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, filled_vdem_gdp_interpol, regime, gap_no_gov, gov_redist_agree, incdiff_large_agree, pct_sample_tertiary, pct_sample_65older, pct_fb_i) %>%
   group_by(iso3c, wave) %>%
   summarise_all(mean, na.rm = T) %>%
   ungroup()
@@ -346,30 +357,18 @@ df_macro <- df_macro %>%
 
 # for plotting corruption, generate small variation in CPI for years prior to 2015
 #make a predicted confidence_gov variable
-m_conf <- lm(confidence_gov_i ~ gdp_pc_10k + socx + cpi15_20, data = df_macro)
+m_conf <- lm(confidence_gov_i ~ gdp_pc_10k + socx + cpi_ii, data = df_macro)
 
 df_macro$confidence_gov_i_lm <- predict.lm(m_conf, newdata = df_macro)
 
 df_macro <- df_macro %>%
-  mutate(cpi15_20 = ifelse(iso3c == "DNK", 90, cpi15_20),
+  mutate(cpi_ii = ifelse(iso3c == "DNK", 90, cpi_ii),
          confidence_gov_i_i = ifelse(is.na(confidence_gov), confidence_gov_i_lm, confidence_gov_i))
 
-# make small disturbances to the cpi using the confidence in gov within-country variance
-df_macro <- df_macro %>%
-  mutate(cpi15_20_x = (cpi15_20*confidence_gov_i_i)/2)
-
-m_cpi <- lm(cpi15_20_x ~ factor(iso3c) + confidence_gov_i_i, data = df_macro)
-
-df_macro$cpi15_20_ix <- predict.lm(m_cpi, newdata = df_macro)
-
-m_cpi2 <- lm(cpi15_20 ~ cpi15_20_x, data = df_macro)
-
-df_macro$cpi15_20_ixx <- predict.lm(m_cpi2, newdata = df_macro)
 
 df_macro <- df_macro %>%
-  mutate(cpi15_20_i = ifelse(!is.na(cpi15_20), cpi15_20, cpi15_20_ixx),
-         cpiZ_i = -1*as.numeric(scale(cpi15_20_i)), # make higher scores = more corrupt percept
-         cpiZ = -1*as.numeric(scale(cpi15_20)),
+  mutate(cpiZ_i = -1*as.numeric(scale(cpi_ii)), # make higher scores = more corrupt percept
+         cpiZ = -1*as.numeric(scale(cpi)),
          libZ_i = as.numeric(scale(liberal_i)),
          libZ = as.numeric(scale(liberal)),
          noconf_govZ_i = -1*as.numeric(scale(confidence_gov_i_i)),
@@ -387,7 +386,7 @@ df_macro <- df_macro %>%
          noconf_govZ_hi = ifelse(!is.na(liberal_high), noconf_govZ, NA),
          gdp_lo = ifelse(!is.na(liberal_low), gdp_pc_10k, NA),
          gdp_hi = ifelse(!is.na(liberal_high), gdp_pc_10k, NA)) %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_all, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i_i, cpi15_20, cpi15_20_i, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_all, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i_i, cpi, cpi_ii, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
 
 # add variance objects, defunkt
 cpiZ_var <- as.numeric(var(df_macro$cpiZ, na.rm = T))
@@ -435,8 +434,6 @@ df_na$pct_fb_i_C <- df_na$pct_fb_i - mean(df_na$pct_fb_i, na.rm = T)
 
 ```{r save}
 
-# full data file
-saveRDS(df, file = here::here("data","df.RDS"))
 # with missing cases removed
 saveRDS(df_na, file = here::here("data","df_na.RDS"))
 # macro
