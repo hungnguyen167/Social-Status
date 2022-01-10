@@ -214,3 +214,8 @@ write.csv(df_tbl, file = here::here("results","tbl_redist.csv"), row.names = F)
 knitr::include_graphics(here::here("results","tbl_redist.png"))
 ```
 
+Colophon
+
+```{r colophon}
+sessionInfo()
+```
