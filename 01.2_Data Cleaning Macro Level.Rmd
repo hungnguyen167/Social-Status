@@ -40,7 +40,7 @@ socx <- read_csv(here::here("data","socx_oecd.csv"))
 gini <- read_csv(here::here("data","gini_solt.csv"))
 
 # WVS/IVS data aggregated
-ivs <- readRDS(here::here("data","ivs_aggregated.rds")) %>%
+wvs <- readRDS(here::here("data","ivs_aggregated.rds")) %>%
   mutate(iso3c = COUNTRY_ALPHA,
          wave = case_when(
            year %in% c(1980:1989) ~ 1987,
@@ -64,7 +64,7 @@ wvs <- wvs %>% # create an interpolated version of wvs variables that takes the 
 
 
 # Institutional Logic - welfare state penetration
-#gwip <- 
+# for future analyses (social policy variables?)
 
 # GDP and Democracy v Authoritarian from V-Dem (some interpolation, see Breznau and Lanver 2021)
 gdp <- read_csv(here::here("data","vdem_gdp_pc_INTERPOLATED_consolidated.csv")) %>%
@@ -140,8 +140,11 @@ socx <- rbind(socx, socx_19, socx_20)
 gini <- rbind(gini, gini_19, gini_20)
 
 
+```
 
-```{r merge}
+
+
+```{r merge, message = F, warning = F}
 
 # first merges
 
@@ -154,16 +157,17 @@ df_na <- left_join(df_na, crpt, by = c("iso3c_wave"))
 
 # the WVS/IVS has repeated years, collapse them
 
-ivs <- ivs %>%
-  group_by(iso3c, wave) %>%
-  summarise_all(mean, na.rm = T)
-
-
-wvs_2 <- wvs_2 %>%
+wvs_2 <- wvs %>%
   group_by(iso3c_wave) %>%
-  summarise_all(mean, na.rm = T)
+  summarise_all(mean, na.rm = T) %>%
+  dplyr::select(iso3c_wave, liberal_ix, liberal_redist_ix, confidence_gov_ix)
 
-df_na <- left_join(df_na, wvs, by = c("iso3c", "wave"))
+wvs <- wvs %>%
+  group_by(iso3c, year) %>%
+  summarise_all(mean, na.rm = T) %>%
+  dplyr::select(-c(wave, iso3c_wave, liberal_ix, liberal_redist_ix, confidence_gov_ix))
+
+df_na <- left_join(df_na, wvs, by = c("iso3c", "year"))
 df_na <- left_join(df_na, wvs_2, by = "iso3c_wave")
 df_na <- left_join(df_na, gdp, by = c("iso3c", "year"))
 df_na <- left_join(df_na, regime, by = c("iso3c", "year"))
@@ -347,15 +351,10 @@ df_macro <- df_macro %>%
          liberal_low = ifelse(iso3c %in% c("HRV","CYP","ITA","SVN","CZE"), NA, liberal_low),
          gdp_di = ifelse(!is.na(liberal_high), 1, 0)) # remove some questionable cases
 
-# for plotting corruption, generate small variation in CPI for years prior to 2015
-#make a predicted confidence_gov variable
-m_conf <- lm(confidence_gov_i ~ gdp_pc_10k + socx + cpi_ii, data = df_macro)
 
-df_macro$confidence_gov_i_lm <- predict.lm(m_conf, newdata = df_macro)
 
 df_macro <- df_macro %>%
-  mutate(cpi_ii = ifelse(iso3c == "DNK", 90, cpi_ii),
-         confidence_gov_i_i = ifelse(is.na(confidence_gov), confidence_gov_i_lm, confidence_gov_i))
+  mutate(cpi_ii = ifelse(iso3c == "DNK", 90, cpi_ii))
 
 
 df_macro <- df_macro %>%
@@ -363,7 +362,7 @@ df_macro <- df_macro %>%
          cpiZ = -1*as.numeric(scale(cpi)),
          libZ_i = as.numeric(scale(liberal_i)),
          libZ = as.numeric(scale(liberal)),
-         noconf_govZ_i = -1*as.numeric(scale(confidence_gov_i_i)),
+         noconf_govZ_i = -1*as.numeric(scale(confidence_gov_i)),
          noconf_govZ = -1*as.numeric(scale(confidence_gov)))
 
 # make high and low corruption perceptions and noconf
@@ -378,13 +377,8 @@ df_macro <- df_macro %>%
          noconf_govZ_hi = ifelse(!is.na(liberal_high), noconf_govZ, NA),
          gdp_lo = ifelse(!is.na(liberal_low), gdp_pc_10k, NA),
          gdp_hi = ifelse(!is.na(liberal_high), gdp_pc_10k, NA)) %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_all, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i_i, cpi, cpi_ii, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_all, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, cpi, cpi_ii, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
 
-# add variance objects, defunkt
-cpiZ_var <- as.numeric(var(df_macro$cpiZ, na.rm = T))
-confidence_gov_var <- var(df_macro$noconf_govZ, na.rm = T)
-liberal_redist_var <- var(df_macro$libZ, na.rm = T)
-dv_var <- var(df_na$gov_redist, na.rm = T)
 
 # create within and between values
 df_na <- df_na %>%
