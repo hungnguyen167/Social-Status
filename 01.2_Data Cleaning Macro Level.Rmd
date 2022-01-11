@@ -39,8 +39,8 @@ socx <- read_csv(here::here("data","socx_oecd.csv"))
 # Gini data
 gini <- read_csv(here::here("data","gini_solt.csv"))
 
-# WVS data aggregated
-wvs <- read_csv(here::here("data","wvs_aggregated.csv")) %>%
+# WVS/IVS data aggregated
+ivs <- readRDS(here::here("data","ivs_aggregated.rds")) %>%
   mutate(iso3c = COUNTRY_ALPHA,
          wave = case_when(
            year %in% c(1980:1989) ~ 1987,
@@ -55,19 +55,13 @@ wvs <- read_csv(here::here("data","wvs_aggregated.csv")) %>%
 ### Wrangling/interpolation
 ```{r loaddata2, message = F, warning = F}
 wvs <- wvs %>% # create an interpolated version of wvs variables that takes the mean by country to fill in missing - most countries do not change much over time
+
   group_by(iso3c) %>%
   mutate(liberal_ix = mean(liberal, na.rm = T),
          liberal_redist_ix = mean(liberal_redist, na.rm = T),
          confidence_gov_ix = mean(confidence_gov, na.rm = T)) %>%
   ungroup()
 
-
-# one WVS with original values, one with imputed values (different merge variables)
-wvs_2 <- wvs %>%
-  dplyr::select(iso3c_wave, liberal_ix, liberal_redist_ix, confidence_gov_ix)
-
-wvs <- wvs %>%
-  dplyr::select(-c(iso3c_wave, year, liberal_ix, liberal_redist_ix, confidence_gov_ix))
 
 # Institutional Logic - welfare state penetration
 #gwip <- 
@@ -145,8 +139,6 @@ socx <- socx %>% subset(year < 2019)
 socx <- rbind(socx, socx_19, socx_20)
 gini <- rbind(gini, gini_19, gini_20)
 
-```
-
 
 
 ```{r merge}
@@ -160,11 +152,12 @@ df_na <- left_join(df_na, crpt, by = c("iso3c_wave"))
 
 
 
-# the WVS has repeated years, collapse them
+# the WVS/IVS has repeated years, collapse them
 
-wvs <- wvs %>%
+ivs <- ivs %>%
   group_by(iso3c, wave) %>%
   summarise_all(mean, na.rm = T)
+
 
 wvs_2 <- wvs_2 %>%
   group_by(iso3c_wave) %>%
@@ -174,7 +167,6 @@ df_na <- left_join(df_na, wvs, by = c("iso3c", "wave"))
 df_na <- left_join(df_na, wvs_2, by = "iso3c_wave")
 df_na <- left_join(df_na, gdp, by = c("iso3c", "year"))
 df_na <- left_join(df_na, regime, by = c("iso3c", "year"))
-
 
 
 rm(gini,socx,crpt)
@@ -197,7 +189,7 @@ df_na <- df_na %>%
          inclarge_w = inclarge - inclarge_b,
          reduce_w = reduce - reduce_b,
          reduce_large_w = reduce_large - reduce_large_b,
-  # fill in missing from wvs
+  # fill in missing from ivs
          liberal_i = ifelse(is.na(liberal), liberal_ix, liberal),
          liberal_redist_i = ifelse(is.na(liberal_redist), liberal_redist_ix, liberal_redist),
          confidence_gov_i = ifelse(is.na(confidence_gov), confidence_gov_ix, confidence_gov)) %>%
@@ -303,7 +295,7 @@ df_macro <- df_macro %>%
          socx = ifelse(iso3c == "HUN" & wave == 1999, 30, socx),
          gdp_pc_10k = ifelse(iso3c == "DNK" & wave == 2019, 5, gdp_pc_10k))
 
-# there is some mismatch when summarizing, fix wvs variables
+# there is some mismatch when summarizing, fix ivs variables
 
 df_macro <- df_macro %>%
   mutate(liberal_i = ifelse(is.na(liberal), liberal_i, liberal),
