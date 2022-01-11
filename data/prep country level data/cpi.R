@@ -6,7 +6,7 @@ pacman::p_load("readxl",
 # 2015 to 2020 (from https://www.transparency.org/en/cpi/2020/, 10.01.2022)
 
 
-cpi <- readxl::read_excel(here::here("data","CPI2020_GlobalTablesTS_210125.xlsx"), 
+cpi <- readxl::read_excel(here::here("data", "prep country level data", "CPI2020_GlobalTablesTS_210125.xlsx"), 
                           skip = 2, sheet = "CPI Timeseries 2012 - 2020")
 
 cpi <- cpi %>%
