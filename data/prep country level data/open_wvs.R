@@ -28,7 +28,7 @@ ivs <- ivs %>%
 
 saveRDS(ivs, here::here("data","ivs.rds"))
 
-agg <- readRDS(here::here("data","ivs.rds"))
+agg <- ivs
 agg[agg < 0] <- NA 
 agg <- agg %>%
   group_by(COUNTRY_ALPHA, year) %>%
