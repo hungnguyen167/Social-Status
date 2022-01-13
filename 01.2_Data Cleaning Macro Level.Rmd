@@ -6,8 +6,7 @@ output:
 ---
 
 ```{r setup}
-library(pacman)
-library(tidyverse) # not loading properly with pacman at the moment... load this way for now
+pacman::p_load("tidyverse", "countrycode")
 
 
 knitr::opts_chunk$set(message = F, warning = F)
@@ -41,7 +40,7 @@ gini <- read_csv(here::here("data","gini_solt.csv"))
 
 # WVS/IVS data aggregated
 wvs <- readRDS(here::here("data","ivs_aggregated.rds")) %>%
-  mutate(iso3c = COUNTRY_ALPHA,
+  mutate(iso3c = countrycode(COW_NUM, "cown", "iso3c"),
          wave = case_when(
            year %in% c(1980:1989) ~ 1987,
            year %in% c(1990:1995) ~ 1992,
@@ -54,13 +53,7 @@ wvs <- readRDS(here::here("data","ivs_aggregated.rds")) %>%
 
 ### Wrangling/interpolation
 ```{r loaddata2, message = F, warning = F}
-wvs <- wvs %>% # create an interpolated version of wvs variables that takes the mean by country to fill in missing - most countries do not change much over time
 
-  group_by(iso3c) %>%
-  mutate(liberal_ix = mean(liberal, na.rm = T),
-         liberal_redist_ix = mean(liberal_redist, na.rm = T),
-         confidence_gov_ix = mean(confidence_gov, na.rm = T)) %>%
-  ungroup()
 
 
 # Institutional Logic - welfare state penetration
@@ -160,20 +153,34 @@ df_na <- left_join(df_na, crpt, by = c("iso3c_wave"))
 wvs_2 <- wvs %>%
   group_by(iso3c_wave) %>%
   summarise_all(mean, na.rm = T) %>%
-  dplyr::select(iso3c_wave, liberal_ix, liberal_redist_ix, confidence_gov_ix)
+  dplyr::select(iso3c_wave, liberal, liberal_redist, confidence_gov)
 
-wvs <- wvs %>%
-  group_by(iso3c, year) %>%
-  summarise_all(mean, na.rm = T) %>%
-  dplyr::select(-c(wave, iso3c_wave, liberal_ix, liberal_redist_ix, confidence_gov_ix))
 
-df_na <- left_join(df_na, wvs, by = c("iso3c", "year"))
-df_na <- left_join(df_na, wvs_2, by = "iso3c_wave")
+df_na <- left_join(df_na, wvs_2, by = c("iso3c_wave"))
 df_na <- left_join(df_na, gdp, by = c("iso3c", "year"))
 df_na <- left_join(df_na, regime, by = c("iso3c", "year"))
 
+# create an interpolated version of wvs variables that takes the mean by country to fill in missing - most countries do not change much over time
 
-rm(gini,socx,crpt)
+# get country means
+df_na <- df_na %>% 
+  group_by(iso3c) %>%
+  mutate(liberal_ix = mean(liberal, na.rm = T),
+         liberal_redist_ix = mean(liberal_redist, na.rm = T),
+         confidence_gov_ix = mean(confidence_gov, na.rm = T)) %>%
+  ungroup()
+
+# replace missing with means
+df_na <- df_na %>%
+  mutate(liberal_i = ifelse(is.na(liberal), liberal_ix, liberal),
+         liberal_redist_i = ifelse(is.na(liberal_redist), liberal_redist_ix, liberal_redist),
+         confidence_gov_i = ifelse(is.na(confidence_gov), confidence_gov_ix, confidence_gov),
+         liberal = ifelse(liberal == "NaN", NA, liberal),
+         liberal_redist = ifelse(liberal_redist == "NaN", NA, liberal_redist),
+         confidence_gov = ifelse(confidence_gov == "NaN", NA, confidence_gov))
+
+
+rm(gini,socx,crpt, wvs_2)
 rm(imm_long)
 ```
 
@@ -193,11 +200,7 @@ df_na <- df_na %>%
          inclarge_w = inclarge - inclarge_b,
          reduce_w = reduce - reduce_b,
          reduce_large_w = reduce_large - reduce_large_b,
-  # fill in missing from ivs
-         liberal_i = ifelse(is.na(liberal), liberal_ix, liberal),
-         liberal_redist_i = ifelse(is.na(liberal_redist), liberal_redist_ix, liberal_redist),
-         confidence_gov_i = ifelse(is.na(confidence_gov), confidence_gov_ix, confidence_gov)) %>%
-  dplyr::select(-c(confidence_gov_ix, liberal_ix, liberal_redist_ix))
+         democratic = regime)
 
 
 ```
@@ -341,15 +344,15 @@ df_macro <- df_macro %>%
 
 # create a variable with all values in one, and then split by high and middle income countries
 # need to find a way to adjust for economic growth and unblanaced time points for calculating GDP
-
+rich_countries <- c("NOR","CHE","DNK","USA","AUS","DEU","AUT","SWE","JPN","NZL","GBR","FRA","CAN","ITA","FIN","NOR","IRL","NLD")
 df_macro <- df_macro %>%
-  mutate(liberal_all = ifelse(!is.na(liberal), liberal, liberal_i),
-         liberal_high = ifelse(wave < 2009 & gdp_i > 2.5, liberal_all, NA),
-         liberal_high = ifelse(wave >= 2009 & gdp_i > 3.3, liberal_all, liberal_high),
-         liberal_high = ifelse(iso3c %in% c("NZL","JPN","DNK","GBR","CHE","AUT", "FIN","DEU"), liberal_all, liberal_high), # selection criteria performs poorly, do rest by hand here
-         liberal_low = ifelse(is.na(liberal_high), liberal_all, NA),
-         liberal_low = ifelse(iso3c %in% c("HRV","CYP","ITA","SVN","CZE"), NA, liberal_low),
-         gdp_di = ifelse(!is.na(liberal_high), 1, 0)) # remove some questionable cases
+  mutate(liberal_high = ifelse(iso3c %in% rich_countries, liberal, NA), 
+         liberal_low = ifelse(is.na(liberal_high), liberal, NA),
+         liberal_low = ifelse(iso3c %in% c("SVN","CZE","CYP","ESP","PRT"), NA, liberal_low), # remove some questionable mid-GDP cases
+         liberal_high_i = ifelse(iso3c %in% rich_countries, liberal_i, NA), 
+         liberal_low_i = ifelse(is.na(liberal_high), liberal_i, NA),
+         liberal_low_i = ifelse(iso3c %in% c("SVN","CZE","CYP","ESP","PRT"), NA, liberal_low_i),
+         gdp_di = ifelse(!is.na(liberal_low_i), 0, 1)) 
 
 
 
@@ -371,13 +374,13 @@ df_macro <- df_macro %>%
          noconf_govZ_i = ifelse(noconf_govZ_i > 2, 2, noconf_govZ_i),
          noconf_govZ = ifelse(noconf_govZ < -2, -2, noconf_govZ),
          noconf_govZ = ifelse(noconf_govZ > 2, 2, noconf_govZ),
-         cpi_low = ifelse(!is.na(liberal_low), cpiZ, NA),
-         cpi_high = ifelse(!is.na(liberal_high), cpiZ, NA),
-         noconf_govZ_low = ifelse(!is.na(liberal_low), noconf_govZ, NA),
-         noconf_govZ_hi = ifelse(!is.na(liberal_high), noconf_govZ, NA),
-         gdp_lo = ifelse(!is.na(liberal_low), gdp_pc_10k, NA),
-         gdp_hi = ifelse(!is.na(liberal_high), gdp_pc_10k, NA)) %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_all, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, cpi, cpi_ii, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
+         cpi_low = ifelse(!is.na(liberal_low_i), cpiZ, NA),
+         cpi_high = ifelse(!is.na(liberal_high_i), cpiZ, NA),
+         noconf_govZ_low = ifelse(!is.na(liberal_low_i), noconf_govZ, NA),
+         noconf_govZ_hi = ifelse(!is.na(liberal_high_i), noconf_govZ, NA),
+         gdp_lo = ifelse(!is.na(liberal_low_i), gdp_pc_10k, NA),
+         gdp_hi = ifelse(!is.na(liberal_high_i), gdp_pc_10k, NA)) %>%
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_high_i, liberal_low_i, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, cpi, cpi_ii, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i)
 
 
 # create within and between values

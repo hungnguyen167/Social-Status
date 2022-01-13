@@ -70,6 +70,52 @@ ggplot() +
 
 ```
 
+```{r spec_by_mod_prep}
+df_ame_mod <- df_ame %>%
+  arrange(mod_var, mod_b) %>%
+  mutate(count = row_number())
+
+df_ame_mod <- df_ame_mod %>%
+  mutate(mod_b_lib = ifelse(mod_var == "A_Liberal_values", mod_b, NA),
+         mod_b_trst = ifelse(mod_var == "B_No_confidence", mod_b, NA),
+         mod_b_cpi = ifelse(mod_var == "C_Corruption_percept", mod_b, NA))
+```
+
+
+```{r spec_by_mod_plot}
+agg_png(here::here("results","Fig4.png"), height = 600, width = 1200, res = 144)
+df_ame_mod %>%
+  ggplot() +
+  #geom_errorbar(aes(ymin = lb, ymax = ub), color = "thistle1") +
+  geom_errorbar(aes(x = count, ymin = mod_b-(2.576*mod_se), ymax = mod_b+(2.576*mod_se)), color = "grey", width = 0) +
+  geom_point(aes(x = count, y = mod_b_lib), color = "#73D055FF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_point(aes(x = count, y = mod_b_trst), color = "#287D8EFF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_point(aes(x = count, y = mod_b_cpi), color = "#453781FF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_vline(xintercept = length(df_ame_mod[df_ame_mod$mod_var == "C_Corruption_percept",1])-0.5, color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = (2*length(df_ame_mod[df_ame_mod$mod_var == "C_Corruption_percept",1]))-0.5, color = "grey", linetype = "dashed") +
+  geom_hline(yintercept = 0, color = "grey") +
+  labs(#color = "Effect at 95% CI", 
+    x = "Models Ordered by Government Heuristic\nand Moderation Coefficient (Y11)", y = "Moderation Coefficient\n(XY-standardized)") +
+  ylim(-0.12,0.135) +
+  #xlim(0,338) +
+  scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
+  annotate(geom = "text", x = 56, y = 0.13, label = "Liberal Values\nhigh abstraction", color = "#73D055FF") +
+  annotate(geom = "text", x = 168, y = 0.13, label = "Lack of Trust\nmedium abstraction", color = "#287D8EFF") +
+  annotate(geom = "text", x = 280, y = 0.13, label = "Corruption Perceptions\nlow abstraction", color = "#453781FF") +
+  theme_classic()
+dev.off()
+
+knitr::include_graphics(here::here("results","Fig4.png"))
+```
 
 
 
