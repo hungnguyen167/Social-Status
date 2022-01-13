@@ -83,11 +83,13 @@ df_ame_mod <- df_ame_mod %>%
 
 
 ```{r spec_by_mod_plot}
-agg_png(here::here("results","Fig4.png"), height = 600, width = 1200, res = 144)
-df_ame_mod %>%
+agg_png(here::here("results","Fig4_top.png"), height = 600, width = 1200, res = 144)
+fig4 <- df_ame_mod %>%
   ggplot() +
   #geom_errorbar(aes(ymin = lb, ymax = ub), color = "thistle1") +
   geom_errorbar(aes(x = count, ymin = mod_b-(2.576*mod_se), ymax = mod_b+(2.576*mod_se)), color = "grey", width = 0) +
+  geom_vline(xintercept = length(df_ame_mod[df_ame_mod$mod_var == "C_Corruption_percept",1])-0.5, color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = (2*length(df_ame_mod[df_ame_mod$mod_var == "C_Corruption_percept",1]))-0.5, color = "grey", linetype = "dashed") +
   geom_point(aes(x = count, y = mod_b_lib), color = "#73D055FF", 
              #shape = "|", 
              shape = 16,
@@ -100,23 +102,55 @@ df_ame_mod %>%
              #shape = "|", 
              shape = 16,
              size = 2, show.legend =F) +
-  geom_vline(xintercept = length(df_ame_mod[df_ame_mod$mod_var == "C_Corruption_percept",1])-0.5, color = "grey", linetype = "dashed") +
-  geom_vline(xintercept = (2*length(df_ame_mod[df_ame_mod$mod_var == "C_Corruption_percept",1]))-0.5, color = "grey", linetype = "dashed") +
   geom_hline(yintercept = 0, color = "grey") +
   labs(#color = "Effect at 95% CI", 
-    x = "Models Ordered by Government Heuristic\nand Moderation Coefficient (Y11)", y = "Moderation Coefficient\n(XY-standardized)") +
+    #x = "Models Ordered by Government Heuristic\nand Moderation Coefficient (Y11)", 
+    y = "Moderation Coefficient\n(XY-standardized)") +
   ylim(-0.12,0.135) +
   #xlim(0,338) +
   scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
   annotate(geom = "text", x = 56, y = 0.13, label = "Liberal Values\nhigh abstraction", color = "#73D055FF") +
   annotate(geom = "text", x = 168, y = 0.13, label = "Lack of Trust\nmedium abstraction", color = "#287D8EFF") +
   annotate(geom = "text", x = 280, y = 0.13, label = "Corruption Perceptions\nlow abstraction", color = "#453781FF") +
-  theme_classic()
+  theme_classic() +
+    theme(
+    legend.position = "none",
+    axis.title.x = element_blank())
+fig4
 dev.off()
 
-knitr::include_graphics(here::here("results","Fig4.png"))
+knitr::include_graphics(here::here("results","Fig4_top.png"))
 ```
 
+```{r fig4_bottom}
+ivlabs <- c("GDP\n  interaction", "GDP\ncontrol", "Gini\ncontrol", "Socx\ncontrol", "% F.Born\ncontrol", "Imputed\nmoderator")
+
+fig4_bot <- ggplot(df_ame_mod) +
+  geom_vline(xintercept = length(df_ame_mod[df_ame_mod$mod_var == "C_Corruption_percept",1])-0.5, color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = (2*length(df_ame_mod[df_ame_mod$mod_var == "C_Corruption_percept",1]))-0.5, color = "grey", linetype = "dashed") +
+  geom_tile(aes(x = count, y = 1, fill = factor(gdp_m_interaction)), height = 0.133, width = 0.3) +
+  geom_tile(aes(x = count, y = 0.8, fill = factor(control_gdp)), height = 0.133, width = 0.3) +
+  geom_tile(aes(x = count, y = 0.6, fill = factor(control_gini)), height = 0.133, width = 0.3) +
+  geom_tile(aes(x = count, y = 0.4, fill = factor(control_socx)), height = 0.133, width = 0.3) +
+  geom_tile(aes(x = count, y = 0.2, fill = factor(control_fb)), height = 0.133, width = 0.3) +
+  geom_tile(aes(x = count, y = 0, fill = factor(mod_imputed)), height = 0.133, width = 0.3) +
+  scale_y_continuous(breaks = c(1,0.8,0.6,0.4,0.2,0), labels=ivlabs) +
+  scale_fill_manual(values = c("white","darkblue")) +
+    theme_classic() +
+  scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
+  xlab("Models Ordered by Government Heuristic\nand Moderation Coefficient (Y11)") +
+  theme(
+    legend.position = "none",
+    axis.title.y = element_blank())
+fig4_bot
+```
+```{r}
+agg_png(here::here("results","Fig4.png"), height = 1000, width = 1200, res = 144)
+ggarrange(fig4,fig4_bot, ncol = 1)
+dev.off()
+
+knitr::include_graphics(here::here("results", "Fig4.png"))
+```
 
 
 Colophon
