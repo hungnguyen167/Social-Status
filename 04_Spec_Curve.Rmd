@@ -93,25 +93,25 @@ fig4 <- df_ame_mod %>%
   geom_point(aes(x = count, y = mod_b_lib), color = "#73D055FF", 
              #shape = "|", 
              shape = 16,
-             size = 2, show.legend =F) +
+             size = 1.8, show.legend =F) +
   geom_point(aes(x = count, y = mod_b_trst), color = "#287D8EFF", 
              #shape = "|", 
              shape = 16,
-             size = 2, show.legend =F) +
+             size = 1.8, show.legend =F) +
   geom_point(aes(x = count, y = mod_b_cpi), color = "#453781FF", 
              #shape = "|", 
              shape = 16,
-             size = 2, show.legend =F) +
+             size = 1.8, show.legend =F) +
   geom_hline(yintercept = 0, color = "grey") +
   labs(#color = "Effect at 95% CI", 
     #x = "Models Ordered by Government Heuristic\nand Moderation Coefficient (Y11)", 
     y = "Moderation Coefficient\n(XY-standardized)") +
-  ylim(-0.12,0.135) +
+  ylim(-0.115,0.125) +
   #xlim(0,338) +
   scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
-  annotate(geom = "text", x = 56, y = 0.13, label = "Liberal Values\nhigh abstraction", color = "#73D055FF") +
-  annotate(geom = "text", x = 168, y = 0.13, label = "Lack of Trust\nmedium abstraction", color = "#287D8EFF") +
-  annotate(geom = "text", x = 280, y = 0.13, label = "Corruption Perceptions\nlow abstraction", color = "#453781FF") +
+  annotate(geom = "text", x = 56, y = 0.12, label = "Liberal Values\nhigh abstraction", color = "#73D055FF") +
+  annotate(geom = "text", x = 168, y = 0.12, label = "Lack of Trust\nmedium abstraction", color = "#287D8EFF") +
+  annotate(geom = "text", x = 280, y = 0.12, label = "Corruption Perceptions\nlow abstraction", color = "#453781FF") +
   theme_classic() +
     theme(
     legend.position = "none",
@@ -145,7 +145,7 @@ fig4_bot <- ggplot(df_ame_mod) +
 fig4_bot
 ```
 ```{r}
-agg_png(here::here("results","Fig4.png"), height = 1000, width = 1200, res = 144)
+agg_png(here::here("results","Fig4.png"), height = 800, width = 1200, res = 144)
 ggarrange(fig4,fig4_bot, ncol = 1)
 dev.off()
 
