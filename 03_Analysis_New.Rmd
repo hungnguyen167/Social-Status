@@ -129,12 +129,14 @@ Hypothesis: In countries where the government does less redistribution or has a 
 
 ```{r figx2}
 #agg_png(here::here("results","Fig2.png"), res = 144, height = 800, width = 1000)
-Fig2.1 <- df_macro %>%
+Fig2.1 <- 
+  df_macro %>%
   ggplot() +
-  geom_text(aes(y = corr, x = liberal_high, label = iso3c), color = "#20A387FF", size = 3) +
-  geom_text(aes(y = corr, x = liberal_low, label = iso3c), color = "midnightblue", size = 3) +
-  geom_text(aes(y = corr, x = liberal_i, label = iso3c), color = "grey", size = 2) +
-  geom_smooth(aes(y = corr, x = liberal_all), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
+ #geom_text(aes(y = corr, x = liberal_high, label = iso3c), color = "#20A387FF", size = 3) +
+  geom_text(aes(y = corr, x = liberal, label = iso3c), color = "black", size = 3) +
+  #geom_text(aes(y = corr, x = liberal_low, label = iso3c), color = "midnightblue", size = 3) +
+  geom_text(aes(y = corr, x = ifelse(is.na(liberal), liberal_i, NA), label = iso3c), color = "grey", size = 2) +
+  geom_smooth(aes(y = corr, x = liberal_i), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
   geom_smooth(aes(y = corr, x = liberal_high), method = 'lm', se = F, color = "#20A387FF") +
   geom_smooth(aes(y = corr, x = liberal_low), method = 'lm', se = F, color = "midnightblue") +
   # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
@@ -162,6 +164,7 @@ Fig2.1 <- df_macro %>%
 Fig2.2 <- df_macro %>%
   ggplot() +
   geom_text(aes(y = corr, x = cpiZ, label = iso3c), color = "black", size = 3) +
+  geom_text(aes(y = corr, x = ifelse(is.na(cpiZ), cpiZ_i, NA), label = iso3c), color = "grey", size = 2) +
   geom_smooth(aes(y = corr, x = cpiZ), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
   geom_smooth(aes(y = corr, x = cpi_high), method = 'lm', se = F, color = "#20A387FF") +
   geom_smooth(aes(y = corr, x = cpi_low), method = 'lm', se = F, color = "midnightblue") +
@@ -184,6 +187,7 @@ Fig2.2 <- df_macro %>%
 Fig2.3 <- df_macro %>%
   ggplot() +
   geom_text(aes(y = corr, x = noconf_govZ, label = iso3c), color = "black", size = 3) +
+  geom_text(aes(y = corr, x = ifelse(is.na(noconf_govZ), noconf_govZ_i, NA), label = iso3c), color = "grey", size = 2) +
   geom_smooth(aes(y = corr, x = noconf_govZ), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
   geom_smooth(aes(y = corr, x = noconf_govZ_hi), method = 'lm', se = F, color = "#20A387FF") +
   geom_smooth(aes(y = corr, x = noconf_govZ_low), method = 'lm', se = F, color = "midnightblue") +
@@ -301,11 +305,11 @@ model_names <- names(model_list)
 
 for (m in 1:length(model_list)) {
   
-  mn <- as.name(model_names[m])
+  #mn <- as.name(model_names[m])
   
   df_ame[m,1] <- paste(as.character(model_list[[m]][["call"]]), sep = "", collapse = "")
   
-  temp <- as.data.frame(get(mn)[["coefficients"]])
+  temp <- as.data.frame(get(model_names[m])[["coefficients"]])
   
   temp <- temp[grepl('cpiZ|noconf_govZ|libZ|incdiff_large', rownames(temp)), 1:2]
   
@@ -322,8 +326,8 @@ for (m in 1:length(model_list)) {
 
 ```{r ameclean}
 df_ame <- df_ame %>%
-  mutate(mod_var = ifelse(grepl("noconf_govZ", Model, fixed = T), "No_confidence", 
-                   ifelse(grepl("cpiZ", Model), "Corruption_percept", "Liberal_values")),
+  mutate(mod_var = ifelse(grepl("noconf_govZ", Model, fixed = T), "B_No_confidence", 
+                   ifelse(grepl("cpiZ", Model), "C_Corruption_percept", "A_Liberal_values")),
          mod_imputed = ifelse(grepl("_i", df_ame$Model), "Yes", "No"),
          ri_cyear = ifelse(grepl("iso3c_year", df_ame$Model), "Yes", "No"),
          ri_country = ifelse(grepl("iso3c)", df_ame$Model), "Yes", "No"),
@@ -332,6 +336,7 @@ df_ame <- df_ame %>%
                    ifelse(grepl("gini", df_ame$Model), "Gini_disp",
                    ifelse(grepl("socx", df_ame$Model), "SocX",
                    ifelse(grepl("pct_fb", df_ame$Model), "Pct_F_Born", "None")))),
+         i_level_control = ifelse(grepl("female", df_ame$Model), "Yes", "No"),
          gdp_m_interaction = ifelse(grepl(":gdp_pc_10k_C", df_ame$Model), "Yes", "No")
          )
 
