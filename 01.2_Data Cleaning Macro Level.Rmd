@@ -380,7 +380,7 @@ df_macro <- df_macro %>%
          noconf_govZ_hi = ifelse(!is.na(liberal_high_i), noconf_govZ, NA),
          gdp_lo = ifelse(!is.na(liberal_low_i), gdp_pc_10k, NA),
          gdp_hi = ifelse(!is.na(liberal_high_i), gdp_pc_10k, NA)) %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_high_i, liberal_low_i, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, cpi, cpi_ii, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i, gap_no_gov)
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_high_i, liberal_low_i, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, cpi, cpi_ii, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i, gap_no_gov, gov_redist_agree, incdiff_large_agree)
 
 
 # create within and between values
