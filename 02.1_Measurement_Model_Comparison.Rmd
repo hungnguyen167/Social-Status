@@ -50,7 +50,7 @@ lavTestLRT(M1_fit, M2_fit)
 Looking at the modification indices by group suggests that even if we freed the association in 3 groups, the chi-square value would only go down by 150 points or so (the highest groups have just over 50 as their modification indices, which means that is how much the chi-square would be reduced if this parameter were freed). Thus, even with a less strict model it will still fit the data significantly worse. There is no empirical evidence whatsoever that these two questions should be used to measure a single latent variable.
 
 ```{r modi}
-modindices(M2_fit, minimum.value = 10)
+modindices(M2_fit, minimum.value = 40)
 ```
 
 
