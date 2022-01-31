@@ -1,756 +1,268 @@
+# SETUP
+
+## Load libraries and dataset. Install if packages do not exist!
+
+library(lme4)
+library(modelsummary)
+library(brms)
+
+## Functions
+
+### A function to generate models
+
+create_mod <- function(dv, ivs, ixs, cvs, prefix, data, suffix=NULL, start, gdpx=FALSE, gdp) {
+    count <- start
+    for(iv in ivs){
+      for (ix in ixs) {
+        if(gdpx){
+            f <<- as.formula(paste(dv, 
+                                 paste(iv, ix, paste(iv, ix, gdp, sep = " : "), paste(cvs, collapse = " + "), sep = " + "),
+                                 sep = "~"))
+        }
+        else{
+            f <<- as.formula(paste(dv, 
+                                 paste(iv, ix, paste(iv, ix,sep = " : "), paste(cvs, collapse = " + "), sep = " + "),
+                                 sep = "~"))
+        }
+        print(f)
+        mod <- lmer(f, data = data)
+        assign(paste0(prefix, count, suffix), mod, envir = .GlobalEnv)
+        count = count +1
+      }
+    } 
+    count <- start
+}
+
+### A function to retrieve goodness-of-fit statistics from models and append to a dataframe
+
+create_df_gof <- function(list_mod) {
+    df_gof <- data.frame(aic=numeric(), bic=numeric(), r2.conditional=numeric(), r2.marginal=numeric(),
+                       icc=numeric(), rmse=numeric(),sigma=numeric(),nobs=numeric())
+    for (mod_name in list_mod){
+      mod <- get(mod_name)
+      gof <- get_gof(mod, metrics = "all")
+      row.names(gof) <- mod_name
+      df_gof <- rbind(df_gof, gof)
+    }
+    return(df_gof)
+}
 
 
-
-# interaction models for plotting
-
-### With Country-Year only
-
-M_4.01 <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C + (1 | iso3c_wave), data = df_na))
-
-M_4.02 <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C + (1 | iso3c_wave), data = df_na))
-
-M_4.03 <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C + (1 | iso3c_wave), data = df_na))
-
-M_4.04i <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C + (1 | iso3c_wave), data = df_na))
-
-M_4.05i <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C + (1 | iso3c_wave), data = df_na))
-
-M_4.06i <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C + (1 | iso3c_wave), data = df_na))
-
-M_4.07wb <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w  + (1 | iso3c_wave), data = df_na))
-
-M_4.08wb <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w  + (1 | iso3c_wave), data = df_na))
-
-M_4.09wb <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w  + (1 | iso3c_wave), data = df_na))
-
-M_4.10iwb <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w  + (1 | iso3c_wave), data = df_na))
-
-M_4.11iwb <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w  + (1 | iso3c_wave), data = df_na))
-
-M_4.12iwb <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w  + (1 | iso3c_wave), data = df_na))
-
-### socx_C control
-
-M_5.01 <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.02 <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.03 <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.04i <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.05i <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.06i <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.07wb <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.08wb <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.09wb <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.10iwb <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.11iwb <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.12iwb <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave), data = df_na))
-
-## gini
-
-M_6.01 <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.02 <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.03 <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.04i <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.05i <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.06i <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.07wb <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.08wb <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.09wb <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.10iwb <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.11iwb <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.12iwb <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-# gdp
-
-M_7.01 <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_7.02 <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_7.03 <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_7.04i <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_7.05i <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_7.06i <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_7.07wb <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_7.08wb <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_7.09wb <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_7.10iwb <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_7.11iwb <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_7.12iwb <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-# immigration
-
-M_8.01 <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.02 <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.03 <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.04i <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.05i <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.06i <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.07wb <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.08wb <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.09wb <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.10iwb <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.11iwb <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.12iwb <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-
-### With Country-Year and Country
-
-M_4.13c <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_4.14c <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_4.15c <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_4.16ic <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_4.17ic <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_4.18ic <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_4.19wbc <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_4.20wbc <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_4.21wbc <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_4.22iwbc <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_4.23iwbc <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_4.24iwbc <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-### socx_C control
-
-M_5.13c <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_5.14c <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_5.15c <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_5.16ic <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_5.17ic <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_5.18ic <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_5.19wbc <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_5.20wbc <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_5.21wbc <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_5.22iwbc <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_5.23iwbc <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_5.24iwbc <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-## gini
-
-M_6.13c <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_6.14c <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_6.15c <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_6.16ic <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_6.17ic <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_6.18ic <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_6.19wbc <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_6.20wbc <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_6.21wbc <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_6.22iwbc <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_6.23iwbc <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_6.24iwbc <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-# gdp
-
-M_7.13c <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_7.14c <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_7.15c <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_7.16ic <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_7.17ic <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_7.18ic <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_7.19wbc <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_7.20wbc <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_7.21wbc <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_7.22iwbc <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_7.23iwbc <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_7.24iwbc <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-# immigration
-
-M_8.13c <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_8.14c <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_8.15c <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_8.16ic <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_8.17ic <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_8.18ic <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_8.19wbc <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_8.20wbc <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_8.21wbc <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_8.22iwbc <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_8.23iwbc <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-M_8.24iwbc <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c), data = df_na))
-
-
-# WITH GDP INTERACTIONS
-
-### With Country-Year only
-
-M_4.01_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_C + gdp_pc_10k_C +noconf_govZ:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave), data = df_na))
-
-M_4.02_gdp <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_C + gdp_pc_10k_C +cpiZ:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave), data = df_na))
-
-M_4.03_gdp <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_C + gdp_pc_10k_C +libZ:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave), data = df_na))
-
-M_4.04i_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_C + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave), data = df_na))
-
-M_4.05i_gdp <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_C + gdp_pc_10k_C +cpiZ_i:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave), data = df_na))
-
-M_4.06i_gdp <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_C + gdp_pc_10k_C +libZ_i:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave), data = df_na))
-
-M_4.07wb_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_w + gdp_pc_10k_C +noconf_govZ:incdiff_large_w:gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_4.08wb_gdp <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_w + gdp_pc_10k_C +cpiZ:incdiff_large_w:gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_4.09wb_gdp <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_w + gdp_pc_10k_C +libZ:incdiff_large_w:gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_4.10iwb_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_w + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_w  + (1 | iso3c_wave), data = df_na))
-
-M_4.11iwb_gdp <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_w + gdp_pc_10k_C +cpiZ_i:incdiff_large_w:gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-M_4.12iwb_gdp <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_w + gdp_pc_10k_C +libZ_i:incdiff_large_w:gdp_pc_10k_C  + (1 | iso3c_wave), data = df_na))
-
-### socx_C control
-
-M_5.01_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_C + gdp_pc_10k_C +noconf_govZ:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.02_gdp <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_C + gdp_pc_10k_C +cpiZ:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.03_gdp <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_C + gdp_pc_10k_C +libZ:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.04i_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_C + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.05i_gdp <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_C + gdp_pc_10k_C +cpiZ_i:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.06i_gdp <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_C + gdp_pc_10k_C +libZ_i:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.07wb_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_w + gdp_pc_10k_C +noconf_govZ:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.08wb_gdp <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_w + gdp_pc_10k_C +cpiZ:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.09wb_gdp <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_w + gdp_pc_10k_C +libZ:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.10iwb_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_w + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.11iwb_gdp <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_w + gdp_pc_10k_C +cpiZ_i:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave), data = df_na))
-
-M_5.12iwb_gdp <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_w + gdp_pc_10k_C +libZ_i:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave), data = df_na))
-
-## gini
-
-M_6.01_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_C + gdp_pc_10k_C +noconf_govZ:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.02_gdp <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_C + gdp_pc_10k_C +cpiZ:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.03_gdp <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_C + gdp_pc_10k_C +libZ:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.04i_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_C + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.05i_gdp <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_C + gdp_pc_10k_C +cpiZ_i:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.06i_gdp <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_C + gdp_pc_10k_C +libZ_i:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.07wb_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_w + gdp_pc_10k_C +noconf_govZ:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.08wb_gdp <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_w + gdp_pc_10k_C +cpiZ:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.09wb_gdp <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_w + gdp_pc_10k_C +libZ:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.10iwb_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_w + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.11iwb_gdp <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_w + gdp_pc_10k_C +cpiZ_i:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-M_6.12iwb_gdp <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_w + gdp_pc_10k_C +libZ_i:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave), data = df_na))
-
-# gdp
-
-#### redundant
-
-# immigration
-
-M_8.01_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_C + gdp_pc_10k_C +noconf_govZ:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.02_gdp <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_C + gdp_pc_10k_C +cpiZ:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.03_gdp <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_C + gdp_pc_10k_C +libZ:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.04i_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_C + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.05i_gdp <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_C + gdp_pc_10k_C + cpiZ_i:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.06i_gdp <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_C + gdp_pc_10k_C +libZ_i:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.07wb_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_w + gdp_pc_10k_C + noconf_govZ:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.08wb_gdp <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_w + gdp_pc_10k_C + cpiZ:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.09wb_gdp <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_w + gdp_pc_10k_C +libZ:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.10iwb_gdp <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_w + gdp_pc_10k_C + noconf_govZ_i:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.11iwb_gdp <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_w + gdp_pc_10k_C + cpiZ_i:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
-
-M_8.12iwb_gdp <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_w + gdp_pc_10k_C + libZ_i:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave), data = df_na))
 
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
+########################################################################################################################
 
-# MODELS WITH AGE, SEX, AND EDUCATION
+# BASE MODELS
 
-### With Country-Year only
+## With Country-Year only
+### bare models
+dv <- "gov_redist_C"
+ivs <- c("noconf_govZ", "cpiZ", "libZ", "noconf_govZ_i", "cpiZ_i", "libZ_i")
+ixs <- c("incdiff_large_C", "incdiff_large_w")
+cvs <- "(1|iso3c_wave)"
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 1, data = df_na)
 
-M_4.01_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C + (1 | iso3c_wave) + ageC + female + educyrs + ageC + female + educyrs, data = df_na))
+#### Bayesian - test phase
 
-M_4.02_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C + (1 | iso3c_wave) + ageC + female + educyrs + ageC + female + educyrs, data = df_na))
+list_mod <- c(paste0("M_4.", 1:12))
+df_gof <- create_df_gof(list_mod =  list_mod)
+pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 
-M_4.03_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C + (1 | iso3c_wave) + ageC + female + educyrs + ageC + female + educyrs, data = df_na))
+f <- M_4.1@call[["formula"]]
+M_bayes.1 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
 
-M_4.04i_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C + (1 | iso3c_wave) + ageC + female + educyrs + ageC + female + educyrs, data = df_na))
 
-M_4.05i_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_4.06i_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.07wb_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.08wb_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.09wb_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.10iwb_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.11iwb_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.12iwb_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
 ### socx_C control
 
-M_5.01_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)","socx_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 1, data = df_na)
 
-M_5.02_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_5.03_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+### gini
+cvs <- c("(1|iso3c_wave)","gini_disp_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 1, data = df_na)
 
-M_5.04i_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_5.05i_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_5.06i_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+### gdp
 
-M_5.07wb_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)","gdp_pc_10k_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = 1, data = df_na)
 
-M_5.08wb_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_5.09wb_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_5.10iwb_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+### immigration
+cvs <- c("(1|iso3c_wave)","pct_fb_i_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 1, data = df_na)
 
-M_5.11iwb_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_5.12iwb_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-## gini
 
-M_6.01_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_6.02_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+## With Country-Year and Country
 
-M_6.03_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+### bare models
+cvs <- c("(1|iso3c_wave)","(1|iso3c)")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 13, data = df_na)
 
-M_6.04i_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_6.05i_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_6.06i_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_6.07wb_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_6.08wb_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_6.09wb_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_6.10iwb_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_6.11iwb_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_6.12iwb_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-# gdp
-
-M_7.01_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_7.02_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_7.03_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_7.04i_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_7.05i_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_7.06i_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_7.07wb_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_7.08wb_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_7.09wb_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_7.10iwb_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_7.11iwb_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_7.12iwb <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-# immigration
-
-M_8.01_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.02_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.03_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.04i_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.05i_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.06i_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.07wb_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.08wb_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.09wb_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.10iwb_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.11iwb_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.12iwb_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-
-### With Country-Year and Country
-
-M_4.13c_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_4.14c_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_4.15c_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_4.16ic_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_4.17ic_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_4.18ic_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_4.19wbc_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_4.20wbc_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_4.21wbc_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_4.22iwbc_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_4.23iwbc_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_4.24iwbc_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
 ### socx_C control
 
-M_5.13c_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)", "(1|iso3c)","socx_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 13, data = df_na)
 
-M_5.14c_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_5.15c_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+### gini
+cvs <- c("(1|iso3c_wave)","(1|iso3c)","gini_disp_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 13, data = df_na)
 
-M_5.16ic_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_5.17ic_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+### gdp
 
-M_5.18ic_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)","(1|iso3c)","gdp_pc_10k_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = 13, data = df_na)
 
-M_5.19wbc_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_5.20wbc_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+### immigration
+cvs <- c("(1|iso3c_wave)","(1|iso3c)","pct_fb_i_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 13, data = df_na)
 
-M_5.21wbc_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_5.22iwbc_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_5.23iwbc_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+## WITH GDP INTERACTIONS
 
-M_5.24iwbc_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + socx_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+### Country-Year Only
 
-## gini
+dv <- "gov_redist_C"
+ivs <- c("noconf_govZ", "cpiZ", "libZ", "noconf_govZ_i", "cpiZ_i", "libZ_i")
+ixs <- c("incdiff_large_C", "incdiff_large_w")
+cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C")
 
-M_6.13c_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 25, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+           suffix = "_gdp", data = df_na)
 
-M_6.14c_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_6.15c_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_6.16ic_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+### socx_C control
+cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "socx_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 25, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+           suffix = "_gdp", data = df_na)
 
-M_6.17ic_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_6.18ic_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+### gini
+cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "gini_disp_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 25, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+           suffix = "_gdp", data = df_na)
 
-M_6.19wbc_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_6.20wbc_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_6.21wbc_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+### immigration
+cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "pct_fb_i_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 25, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+           suffix = "_gdp", data = df_na)
 
-M_6.22iwbc_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_6.23iwbc_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
 
-M_6.24iwbc_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + gini_disp_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-# gdp
+# BASE MODEL + AGE, SEX, AND EDUCATION
 
-M_7.13c_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+## With Country-Year only
+### bare models
 
-M_7.14c_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 37, data = df_na)
 
-M_7.15c_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+### socx_C control
+cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "socx_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 37, data = df_na)
 
-M_7.16ic_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+### gini
 
-M_7.17ic_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "gini_disp_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 37, data = df_na)
 
-M_7.18ic_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+### gdp
+ 
+cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "gdp_pc_10k_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = 37, data = df_na)
 
-M_7.19wbc_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+### immigration
+cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "pct_fb_i_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 37, data = df_na)
 
-M_7.20wbc_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
 
-M_7.21wbc_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
+## With Country-Year and Country
+### bare models
 
-M_7.22iwbc_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_7.23iwbc_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_7.24iwbc_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + gdp_pc_10k_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-# immigration
-
-M_8.13c_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_8.14c_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_8.15c_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_8.16ic_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_8.17ic_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_8.18ic_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_8.19wbc_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_8.20wbc_ind <- summary(lmer(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_8.21wbc_ind <- summary(lmer(gov_redist_C ~ libZ + libZ*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_8.22iwbc_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_8.23iwbc_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-M_8.24iwbc_ind <- summary(lmer(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + pct_fb_i_C  + (1 | iso3c_wave) + (1 | iso3c) + ageC + female + educyrs, data = df_na))
-
-# WITH GDP INTERACTIONS
-
-### With Country-Year only
-
-M_4.01_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_C + gdp_pc_10k_C +noconf_govZ:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.02_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_C + gdp_pc_10k_C +cpiZ:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.03_gdp_ind <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_C + gdp_pc_10k_C +libZ:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.04i_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_C + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.05i_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_C + gdp_pc_10k_C +cpiZ_i:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.06i_gdp_ind <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_C + gdp_pc_10k_C +libZ_i:incdiff_large_C:gdp_pc_10k_C + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.07wb_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_w + gdp_pc_10k_C +noconf_govZ:incdiff_large_w:gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.08wb_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_w + gdp_pc_10k_C +cpiZ:incdiff_large_w:gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.09wb_gdp_ind <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_w + gdp_pc_10k_C +libZ:incdiff_large_w:gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.10iwb_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_w + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_w  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.11iwb_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_w + gdp_pc_10k_C +cpiZ_i:incdiff_large_w:gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_4.12iwb_gdp_ind <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_w + gdp_pc_10k_C +libZ_i:incdiff_large_w:gdp_pc_10k_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 49, data = df_na)
 
 ### socx_C control
 
-M_5.01_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_C + gdp_pc_10k_C +noconf_govZ:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "socx_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 49, data = df_na)
 
-M_5.02_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_C + gdp_pc_10k_C +cpiZ:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+### gini
 
-M_5.03_gdp_ind <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_C + gdp_pc_10k_C +libZ:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "gini_disp_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 49, data = df_na)
 
-M_5.04i_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_C + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+### gdp
 
-M_5.05i_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_C + gdp_pc_10k_C +cpiZ_i:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "gdp_pc_10k_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = 49, data = df_na)
 
-M_5.06i_gdp_ind <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_C + gdp_pc_10k_C +libZ_i:incdiff_large_C:gdp_pc_10k_C+ socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+### immigration
 
-M_5.07wb_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_w + gdp_pc_10k_C +noconf_govZ:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "pct_fb_i_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 49, data = df_na)
 
-M_5.08wb_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_w + gdp_pc_10k_C +cpiZ:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+## With GDP interactions
+### Country-Year Only
 
-M_5.09wb_gdp_ind <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_w + gdp_pc_10k_C +libZ:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_5.10iwb_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_w + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs")
 
-M_5.11iwb_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_w + gdp_pc_10k_C +cpiZ_i:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 61, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+           suffix = "_gdp", data = df_na)
 
-M_5.12iwb_gdp_ind <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_w + gdp_pc_10k_C +libZ_i:incdiff_large_w:gdp_pc_10k_C + socx_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-## gini
 
-M_6.01_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_C + gdp_pc_10k_C +noconf_govZ:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+### socx_C control
+cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "socx_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 61, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+           suffix = "_gdp", data = df_na)
 
-M_6.02_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_C + gdp_pc_10k_C +cpiZ:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_6.03_gdp_ind <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_C + gdp_pc_10k_C +libZ:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+### gini
+cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "gini_disp_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 61, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+           suffix = "_gdp", data = df_na)
 
-M_6.04i_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_C + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_6.05i_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_C + gdp_pc_10k_C +cpiZ_i:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_6.06i_gdp_ind <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_C + gdp_pc_10k_C +libZ_i:incdiff_large_C:gdp_pc_10k_C+ gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+### immigration
+cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "pct_fb_i_C")
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 61, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+           suffix = "_gdp", data = df_na)
 
-M_6.07wb_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_w + gdp_pc_10k_C +noconf_govZ:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_6.08wb_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_w + gdp_pc_10k_C +cpiZ:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_6.09wb_gdp_ind <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_w + gdp_pc_10k_C +libZ:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_6.10iwb_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_w + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-M_6.11iwb_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_w + gdp_pc_10k_C +cpiZ_i:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
+length(ls(pattern="M_")) ## 336 models in total
 
-M_6.12iwb_gdp_ind <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_w + gdp_pc_10k_C +libZ_i:incdiff_large_w:gdp_pc_10k_C + gini_disp_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
-# gdp
 
-#### redundant
 
-# immigration
-
-M_8.01_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_C + gdp_pc_10k_C +noconf_govZ:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.02_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_C + gdp_pc_10k_C +cpiZ:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.03_gdp_ind <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_C + gdp_pc_10k_C +libZ:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.04i_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_C + gdp_pc_10k_C +noconf_govZ_i:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.05i_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_C + gdp_pc_10k_C + cpiZ_i:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.06i_gdp_ind <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_C + gdp_pc_10k_C +libZ_i:incdiff_large_C:gdp_pc_10k_C+ pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.07wb_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ + incdiff_large_w + gdp_pc_10k_C + noconf_govZ:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.08wb_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ + incdiff_large_w + gdp_pc_10k_C + cpiZ:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.09wb_gdp_ind <- summary(lmer(gov_redist_C ~ libZ + incdiff_large_w + gdp_pc_10k_C +libZ:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.10iwb_gdp_ind <- summary(lmer(gov_redist_C ~ noconf_govZ_i + incdiff_large_w + gdp_pc_10k_C + noconf_govZ_i:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.11iwb_gdp_ind <- summary(lmer(gov_redist_C ~ cpiZ_i + incdiff_large_w + gdp_pc_10k_C + cpiZ_i:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
-
-M_8.12iwb_gdp_ind <- summary(lmer(gov_redist_C ~ libZ_i + incdiff_large_w + gdp_pc_10k_C + libZ_i:incdiff_large_w:gdp_pc_10k_C + pct_fb_i_C  + (1 | iso3c_wave) + ageC + female + educyrs, data = df_na))
 
 
 
