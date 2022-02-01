@@ -160,7 +160,7 @@ Fig2.1 <-
 Here Japan is an extreme outlier among rich countries, it has a very high level of support for the government being responsible rather than individuals. Contrast with Sweden which has extrememly high individual rather than government. This is likely a product of existing government arrangements. But Japan is so extreme that it makes sense to exclude it from the line of fit. 
 
 ```{r figx2}
-agg_png(here::here("results","Fig2.1_redist.png"), res = 144, height = 800, width = 1000)
+#agg_png(here::here("results","Fig2.1_redist.png"), res = 144, height = 800, width = 1000)
 Fig2.1_redist <- 
   df_macro %>%
   mutate(liberal_redist_high = ifelse(iso3c == "JPN", NA, liberal_redist_high)) %>%
@@ -178,13 +178,13 @@ Fig2.1_redist <-
   # annotate(geom = "text", x = 7.3, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
   # annotate(geom = "text", x = 7.3, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
   labs(x = "LIBERAL VALUES II\nWorld Values Survey data\ngovernment v. individual provide for needs",
-       y = "CORRELATION within COUNTRY-YEAR\n'Government should redistribute' with\n'Differences in income are too large'",
+       y = "",
        caption = " \n \n \n ") +
   theme_classic()
-Fig2.1_redist
-dev.off()
+#Fig2.1_redist
+#dev.off()
 
-knitr::include_graphics(here::here("results","Fig2.1_redist.png"))
+#knitr::include_graphics(here::here("results","Fig2.1_redist.png"))
 ```
 
 #### Plot Corrupt / Corr
@@ -205,9 +205,10 @@ Fig2.2 <- df_macro %>%
   annotate(geom = "text", x = -1.6, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
   annotate(geom = "text", x = -1.6, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
   annotate(geom = "text", x = -1.6, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
-  labs(x = "CORRUPTION PERCEPTIONS INDEX (CPI)\nTransparency International data\n ",
+  labs(x = "CORRUPTION PERCEPTIONS INDEX (CPI)\nTransparency International data\n \n ",
        y = "",
-       caption = " \nY data from International Social Survey Program\ngrey countries in left-panel interpolated with country-means") +
+       #caption = " \nY data from International Social Survey Program\ngrey countries in left-panel interpolated with country-means"
+       ) +
   theme_classic()
 
 ```
@@ -223,7 +224,8 @@ Fig2.3 <- df_macro %>%
   geom_smooth(aes(y = corr, x = noconf_govZ_low), method = 'lm', se = F, color = "midnightblue") +
   labs(x = "LACK OF TRUST IN GOV\nWorld Values Survey Data\n ",
        y = "",
-       caption = " \nY data from International Social Survey Program\ngrey countries in left-panel interpolated with country-means") +
+       #caption = " \nY data from International Social Survey Program\ngrey countries in left-panel interpolated with country-means"
+       ) +
   theme_classic()
 
 ```
@@ -245,66 +247,27 @@ Fig2.4 <- df_macro %>%
   annotate(geom = "text", x = -1.6, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
   labs(x = "GDP PER CAPITA (10k)\nVarieties of Democracy Data\n ",
        y = "",
-       caption = " \nY data from International Social Survey Program\ngrey countries in left-panel interpolated with country-means") +
+       #caption = " \nY data from International Social Survey Program\ngrey countries reflect interpolated data points"
+       ) +
   theme_classic()
 
 ```
 ### Plot Arranged Figure
 
 ```{r fig2}
-agg_png(filename = here::here("results","Fig2.png"), res = 144, width = 1500, height = 800)
-ggarrange(Fig2.1, Fig2.2, widths = c(1,1.15))
+agg_png(filename = here::here("results","Fig2.png"), res = 144, width = 2000, height = 800)
+ggarrange(Fig2.1, Fig2.1_redist, Fig2.2, widths = c(1.1,1,1), nrow = 1)
 dev.off()
 
 knitr::include_graphics(here::here("results","Fig2.png"))
 ```
+
 ```{r fig3}
-agg_png(filename = here::here("results","Fig3.png"), res = 144, width = 1500, height = 800)
+agg_png(filename = here::here("results","Fig3.png"), res = 144, width = 1300, height = 800)
 ggarrange(Fig2.3, Fig2.4, widths = c(1,1.15))
 dev.off()
 
 knitr::include_graphics(here::here("results","Fig3.png"))
-```
-
-### Moderation Models
-
-This is a cross-level interaction as macro moderator affects the micro association.
-
-Create a wrapper for lmer models
-mod_models - creates tables
-loop - creates matrix of results
-```{r}
-mod_models <- function(df, dv, main_iv, value_var, return_mod=FALSE, ...) {
-    df_new <- df %>%
-          select(iso3c, wave, dv, main_iv, value_var)
-   
-    ## baseline model
-    m00 <- lmer(get(dv) ~  1 + get(main_iv)+ (1 | iso3c) + (1 | wave), data = df_new)
-    # with main effects
-    m01 <- lmer(get(dv) ~  1 + get(main_iv) + get(value_var) + (1 | iso3c) + (1 | wave), data = df_new) 
-    # random-slopes
-    m02 <- lmer(get(dv) ~  1 + get(main_iv) + get(value_var) + (1 | iso3c) + (get(main_iv) | wave), 
-                data = df_new)
-    # moderation
-    m03 <- lmer(get(dv) ~  1 + get(main_iv) + get(value_var) + get(value_var)*get(main_iv)  + 
-                  (1 | iso3c) + (1 | wave), data = df_new) 
-
-    if (return_mod == TRUE ) {
-        return(m01,m02,m03)
-    }
-
-    else {
-        tab_temp <- tab_model(m00,m01,m02,m03, show.ci = F, show.aic = T, 
-                               show.loglik = T, show.icc = T, p.style = "stars")
-        return(tab_temp)
-
-    }
-        
-}
-
-
-# all models, make sure the model with the MOST variables is last
-# using "get(x)" here doesn't work because the variables names are  wrong for postestimation commands, do by hand
 ```
 
 ### All Plausible Models

@@ -102,37 +102,37 @@ create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 1, data 
 
 
 
-
+startvalue <- length(ls(pattern="M_"))+1
 
 ## With Country-Year and Country
 
 ### bare models
 cvs <- c("(1|iso3c_wave)","(1|iso3c)")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 13, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = startvalue, data = df_na)
 
 
 ### socx_C control
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","socx_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 13, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, data = df_na)
 
 
 ### gini
 cvs <- c("(1|iso3c_wave)","(1|iso3c)","gini_disp_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 13, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, data = df_na)
 
 
 ### gdp
 
 cvs <- c("(1|iso3c_wave)","(1|iso3c)","gdp_pc_10k_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = 13, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = startvalue, data = df_na)
 
 
 ### immigration
 cvs <- c("(1|iso3c_wave)","(1|iso3c)","pct_fb_i_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 13, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, data = df_na)
 
-
+startvalue <- length(ls(pattern="M_"))+1
 
 ## WITH GDP INTERACTIONS
 
@@ -143,27 +143,27 @@ ivs <- c("noconf_govZ", "cpiZ", "libZ", "lib_redistZ", "noconf_govZ_i", "cpiZ_i"
 ixs <- c("incdiff_large_C", "incdiff_large_w")
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C")
 
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 25, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
            suffix = "_gdp", data = df_na)
 
 
 
 ### socx_C control
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "socx_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 25, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
            suffix = "_gdp", data = df_na)
 
 
 ### gini
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "gini_disp_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 25, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
            suffix = "_gdp", data = df_na)
 
 
 
 ### immigration
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "pct_fb_i_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 25, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
            suffix = "_gdp", data = df_na)
 
 
@@ -174,85 +174,86 @@ create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 25, gdpx
 
 
 # BASE MODEL + AGE, SEX, AND EDUCATION
-
+startvalue <- length(ls(pattern="M_"))+1
 ## With Country-Year only
 ### bare models
 
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 37, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = startvalue, data = df_na)
 
 ### socx_C control
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "socx_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 37, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, data = df_na)
 
 ### gini
 
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "gini_disp_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 37, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, data = df_na)
 
 ### gdp
  
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "gdp_pc_10k_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = 37, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = startvalue, data = df_na)
 
 ### immigration
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "pct_fb_i_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 37, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, data = df_na)
 
 
 ## With Country-Year and Country
 ### bare models
+startvalue <- length(ls(pattern="M_"))+1
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 49, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = startvalue, data = df_na)
 
 ### socx_C control
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "socx_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 49, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, data = df_na)
 
 ### gini
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "gini_disp_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 49, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, data = df_na)
 
 ### gdp
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "gdp_pc_10k_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = 49, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = startvalue, data = df_na)
 
 ### immigration
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "pct_fb_i_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 49, data = df_na)
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, data = df_na)
 
 ## With GDP interactions
 ### Country-Year Only
-
+startvalue <- length(ls(pattern="M_"))+1
 
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs")
 
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 61, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
            suffix = "_gdp", data = df_na)
 
 
 
 ### socx_C control
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "socx_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 61, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
            suffix = "_gdp", data = df_na)
 
 
 ### gini
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "gini_disp_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 61, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
            suffix = "_gdp", data = df_na)
 
 
 
 ### immigration
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "pct_fb_i_C")
-create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 61, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
+create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
            suffix = "_gdp", data = df_na)
 
 
