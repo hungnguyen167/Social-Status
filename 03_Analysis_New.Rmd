@@ -323,13 +323,13 @@ df_ame <- df_ame %>%
                    ifelse(grepl("cpiZ", Model), "C_Corruption_percept",
                    ifelse(grepl("libZ", Model), "A1_Liberal_values", "A2_Liberal_values"))),
          mod_imputed = ifelse(grepl("_i", df_ame$Model), "Yes", "No"),
-         ri_cyear = ifelse(grepl("iso3c_year", df_ame$Model), "Yes", "No"),
+         ri_cyear = ifelse(grepl("iso3c_wave", df_ame$Model), "Yes", "No"),
          ri_country = ifelse(grepl("iso3c)", df_ame$Model), "Yes", "No"),
          estimation = ifelse(grepl("lmer", df_ame$Model), "GLM", "OLS"),
-         control = ifelse(grepl("gdp", df_ame$Model), "GDPpc",
-                   ifelse(grepl("gini", df_ame$Model), "Gini_disp",
-                   ifelse(grepl("socx", df_ame$Model), "SocX",
-                   ifelse(grepl("pct_fb", df_ame$Model), "Pct_F_Born", "None")))),
+         control_gdp = ifelse(grepl("gdp", df_ame$Model), "Yes", "No"),
+         control_gini = ifelse(grepl("gini", df_ame$Model), "Yes", "No"),
+         control_socx = ifelse(grepl("socx", df_ame$Model), "Yes", "No"),
+         control_fb = ifelse(grepl("pct_fb", df_ame$Model), "Yes", "No"),
          i_level_control = ifelse(grepl("female", df_ame$Model), "Yes", "No"),
          gdp_m_interaction = ifelse(grepl(":gdp_pc_10k_C", df_ame$Model), "Yes", "No")
          )

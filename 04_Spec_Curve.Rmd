@@ -86,8 +86,8 @@ df_ame_mod <- df_ame_mod %>%
 ```{r spec_by_mod_plot}
 mcount = length(df_ame_mod[,1])/4 # counter to make vertical bars
 
-agg_png(here::here("results","Fig4.png"), height = 600, width = 1200, res = 144)
-df_ame_mod %>%
+#agg_png(here::here("results","Fig4.png"), height = 600, width = 1200, res = 144)
+fig4 <- df_ame_mod %>%
   ggplot() +
   #geom_errorbar(aes(ymin = lb, ymax = ub), color = "thistle1") +
   geom_errorbar(aes(x = count, ymin = mod_b-(2.576*mod_se), ymax = mod_b+(2.576*mod_se)), color = "grey", width = 0) +
@@ -112,22 +112,32 @@ df_ame_mod %>%
   geom_vline(xintercept = (3*mcount), color = "grey", linetype = "dashed") +
   geom_hline(yintercept = 0, color = "grey") +
   labs(#color = "Effect at 95% CI", 
-    x = "Models Ordered by Government Heuristic\nand Moderation Coefficient (Y11)", y = "Moderation Coefficient\n(XY-standardized)") +
-  ylim(-0.12,0.135) +
+    x = "", 
+    y = "Moderation Coefficient\n(XY-standardized)") +
+  ylim(-0.12,0.14) +
   #xlim(0,338) +
   scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
-  annotate(geom = "text", x = mcount/2, y = 0.13, label = "Liberal Values I\nhigh abstraction", color = "#73D055FF") +
-  annotate(geom = "text", x = mcount+(mcount/2), y = 0.13, label = "Liberal Values II\nhigh abstraction", color = "#73D055FF") +
-  annotate(geom = "text", x = 2*mcount+(mcount/2), y = 0.13, label = "Lack of Trust\nmedium abstraction", color = "#287D8EFF") +
-  annotate(geom = "text", x = 3*mcount+(mcount/2), y = 0.13, label = "Corruption Perceptions\nlow abstraction", color = "#453781FF") +
-  theme_classic()
-dev.off()
+  annotate(geom = "text", x = mcount/2, y = 0.13, label = "Liberal Values I\ngov v private\nbusinesses", color = "#73D055FF", size = 3) +
+  annotate(geom = "text", x = mcount+(mcount/2), y = 0.13, label = "Liberal Values II\ngov v individual\nresponsible", color = "#73D055FF", size = 3) +
+  annotate(geom = "text", x = 2*mcount+(mcount/2), y = 0.13, label = "Lack of Trust\n in Government\n ", color = "#287D8EFF", size = 3) +
+  annotate(geom = "text", x = 3*mcount+(mcount/2), y = 0.13, label = "Corruption Perceptions\n \n ", color = "#453781FF", size = 3) +
+  annotate(geom = "text", x = mcount/2, y = -0.12, label = "high abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  annotate(geom = "text", x = mcount+(mcount/2), y = -0.12, label = "high abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  annotate(geom = "text", x = 2*mcount+(mcount/2), y = -0.12, label = "medium abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  annotate(geom = "text", x = 3*mcount+(mcount/2), y = -0.12, label = "low abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank()
+  )
 
-knitr::include_graphics(here::here("results","Fig4.png"))
+#dev.off()
+
+#knitr::include_graphics(here::here("results","Fig4.png"))
 ```
 
 ```{r fig4_bottom}
-ivlabs <- c("GDP\n  interaction", "GDP\ncontrol", "Gini\ncontrol", "Socx\ncontrol", "% F.Born\ncontrol", "Imputed\nmoderator")
+ivlabs <- c("GDP\n  interaction", "GDP\ncontrol", "Gini\ncontrol", "SocX\ncontrol", "% F.Born\ncontrol", "Imputed\nmoderator")
 
 fig4_bot <- ggplot(df_ame_mod) +
   geom_vline(xintercept = mcount, color = "grey", linetype = "dashed") +
