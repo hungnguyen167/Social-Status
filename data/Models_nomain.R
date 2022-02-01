@@ -59,7 +59,8 @@ create_df_gof <- function(list_mod) {
 ## With Country-Year only
 ### bare models
 dv <- "gov_redist_C"
-ivs <- c("noconf_govZ", "cpiZ", "libZ", "noconf_govZ_i", "cpiZ_i", "libZ_i")
+ivs <- c("noconf_govZ", "cpiZ", "libZ", "lib_redistZ", "noconf_govZ_i", 
+         "cpiZ_i", "libZ_i", "lib_redistZ")
 ixs <- c("incdiff_large_C", "incdiff_large_w")
 cvs <- "(1|iso3c_wave)"
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 1, data = df_na)
@@ -138,7 +139,7 @@ create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 13, data
 ### Country-Year Only
 
 dv <- "gov_redist_C"
-ivs <- c("noconf_govZ", "cpiZ", "libZ", "noconf_govZ_i", "cpiZ_i", "libZ_i")
+ivs <- c("noconf_govZ", "cpiZ", "libZ", "lib_redistZ", "noconf_govZ_i", "cpiZ_i", "libZ_i", "lib_redistZ")
 ixs <- c("incdiff_large_C", "incdiff_large_w")
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C")
 
@@ -258,148 +259,6 @@ create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 61, gdpx
 
 
 
-length(ls(pattern="M_")) ## 336 models in total
+length(ls(pattern="M_")) ## 408 models 01-Feb-22
 
 
-
-
-
-
-
-
-########################################################################################################################
-########################################################################################################################
-########################################################################################################################
-
-
-
-
-### Linear regression
-
-L_4.01l <- lm(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C, data = df_na)
-
-L_4.02l <- lm(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C, data = df_na)
-
-L_4.03l <- lm(gov_redist_C ~ libZ + libZ*incdiff_large_C, data = df_na)
-
-L_4.04il <- lm(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C, data = df_na)
-
-L_4.05il <- lm(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C, data = df_na)
-
-L_4.06il <- lm(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C, data = df_na)
-
-L_4.07wbl <- lm(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w , data = df_na)
-
-L_4.08wbl <- lm(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w , data = df_na)
-
-L_4.09wbl <- lm(gov_redist_C ~ libZ + libZ*incdiff_large_w , data = df_na)
-
-L_4.10iwbl <- lm(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w , data = df_na)
-
-L_4.11iwbl <- lm(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w , data = df_na)
-
-L_4.12iwbl <- lm(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w , data = df_na)
-
-### socx_C control
-
-L_5.01l <- lm(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ socx_C , data = df_na)
-
-L_5.02l <- lm(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ socx_C , data = df_na)
-
-L_5.03l <- lm(gov_redist_C ~ libZ + libZ*incdiff_large_C+ socx_C , data = df_na)
-
-L_5.04il <- lm(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ socx_C , data = df_na)
-
-L_5.05il <- lm(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ socx_C , data = df_na)
-
-L_5.06il <- lm(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ socx_C , data = df_na)
-
-L_5.07wbl <- lm(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + socx_C , data = df_na)
-
-L_5.08wbl <- lm(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + socx_C , data = df_na)
-
-L_5.09wbl <- lm(gov_redist_C ~ libZ + libZ*incdiff_large_w + socx_C , data = df_na)
-
-L_5.10iwbl <- lm(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + socx_C , data = df_na)
-
-L_5.11iwbl <- lm(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + socx_C , data = df_na)
-
-L_5.12iwbl <- lm(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + socx_C , data = df_na)
-
-## gini
-
-L_6.01l <- lm(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ gini_disp_C , data = df_na)
-
-L_6.02l <- lm(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ gini_disp_C , data = df_na)
-
-L_6.03l <- lm(gov_redist_C ~ libZ + libZ*incdiff_large_C+ gini_disp_C , data = df_na)
-
-L_6.04il <- lm(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ gini_disp_C , data = df_na)
-
-L_6.05il <- lm(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ gini_disp_C , data = df_na)
-
-L_6.06il <- lm(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ gini_disp_C , data = df_na)
-
-L_6.07wbl <- lm(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + gini_disp_C , data = df_na)
-
-L_6.08wbl <- lm(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + gini_disp_C , data = df_na)
-
-L_6.09wbl <- lm(gov_redist_C ~ libZ + libZ*incdiff_large_w + gini_disp_C , data = df_na)
-
-L_6.10iwbl <- lm(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gini_disp_C , data = df_na)
-
-L_6.11iwbl <- lm(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + gini_disp_C , data = df_na)
-
-L_6.12iwbl <- lm(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + gini_disp_C , data = df_na)
-
-# gdp
-
-L_7.01l <- lm(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ gdp_pc_10k_C , data = df_na)
-
-L_7.02l <- lm(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ gdp_pc_10k_C , data = df_na)
-
-L_7.03l <- lm(gov_redist_C ~ libZ + libZ*incdiff_large_C+ gdp_pc_10k_C , data = df_na)
-
-L_7.04il <- lm(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ gdp_pc_10k_C , data = df_na)
-
-L_7.05il <- lm(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ gdp_pc_10k_C , data = df_na)
-
-L_7.06il <- lm(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ gdp_pc_10k_C , data = df_na)
-
-L_7.07wbl <- lm(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + gdp_pc_10k_C , data = df_na)
-
-L_7.08wbl <- lm(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + gdp_pc_10k_C , data = df_na)
-
-L_7.09wbl <- lm(gov_redist_C ~ libZ + libZ*incdiff_large_w + gdp_pc_10k_C , data = df_na)
-
-L_7.10iwbl <- lm(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + gdp_pc_10k_C , data = df_na)
-
-L_7.11iwbl <- lm(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + gdp_pc_10k_C , data = df_na)
-
-L_7.12iwbl <- lm(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + gdp_pc_10k_C , data = df_na)
-
-# immigration
-
-L_8.01l <- lm(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_C+ pct_fb_i_C  , data = df_na)
-
-L_8.02l <- lm(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_C+ pct_fb_i_C  , data = df_na)
-
-L_8.03l <- lm(gov_redist_C ~ libZ + libZ*incdiff_large_C+ pct_fb_i_C  , data = df_na)
-
-L_8.04il <- lm(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_C+ pct_fb_i_C  , data = df_na)
-
-L_8.05il <- lm(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_C+ pct_fb_i_C  , data = df_na)
-
-L_8.06il <- lm(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_C+ pct_fb_i_C  , data = df_na)
-
-L_8.07wbl <- lm(gov_redist_C ~ noconf_govZ + noconf_govZ*incdiff_large_w + pct_fb_i_C  , data = df_na)
-
-L_8.08wbl <- lm(gov_redist_C ~ cpiZ + cpiZ*incdiff_large_w + pct_fb_i_C  , data = df_na)
-
-L_8.09wbl <- lm(gov_redist_C ~ libZ + libZ*incdiff_large_w + pct_fb_i_C  , data = df_na)
-
-L_8.10iwbl <- lm(gov_redist_C ~ noconf_govZ_i + noconf_govZ_i*incdiff_large_w + pct_fb_i_C  , data = df_na)
-
-L_8.11iwbl <- lm(gov_redist_C ~ cpiZ_i + cpiZ_i*incdiff_large_w + pct_fb_i_C  , data = df_na)
-
-L_8.12iwbl <- lm(gov_redist_C ~ libZ_i + libZ_i*incdiff_large_w + pct_fb_i_C  , data = df_na)

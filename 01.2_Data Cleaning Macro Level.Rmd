@@ -352,6 +352,12 @@ df_macro <- df_macro %>%
          liberal_high_i = ifelse(iso3c %in% rich_countries, liberal_i, NA), 
          liberal_low_i = ifelse(is.na(liberal_high), liberal_i, NA),
          liberal_low_i = ifelse(iso3c %in% c("SVN","CZE","CYP","ESP","PRT"), NA, liberal_low_i),
+         liberal_redist_high = ifelse(iso3c %in% rich_countries, liberal_redist, NA), 
+         liberal_redist_low = ifelse(is.na(liberal_redist_high), liberal_redist, NA),
+         liberal_redist_low = ifelse(iso3c %in% c("SVN","CZE","CYP","ESP","PRT"), NA, liberal_redist_low), # remove some questionable mid-GDP cases
+         liberal_redist_high_i = ifelse(iso3c %in% rich_countries, liberal_redist_i, NA), 
+         liberal_redist_low_i = ifelse(is.na(liberal_redist_high), liberal_redist_i, NA),
+         liberal_redist_low_i = ifelse(iso3c %in% c("SVN","CZE","CYP","ESP","PRT"), NA, liberal_redist_low_i),
          gdp_di = ifelse(!is.na(liberal_low_i), 0, 1)) 
 
 
@@ -365,6 +371,8 @@ df_macro <- df_macro %>%
          cpiZ = -1*as.numeric(scale(cpi)),
          libZ_i = as.numeric(scale(liberal_i)),
          libZ = as.numeric(scale(liberal)),
+         lib_redistZ_i = as.numeric(scale(liberal_redist_i)),
+         lib_redistZ = as.numeric(scale(liberal_redist)),
          noconf_govZ_i = -1*as.numeric(scale(confidence_gov_i)),
          noconf_govZ = -1*as.numeric(scale(confidence_gov)))
 
@@ -380,7 +388,7 @@ df_macro <- df_macro %>%
          noconf_govZ_hi = ifelse(!is.na(liberal_high_i), noconf_govZ, NA),
          gdp_lo = ifelse(!is.na(liberal_low_i), gdp_pc_10k, NA),
          gdp_hi = ifelse(!is.na(liberal_high_i), gdp_pc_10k, NA)) %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_high_i, liberal_low_i, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, cpi, cpi_ii, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i, gap_no_gov, gov_redist_agree, incdiff_large_agree)
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_high_i, liberal_low_i, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, liberal_redist_high, liberal_redist_low, liberal_redist_high_i, liberal_redist_low_i, confidence_gov, confidence_gov_i, cpi, cpi_ii, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i, lib_redistZ, lib_redistZ_i, gap_no_gov, gov_redist_agree, incdiff_large_agree)
 
 
 # create within and between values
@@ -403,7 +411,7 @@ df_na <- df_na %>%
 df_macro <- as.data.frame(df_macro)
 
 df_macro_m <- df_macro %>%
-  dplyr::select(iso3c, wave, cpiZ, cpiZ_i, libZ, libZ_i, gdp_di, gdp_pc_10k, gini_disp, socx, noconf_govZ, noconf_govZ_i)
+  dplyr::select(iso3c, wave, cpiZ, cpiZ_i, libZ, libZ_i, lib_redistZ, lib_redistZ_i, gdp_di, gdp_pc_10k, gini_disp, socx, noconf_govZ, noconf_govZ_i)
 
 # check that all macro variables are centered, ideal for MLM
 df_macro_m$gdp_pc_10k_C <- df_macro_m$gdp_pc_10k - mean(df_macro_m$gdp_pc_10k, na.rm = T)

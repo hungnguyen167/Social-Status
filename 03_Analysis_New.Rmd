@@ -125,7 +125,7 @@ Theory: individuals have values or follow norms about how much the government sh
 Hypothesis: In countries where the government does less redistribution or has a weaker welfare state, the correlation between perceptions of the income gap and the idea that the government is responsible for doing something about it will be smaller.
 
 
-#### Plot Liberal Corr
+#### Plot Liberal Business Ownership Corr
 
 ```{r figx2}
 #agg_png(here::here("results","Fig2.png"), res = 144, height = 800, width = 1000)
@@ -146,7 +146,7 @@ Fig2.1 <-
   # annotate(geom = "text", x = 7.3, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
   # annotate(geom = "text", x = 7.3, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
   # annotate(geom = "text", x = 7.3, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
-  labs(x = "LIBERAL VALUES\nWorld Values Survey data\ngovernment v. individual responsible for needs",
+  labs(x = "LIBERAL VALUES I\nWorld Values Survey data\ngovernment v. private ownership of business",
        y = "CORRELATION within COUNTRY-YEAR\n'Government should redistribute' with\n'Differences in income are too large'",
        caption = " \n \n \n ") +
   theme_classic()
@@ -155,7 +155,37 @@ Fig2.1 <-
 #knitr::include_graphics(here::here("results","Fig2.png"))
 ```
 
+#### Plot Liberal Individual Welfare Corr
 
+Here Japan is an extreme outlier among rich countries, it has a very high level of support for the government being responsible rather than individuals. Contrast with Sweden which has extrememly high individual rather than government. This is likely a product of existing government arrangements. But Japan is so extreme that it makes sense to exclude it from the line of fit. 
+
+```{r figx2}
+agg_png(here::here("results","Fig2.1_redist.png"), res = 144, height = 800, width = 1000)
+Fig2.1_redist <- 
+  df_macro %>%
+  mutate(liberal_redist_high = ifelse(iso3c == "JPN", NA, liberal_redist_high)) %>%
+  ggplot() +
+  geom_text(aes(y = corr, x = liberal_redist, label = iso3c), color = "black", size = 3) +
+  geom_text(aes(y = corr, x = ifelse(is.na(liberal_redist), liberal_redist_i, NA), label = iso3c), color = "grey", size = 2) +
+  geom_smooth(aes(y = corr, x = liberal_redist_i), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
+  geom_smooth(aes(y = corr, x = liberal_redist_high), method = 'lm', se = F, color = "#20A387FF") +
+  geom_smooth(aes(y = corr, x = liberal_redist_low), method = 'lm', se = F, color = "midnightblue") +
+  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
+  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
+  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
+  # annotate(geom = "text", x = 6.8, y = 0.34, label = "Fitted Lines", hjust = 0) +
+  # annotate(geom = "text", x = 7.3, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
+  # annotate(geom = "text", x = 7.3, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
+  # annotate(geom = "text", x = 7.3, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
+  labs(x = "LIBERAL VALUES II\nWorld Values Survey data\ngovernment v. individual provide for needs",
+       y = "CORRELATION within COUNTRY-YEAR\n'Government should redistribute' with\n'Differences in income are too large'",
+       caption = " \n \n \n ") +
+  theme_classic()
+Fig2.1_redist
+dev.off()
+
+knitr::include_graphics(here::here("results","Fig2.1_redist.png"))
+```
 
 #### Plot Corrupt / Corr
 
@@ -307,11 +337,11 @@ for (m in 1:length(model_list)) {
   
   #mn <- as.name(model_names[m])
   
-  df_ame[m,1] <- paste(as.character(model_list[[m]][["call"]]), sep = "", collapse = "")
+  df_ame[m,1] <- paste(as.character(model_list[[m]]@call), sep = "", collapse = "")
   
-  temp <- as.data.frame(get(model_names[m])[["coefficients"]])
+  temp <- as.data.frame(summary(get(model_names[m]))[["coefficients"]])
   
-  temp <- temp[grepl('cpiZ|noconf_govZ|libZ|incdiff_large', rownames(temp)), 1:2]
+  temp <- temp[grepl('cpiZ|noconf_govZ|libZ|lib_redistZ|incdiff_large', rownames(temp)), 1:2]
   
   df_ame[m,"mod_b"] <- temp[grepl(":", rownames(temp)),1]
   df_ame[m, "mod_se"] <- temp[grepl(":", rownames(temp)),2]
@@ -327,7 +357,8 @@ for (m in 1:length(model_list)) {
 ```{r ameclean}
 df_ame <- df_ame %>%
   mutate(mod_var = ifelse(grepl("noconf_govZ", Model, fixed = T), "B_No_confidence", 
-                   ifelse(grepl("cpiZ", Model), "C_Corruption_percept", "A_Liberal_values")),
+                   ifelse(grepl("cpiZ", Model), "C_Corruption_percept",
+                   ifelse(grepl("libZ", Model), "A1_Liberal_values", "A2_Liberal_values"))),
          mod_imputed = ifelse(grepl("_i", df_ame$Model), "Yes", "No"),
          ri_cyear = ifelse(grepl("iso3c_year", df_ame$Model), "Yes", "No"),
          ri_country = ifelse(grepl("iso3c)", df_ame$Model), "Yes", "No"),

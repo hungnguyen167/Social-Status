@@ -2,3 +2,5 @@
 .RData
 .Rproj.user
 data/prep country level data/WVS_TimeSeries_1981_2020_ascii_v2_0.csv
+data/prep country level data/WVS_Trend_v2_0.dta
+data/prep country level data/ZA7503_v2-0-0.dta
