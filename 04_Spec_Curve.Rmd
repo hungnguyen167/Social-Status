@@ -84,6 +84,8 @@ df_ame_mod <- df_ame_mod %>%
 
 
 ```{r spec_by_mod_plot}
+mcount = length(df_ame_mod[,1])/4 # counter to make vertical bars
+
 agg_png(here::here("results","Fig4.png"), height = 600, width = 1200, res = 144)
 df_ame_mod %>%
   ggplot() +
@@ -105,19 +107,19 @@ df_ame_mod %>%
              #shape = "|", 
              shape = 16,
              size = 2, show.legend =F) +
-  geom_vline(xintercept = (length(subset(df_ame_mod, !is.na(mod_b_lib))[,1])-0.5), color = "grey", linetype = "dashed") +
-  geom_vline(xintercept = (2*length(subset(df_ame_mod, !is.na(mod_b_lib))[,1])-0.5), color = "grey", linetype = "dashed") +
-  geom_vline(xintercept = ((2*length(subset(df_ame_mod, !is.na(mod_b_lib))[,1]))+length(subset(df_ame_mod, !is.na(mod_b_trst))[,1])-0.5), color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = mcount, color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = (2*mcount), color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = (3*mcount), color = "grey", linetype = "dashed") +
   geom_hline(yintercept = 0, color = "grey") +
   labs(#color = "Effect at 95% CI", 
     x = "Models Ordered by Government Heuristic\nand Moderation Coefficient (Y11)", y = "Moderation Coefficient\n(XY-standardized)") +
   ylim(-0.12,0.135) +
   #xlim(0,338) +
   scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
-  annotate(geom = "text", x = 46, y = 0.13, label = "Liberal Values I\nhigh abstraction", color = "#73D055FF") +
-  annotate(geom = "text", x = 94+46, y = 0.13, label = "Liberal Values II\nhigh abstraction", color = "#73D055FF") +
-  annotate(geom = "text", x = 94+94+55, y = 0.13, label = "Lack of Trust\nmedium abstraction", color = "#287D8EFF") +
-  annotate(geom = "text", x = 94+94+110+55, y = 0.13, label = "Corruption Perceptions\nlow abstraction", color = "#453781FF") +
+  annotate(geom = "text", x = mcount/2, y = 0.13, label = "Liberal Values I\nhigh abstraction", color = "#73D055FF") +
+  annotate(geom = "text", x = mcount+(mcount/2), y = 0.13, label = "Liberal Values II\nhigh abstraction", color = "#73D055FF") +
+  annotate(geom = "text", x = 2*mcount+(mcount/2), y = 0.13, label = "Lack of Trust\nmedium abstraction", color = "#287D8EFF") +
+  annotate(geom = "text", x = 3*mcount+(mcount/2), y = 0.13, label = "Corruption Perceptions\nlow abstraction", color = "#453781FF") +
   theme_classic()
 dev.off()
 
