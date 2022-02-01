@@ -260,6 +260,6 @@ create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startval
 
 
 
-length(ls(pattern="M_")) ## 408 models 01-Feb-22
+length(ls(pattern="M_")) ## 448 models 01-Feb-22
 
 
