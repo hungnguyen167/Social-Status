@@ -6,11 +6,6 @@ output:
 ---
 
 
-
-
-
-
-
 ```{r, include = F}
 rm(list = ls())
 ```
@@ -39,18 +34,43 @@ df_macro <- readRDS(here::here("data", "df_macro.RDS"))
 
 ## Mediation Models
 
+### Set up Data
 
-```{r mediation, include = T, echo = T}
+```{r setupSEM}
 # cross-level interaction
 df_na <- df_na %>%
   mutate(incdXcpiZ = incdiff_large_w*cpiZ,
          incdXgovZ = incdiff_large_w*noconf_govZ,
          incdXlibZ = incdiff_large_w*libZ,
-         incdXlibZXgdp = incdXlibZ*gdp_pc_10k_C)
+         incdXlibZXgdp = incdXlibZ*gdp_pc_10k_C,
+         incdXgovZXgdp = incdXgovZ*gdp_pc_10k_C,
+         incdXcpiZXgdp = incdXcpiZ*gdp_pc_10k_C)
 
-# remove missing
+# remove missing for SEM
 df_na_libZ <- subset(df_na, !is.na(libZ)) %>%
   dummy_cols(select_columns = 'iso3c_wave')
+
+df_na_govZ <- subset(df_na, !is.na(noconf_govZ)) %>%
+  dummy_cols(select_columns = 'iso3c_wave')
+
+df_na_cpiZ <- subset(df_na, !is.na(cpiZ)) %>%
+  dummy_cols(select_columns = 'iso3c_wave')
+
+# create matrix to collect chi-sq tests
+sem_outs <- as.data.frame(matrix(nrow = 18, ncol = 4))
+colnames(sem_outs) <- c("Model", "Fixed_Value", "Standard_P", "Robust_P")
+
+sem_outs[,1] <- c("Liberal_05", "LiberalXGDP_05", "Liberal_07", "LiberalXGDP_07", "Liberal_10", "LiberalXGDP_10",
+                  "Lack_trust_05", "Lack_trustXGDP_05", "Lack_trust_07", "Lack_trustXGDP_07", "Lack_trust_10", "Lack_trustXGDP_10",
+                  "Corrupt_05", "CorruptXGDP_05", "Corrupt_07", "CorruptXGDP_07", "Corrupt_10", "CorruptXGDP_10")
+
+sem_outs[,2] <- c("-.05", "-.05", "-.07", "-.07", "-.10", "-.10", "-.05", "-.05", "-.07", "-.07", "-.10", "-.10", "-.05", "-.05", "-.07", "-.07", "-.10", "-.10")
+```
+
+### Liberal Values
+
+```{r med_libZ, include = T, echo = T}
+
 
 # the stricter parameters of SEM lead us to take the simplest model of the within-country variance only
 # thus we do not need these country dummies, although this is one way to set them up
@@ -59,33 +79,198 @@ iso3c_wave <- colnames(df_na_libZ[(match("iso3c_wave_AUS_1999",names(df_na_libZ)
 intercepts <- paste0(iso3c_wave, collapse=" + ")
 
 
-# lavaan automatically tests the model with and without the fixed parameter 
+# lavaan automatically tests the model with and without the fixed parameter, so there is no need to model it without 
 # its an equal fit test with one degree of freedom
 
 # without gdp interaction
-m0_lib <- '
+m0_lib_05 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ libZ
+  gov_redist_C ~ -0.05*incdXlibZ'
+
+m0_lib_07 <- '
   gov_redist_C ~ incdiff_large_w
   gov_redist_C ~ libZ
   gov_redist_C ~ -0.07*incdXlibZ'
 
+m0_lib_10 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ libZ
+  gov_redist_C ~ -0.10*incdXlibZ'
+
 # gdp interaction
-m1_lib <- '
+m1_lib_05 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ libZ
+  gov_redist_C ~ -0.05*incdXlibZXgdp'
+
+m1_lib_07 <- '
   gov_redist_C ~ incdiff_large_w
   gov_redist_C ~ libZ
   gov_redist_C ~ -0.07*incdXlibZXgdp'
 
+m1_lib_10 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ libZ
+  gov_redist_C ~ -0.10*incdXlibZXgdp'
+
 # as we focus on within variance, we only need do robust clustering for our country-wave variable
 
-m0_lib_fit <- sem(m0_lib, data = df_na_libZ, cluster = "iso3c_wave")
-m1_lib_fit <- sem(m1_lib, data = df_na_libZ, cluster = "iso3c_wave")
+m0_lib_fit_05 <- sem(m0_lib_05, data = df_na_libZ, cluster = "iso3c_wave")
+m1_lib_fit_05 <- sem(m1_lib_05, data = df_na_libZ, cluster = "iso3c_wave")
 
+m0_lib_fit_07 <- sem(m0_lib_07, data = df_na_libZ, cluster = "iso3c_wave")
+m1_lib_fit_07 <- sem(m1_lib_07, data = df_na_libZ, cluster = "iso3c_wave")
 
-summary(m0_lib_fit)
-summary(m1_lib_fit)
-summary(m2_lib_fit)
-summary(m3_lib_fit)
+m0_lib_fit_10 <- sem(m0_lib_10, data = df_na_libZ, cluster = "iso3c_wave")
+m1_lib_fit_10 <- sem(m1_lib_10, data = df_na_libZ, cluster = "iso3c_wave")
+
+sem_outs[1,3] <- m0_lib_fit_05@test[["standard"]][["pvalue"]]
+sem_outs[1,4] <- m0_lib_fit_05@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[3,3] <- m0_lib_fit_07@test[["standard"]][["pvalue"]]
+sem_outs[3,4] <- m0_lib_fit_07@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[5,3] <- m0_lib_fit_10@test[["standard"]][["pvalue"]]
+sem_outs[5,4] <- m0_lib_fit_10@test[["yuan.bentler.mplus"]][["pvalue"]]
+
+sem_outs[2,3] <- m1_lib_fit_05@test[["standard"]][["pvalue"]]
+sem_outs[2,4] <- m1_lib_fit_05@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[4,3] <- m1_lib_fit_07@test[["standard"]][["pvalue"]]
+sem_outs[4,4] <- m1_lib_fit_07@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[6,3] <- m1_lib_fit_10@test[["standard"]][["pvalue"]]
+sem_outs[6,4] <- m1_lib_fit_10@test[["yuan.bentler.mplus"]][["pvalue"]]
+
 ```
-### Table 2. Descriptives w/ Question Wording
+
+
+``` {r med_govZ}
+# without gdp interaction
+m0_gov_05 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ noconf_govZ
+  gov_redist_C ~ -0.05*incdXgovZ'
+
+m0_gov_07 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ noconf_govZ
+  gov_redist_C ~ -0.07*incdXgovZ'
+
+m0_gov_10 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ noconf_govZ
+  gov_redist_C ~ -0.10*incdXgovZ'
+
+# gdp interaction
+m1_gov_05 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ noconf_govZ
+  gov_redist_C ~ -0.05*incdXgovZXgdp'
+
+m1_gov_07 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ noconf_govZ
+  gov_redist_C ~ -0.07*incdXgovZXgdp'
+
+m1_gov_10 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ noconf_govZ
+  gov_redist_C ~ -0.10*incdXgovZXgdp'
+
+# as we focus on within variance, we only need do robust clustering for our country-wave variable
+
+m0_gov_fit_05 <- sem(m0_gov_05, data = df_na_govZ, cluster = "iso3c_wave")
+m1_gov_fit_05 <- sem(m1_gov_05, data = df_na_govZ, cluster = "iso3c_wave")
+
+m0_gov_fit_07 <- sem(m0_gov_07, data = df_na_govZ, cluster = "iso3c_wave")
+m1_gov_fit_07 <- sem(m1_gov_07, data = df_na_govZ, cluster = "iso3c_wave")
+
+m0_gov_fit_10 <- sem(m0_gov_10, data = df_na_govZ, cluster = "iso3c_wave")
+m1_gov_fit_10 <- sem(m1_gov_10, data = df_na_govZ, cluster = "iso3c_wave")
+
+
+sem_outs[7,3] <- m0_gov_fit_05@test[["standard"]][["pvalue"]]
+sem_outs[7,4] <- m0_gov_fit_05@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[9,3] <- m0_gov_fit_07@test[["standard"]][["pvalue"]]
+sem_outs[9,4] <- m0_gov_fit_07@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[11,3] <- m0_gov_fit_10@test[["standard"]][["pvalue"]]
+sem_outs[11,4] <- m0_gov_fit_10@test[["yuan.bentler.mplus"]][["pvalue"]]
+
+sem_outs[8,3] <- m1_gov_fit_05@test[["standard"]][["pvalue"]]
+sem_outs[8,4] <- m1_gov_fit_05@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[10,3] <- m1_gov_fit_07@test[["standard"]][["pvalue"]]
+sem_outs[10,4] <- m1_gov_fit_07@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[12,3] <- m1_gov_fit_10@test[["standard"]][["pvalue"]]
+sem_outs[12,4] <- m1_gov_fit_10@test[["yuan.bentler.mplus"]][["pvalue"]]
+
+```
+
+
+### Corruption Perceptions Index
+
+``` {r med_govZ}
+# without gdp interaction
+m0_cpi_05 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ cpiZ
+  gov_redist_C ~ -0.05*incdXcpiZ'
+
+m0_cpi_07 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ cpiZ
+  gov_redist_C ~ -0.07*incdXcpiZ'
+
+m0_cpi_10 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ cpiZ
+  gov_redist_C ~ -0.10*incdXcpiZ'
+
+# gdp interaction
+m1_cpi_05 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ cpiZ
+  gov_redist_C ~ -0.05*incdXcpiZXgdp'
+
+m1_cpi_07 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ cpiZ
+  gov_redist_C ~ -0.07*incdXcpiZXgdp'
+
+m1_cpi_10 <- '
+  gov_redist_C ~ incdiff_large_w
+  gov_redist_C ~ cpiZ
+  gov_redist_C ~ -0.10*incdXcpiZXgdp'
+
+# as we focus on within variance, we only need do robust clustering for our country-wave variable
+
+m0_cpi_fit_05 <- sem(m0_cpi_05, data = df_na_cpiZ, cluster = "iso3c_wave")
+m1_cpi_fit_05 <- sem(m1_cpi_05, data = df_na_cpiZ, cluster = "iso3c_wave")
+
+m0_cpi_fit_07 <- sem(m0_cpi_07, data = df_na_cpiZ, cluster = "iso3c_wave")
+m1_cpi_fit_07 <- sem(m1_cpi_07, data = df_na_cpiZ, cluster = "iso3c_wave")
+
+m0_cpi_fit_10 <- sem(m0_cpi_10, data = df_na_cpiZ, cluster = "iso3c_wave")
+m1_cpi_fit_10 <- sem(m1_cpi_10, data = df_na_cpiZ, cluster = "iso3c_wave")
+
+
+sem_outs[13,3] <- m0_cpi_fit_05@test[["standard"]][["pvalue"]]
+sem_outs[13,4] <- m0_cpi_fit_05@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[15,3] <- m0_cpi_fit_07@test[["standard"]][["pvalue"]]
+sem_outs[15,4] <- m0_cpi_fit_07@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[17,3] <- m0_cpi_fit_10@test[["standard"]][["pvalue"]]
+sem_outs[17,4] <- m0_cpi_fit_10@test[["yuan.bentler.mplus"]][["pvalue"]]
+
+sem_outs[14,3] <- m1_cpi_fit_05@test[["standard"]][["pvalue"]]
+sem_outs[14,4] <- m1_cpi_fit_05@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[16,3] <- m1_cpi_fit_07@test[["standard"]][["pvalue"]]
+sem_outs[16,4] <- m1_cpi_fit_07@test[["yuan.bentler.mplus"]][["pvalue"]]
+sem_outs[18,3] <- m1_cpi_fit_10@test[["standard"]][["pvalue"]]
+sem_outs[18,4] <- m1_cpi_fit_10@test[["yuan.bentler.mplus"]][["pvalue"]]
+
+sem_outs[,3] <- round(sem_outs[,3], 4)
+sem_outs[,4] <- round(sem_outs[,4], 4)
+
+```
+
+### Question Wording
 
 ```{r wording}
 liberal_redist_label <- "Government should take more responsibility to ensure that everyone is provided for [versus] People should take more responsibility to provide for themselves"
@@ -93,266 +278,6 @@ liberal_label <- "Private ownership of business and industry should be increased
 confidence_gov_label <- "I am going to name a number of organizations. For each one, could you tell me how much confidence you have in them: is it a great deal of confidence, quite a lot of confidence, not very much confidence or none at all? [the government]"
 democratic_label <- "And how democratically is this country being governed today? Again using a scale from 1 to 10, where 1 means that it is “not at all democratic” and 10 means that it is “completely democratic,” what position would you choose?"
 ```
-
-## Macro-Correlations
-
-
-```{r var_dvs}
-# create a variable that captures the percentage of respondents that think income gap is too large but do not agree gov should do something about it
-
-
-df_macro_corr <- df_macro %>%
-  dplyr::select(-c(iso3c, wave)) %>%
-  cor(., use = "pairwise.complete.obs") %>%
-  as.data.frame() %>%
-  round(.,2)
-```
-
-### Puzzling correlation check
-
-The positive correlation of liberal_redist and gov_redist is puzzling. Why would a country have more support for people (versus the govt) taking more responsibility to provide for their own needs and agree that the government should reduce income differences?
-
-To investigate we plot the countries, and the result makes clear that this variable cannot be coded correctly. There is no way that the USA is the most supportive of all countries of the government (versus people themselves) taking responsibility for providing for their needs. Yet the WVS codebook suggets that lower values are more support of government.
-
-This is now fixed in the source load for the WVS so re-creating the plot will not reveal the error.
-
-```{r invest_corr}
-
-# df_macro %>%
-#   ggplot(aes(y = gov_redist, x = liberal_redist_i)) +
-#   geom_label(aes(label = iso3c))
-
-```
-
-### Fig X. Correlation of Redist Variables and Context Vars
-
-After observing the variation in the correlation between inclarge and incdiff by country. We suspect that attitudes toward the role of government are in play. We suspect these come from institutionalized norms. 
-
-Theory: individuals have values or follow norms about how much the government should intervene in the socio-economic affairs of individuals, how much the government should protect against social risks and how much the government (society) should share or redistribute based on need. 
-
-Hypothesis: In countries where the government does less redistribution or has a weaker welfare state, the correlation between perceptions of the income gap and the idea that the government is responsible for doing something about it will be smaller.
-
-
-#### Plot Liberal Business Ownership Corr
-
-```{r figx2}
-#agg_png(here::here("results","Fig2.png"), res = 144, height = 800, width = 1000)
-Fig2.1 <- 
-  df_macro %>%
-  ggplot() +
- #geom_text(aes(y = corr, x = liberal_high, label = iso3c), color = "#20A387FF", size = 3) +
-  geom_text(aes(y = corr, x = liberal, label = iso3c), color = "black", size = 3) +
-  #geom_text(aes(y = corr, x = liberal_low, label = iso3c), color = "midnightblue", size = 3) +
-  geom_text(aes(y = corr, x = ifelse(is.na(liberal), liberal_i, NA), label = iso3c), color = "grey", size = 2) +
-  geom_smooth(aes(y = corr, x = liberal_i), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
-  geom_smooth(aes(y = corr, x = liberal_high), method = 'lm', se = F, color = "#20A387FF") +
-  geom_smooth(aes(y = corr, x = liberal_low), method = 'lm', se = F, color = "midnightblue") +
-  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
-  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
-  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
-  # annotate(geom = "text", x = 6.8, y = 0.34, label = "Fitted Lines", hjust = 0) +
-  # annotate(geom = "text", x = 7.3, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
-  # annotate(geom = "text", x = 7.3, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
-  # annotate(geom = "text", x = 7.3, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
-  labs(x = "LIBERAL VALUES I\nWorld Values Survey data\ngovernment v. private ownership of business",
-       y = "CORRELATION within COUNTRY-YEAR\n'Government should redistribute' with\n'Differences in income are too large'",
-       caption = " \n \n \n ") +
-  theme_classic()
-#dev.off()
-
-#knitr::include_graphics(here::here("results","Fig2.png"))
-```
-
-#### Plot Liberal Individual Welfare Corr
-
-Here Japan is an extreme outlier among rich countries, it has a very high level of support for the government being responsible rather than individuals. Contrast with Sweden which has extrememly high individual rather than government. This is likely a product of existing government arrangements. But Japan is so extreme that it makes sense to exclude it from the line of fit. 
-
-```{r figx2}
-#agg_png(here::here("results","Fig2.1_redist.png"), res = 144, height = 800, width = 1000)
-Fig2.1_redist <- 
-  df_macro %>%
-  mutate(liberal_redist_high = ifelse(iso3c == "JPN", NA, liberal_redist_high)) %>%
-  ggplot() +
-  geom_text(aes(y = corr, x = liberal_redist, label = iso3c), color = "black", size = 3) +
-  geom_text(aes(y = corr, x = ifelse(is.na(liberal_redist), liberal_redist_i, NA), label = iso3c), color = "grey", size = 2) +
-  geom_smooth(aes(y = corr, x = liberal_redist_i), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
-  geom_smooth(aes(y = corr, x = liberal_redist_high), method = 'lm', se = F, color = "#20A387FF") +
-  geom_smooth(aes(y = corr, x = liberal_redist_low), method = 'lm', se = F, color = "midnightblue") +
-  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
-  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
-  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
-  # annotate(geom = "text", x = 6.8, y = 0.34, label = "Fitted Lines", hjust = 0) +
-  # annotate(geom = "text", x = 7.3, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
-  # annotate(geom = "text", x = 7.3, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
-  # annotate(geom = "text", x = 7.3, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
-  labs(x = "LIBERAL VALUES II\nWorld Values Survey data\ngovernment v. individual provide for needs",
-       y = "",
-       caption = " \n \n \n ") +
-  theme_classic()
-#Fig2.1_redist
-#dev.off()
-
-#knitr::include_graphics(here::here("results","Fig2.1_redist.png"))
-```
-
-#### Plot Corrupt / Corr
-
-```{r figx3}
-#agg_png(here::here("results","Fig3.png"), res = 144, height = 800, width = 1000)
-Fig2.2 <- df_macro %>%
-  ggplot() +
-  geom_text(aes(y = corr, x = cpiZ, label = iso3c), color = "black", size = 3) +
-  geom_text(aes(y = corr, x = ifelse(is.na(cpiZ), cpiZ_i, NA), label = iso3c), color = "grey", size = 2) +
-  geom_smooth(aes(y = corr, x = cpiZ), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
-  geom_smooth(aes(y = corr, x = cpi_high), method = 'lm', se = F, color = "#20A387FF") +
-  geom_smooth(aes(y = corr, x = cpi_low), method = 'lm', se = F, color = "midnightblue") +
-  geom_segment(aes(x = -2, xend = -1.7, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
-  geom_segment(aes(x = -2, xend = -1.7, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
-  geom_segment(aes(x = -2, xend = -1.7, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
-  annotate(geom = "text", x = -2, y = 0.34, label = "Fitted Lines", hjust = 0) +
-  annotate(geom = "text", x = -1.6, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
-  annotate(geom = "text", x = -1.6, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
-  annotate(geom = "text", x = -1.6, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
-  labs(x = "CORRUPTION PERCEPTIONS INDEX (CPI)\nTransparency International data\n \n ",
-       y = "",
-       #caption = " \nY data from International Social Survey Program\ngrey countries in left-panel interpolated with country-means"
-       ) +
-  theme_classic()
-
-```
-
-```{r figx3}
-#agg_png(here::here("results","Fig3.png"), res = 144, height = 800, width = 1000)
-Fig2.3 <- df_macro %>%
-  ggplot() +
-  geom_text(aes(y = corr, x = noconf_govZ, label = iso3c), color = "black", size = 3) +
-  geom_text(aes(y = corr, x = ifelse(is.na(noconf_govZ), noconf_govZ_i, NA), label = iso3c), color = "grey", size = 2) +
-  geom_smooth(aes(y = corr, x = noconf_govZ), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
-  geom_smooth(aes(y = corr, x = noconf_govZ_hi), method = 'lm', se = F, color = "#20A387FF") +
-  geom_smooth(aes(y = corr, x = noconf_govZ_low), method = 'lm', se = F, color = "midnightblue") +
-  labs(x = "LACK OF TRUST IN GOV\nWorld Values Survey Data\n ",
-       y = "",
-       #caption = " \nY data from International Social Survey Program\ngrey countries in left-panel interpolated with country-means"
-       ) +
-  theme_classic()
-
-```
-
-```{r figx4}
-#agg_png(here::here("results","Fig3.png"), res = 144, height = 800, width = 1000)
-Fig2.4 <- df_macro %>%
-  ggplot() +
-  geom_text(aes(y = corr, x = gdp_pc_10k, label = iso3c), color = "black", size = 3) +
-  geom_smooth(aes(y = corr, x = gdp_pc_10k), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
-  geom_smooth(aes(y = corr, x = gdp_hi), method = 'lm', se = F, color = "#20A387FF") +
-  geom_smooth(aes(y = corr, x = gdp_lo), method = 'lm', se = F, color = "midnightblue") +
-  geom_segment(aes(x = -2, xend = -1.7, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
-  geom_segment(aes(x = -2, xend = -1.7, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
-  geom_segment(aes(x = -2, xend = -1.7, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
-  annotate(geom = "text", x = -2, y = 0.34, label = "Fitted Lines", hjust = 0) +
-  annotate(geom = "text", x = -1.6, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
-  annotate(geom = "text", x = -1.6, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
-  annotate(geom = "text", x = -1.6, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
-  labs(x = "GDP PER CAPITA (10k)\nVarieties of Democracy Data\n ",
-       y = "",
-       #caption = " \nY data from International Social Survey Program\ngrey countries reflect interpolated data points"
-       ) +
-  theme_classic()
-
-```
-### Plot Arranged Figure
-
-```{r fig2}
-agg_png(filename = here::here("results","Fig2.png"), res = 144, width = 2000, height = 800)
-ggarrange(Fig2.1, Fig2.1_redist, Fig2.2, widths = c(1.1,1,1), nrow = 1)
-dev.off()
-
-knitr::include_graphics(here::here("results","Fig2.png"))
-```
-
-```{r fig3}
-agg_png(filename = here::here("results","Fig3.png"), res = 144, width = 1300, height = 800)
-ggarrange(Fig2.3, Fig2.4, widths = c(1,1.15))
-dev.off()
-
-knitr::include_graphics(here::here("results","Fig3.png"))
-```
-
-### All Plausible Models
-
-#### Moderation models, for specification curve
-
-Selection point. If we've run the models and the margins command before then this will not be necessary. 
-
-NOTE: that if we make changes to the models we have to turn off the selector and re-run, or delete the df_ame file, or the if selection won't work!
-
-```{r ameload}
-if (file.exists(here::here("data", "df_ame.RDS"))) { 
-  # select if this margins datafile is already there
-
-   df_ame <- readRDS(here::here("data", "df_ame.RDS"))
-
-    } else 
- { source(here::here("data", "Models_nomain.R"))
-   model_list <- mget(ls(pattern = "M_"))
-   #model_list_lm <- mget(ls(pattern = "L_"))
-#########
-   # Compile all M_ models margins (multilevel)   
-   df_ame <- as.data.frame(matrix(nrow = length(model_list), ncol = 3))
-
-colnames(df_ame) <- c("Model", "mod_b", "mod_se")
-
-model_names <- names(model_list)
-
-for (m in 1:length(model_list)) {
-  
-  #mn <- as.name(model_names[m])
-  
-  df_ame[m,1] <- paste(as.character(model_list[[m]]@call), sep = "", collapse = "")
-  
-  temp <- as.data.frame(summary(get(model_names[m]))[["coefficients"]])
-  
-  temp <- temp[grepl('cpiZ|noconf_govZ|libZ|lib_redistZ|incdiff_large', rownames(temp)), 1:2]
-  
-  df_ame[m,"mod_b"] <- temp[grepl(":", rownames(temp)),1]
-  df_ame[m, "mod_se"] <- temp[grepl(":", rownames(temp)),2]
-  
-}
-
-
-}
-```
-
-#### Get model specifications
-
-```{r ameclean}
-df_ame <- df_ame %>%
-  mutate(mod_var = ifelse(grepl("noconf_govZ", Model, fixed = T), "B_No_confidence", 
-                   ifelse(grepl("cpiZ", Model), "C_Corruption_percept",
-                   ifelse(grepl("libZ", Model), "A1_Liberal_values", "A2_Liberal_values"))),
-         mod_imputed = ifelse(grepl("_i", df_ame$Model), "Yes", "No"),
-         ri_cyear = ifelse(grepl("iso3c_wave", df_ame$Model), "Yes", "No"),
-         ri_country = ifelse(grepl("iso3c)", df_ame$Model), "Yes", "No"),
-         estimation = ifelse(grepl("lmer", df_ame$Model), "GLM", "OLS"),
-         control_gdp = ifelse(grepl("gdp", df_ame$Model), "Yes", "No"),
-         control_gini = ifelse(grepl("gini", df_ame$Model), "Yes", "No"),
-         control_socx = ifelse(grepl("socx", df_ame$Model), "Yes", "No"),
-         control_fb = ifelse(grepl("pct_fb", df_ame$Model), "Yes", "No"),
-         i_level_control = ifelse(grepl("female", df_ame$Model), "Yes", "No"),
-         gdp_m_interaction = ifelse(grepl(":gdp_pc_10k_C", df_ame$Model), "Yes", "No")
-         )
-
-df_ame <- df_ame %>%
-  arrange(mod_b) %>%
-  mutate(count = row_number())
-
-saveRDS(df_ame, here::here("data", "df_ame.RDS"))
-
-```
-
-
-
-
 
 Colophon
 
