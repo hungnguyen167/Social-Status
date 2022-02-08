@@ -1,5 +1,5 @@
 ---
-title: "Attitudes toward Redistribution"
+title: "02 Visualizations"
 output:
   html_document:
     df_print: paged
@@ -93,7 +93,7 @@ Theory: individuals have values or follow norms about how much the government sh
 Hypothesis: In countries where the government does less redistribution or has a weaker welfare state, the correlation between perceptions of the income gap and the idea that the government is responsible for doing something about it will be smaller.
 
 
-#### Plot Liberal Business Ownership Corr
+#### Plot Liberal Business Ownership Corr (Liberal Values I)
 
 ```{r figx2}
 #agg_png(here::here("results","Fig2.png"), res = 144, height = 800, width = 1000)
@@ -115,15 +115,15 @@ Fig2.1 <-
   # annotate(geom = "text", x = 7.3, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
   # annotate(geom = "text", x = 7.3, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
   labs(x = "LIBERAL VALUES I\nWorld Values Survey data\ngovernment v. private ownership of business",
-       y = "CORRELATION within COUNTRY-YEAR\n'Government should redistribute' with\n'Differences in income are too large'",
-       caption = " \n \n \n ") +
+       y = "CORRELATION within COUNTRY-YEAR\n'Government should redistribute' with\n'Differences in income are too large'"
+       ) +
   theme_classic()
 #dev.off()
 
 #knitr::include_graphics(here::here("results","Fig2.png"))
 ```
 
-#### Plot Liberal Individual Welfare Corr
+#### Plot Liberal Individual Welfare Corr (Liberal Values II)
 
 Here Japan is an extreme outlier among rich countries, it has a very high level of support for the government being responsible rather than individuals. Contrast with Sweden which has extrememly high individual rather than government. This is likely a product of existing government arrangements. But Japan is so extreme that it makes sense to exclude it from the line of fit. 
 
@@ -146,8 +146,8 @@ Fig2.1_redist <-
   # annotate(geom = "text", x = 7.3, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
   # annotate(geom = "text", x = 7.3, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
   labs(x = "LIBERAL VALUES II\nWorld Values Survey data\ngovernment v. individual provide for needs",
-       y = "",
-       caption = " \n \n \n ") +
+       y = ""
+       ) +
   theme_classic()
 #Fig2.1_redist
 #dev.off()
@@ -173,13 +173,15 @@ Fig2.2 <- df_macro %>%
   annotate(geom = "text", x = -1.6, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
   annotate(geom = "text", x = -1.6, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
   annotate(geom = "text", x = -1.6, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
-  labs(x = "CORRUPTION PERCEPTIONS INDEX (CPI)\nTransparency International data\n \n ",
+  labs(x = "CORRUPTION PERCEPTIONS INDEX (CPI)\nTransparency International data\n ",
        y = "",
        #caption = " \nY data from International Social Survey Program\ngrey countries in left-panel interpolated with country-means"
        ) +
   theme_classic()
 
 ```
+
+### Plot No Trust
 
 ```{r figx3}
 #agg_png(here::here("results","Fig3.png"), res = 144, height = 800, width = 1000)
@@ -198,6 +200,8 @@ Fig2.3 <- df_macro %>%
 
 ```
 
+### Plot GDP
+
 ```{r figx4}
 #agg_png(here::here("results","Fig3.png"), res = 144, height = 800, width = 1000)
 Fig2.4 <- df_macro %>%
@@ -209,10 +213,10 @@ Fig2.4 <- df_macro %>%
   geom_segment(aes(x = -2, xend = -1.7, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
   geom_segment(aes(x = -2, xend = -1.7, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
   geom_segment(aes(x = -2, xend = -1.7, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
-  annotate(geom = "text", x = -2, y = 0.34, label = "Fitted Lines", hjust = 0) +
-  annotate(geom = "text", x = -1.6, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
-  annotate(geom = "text", x = -1.6, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
-  annotate(geom = "text", x = -1.6, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
+  # annotate(geom = "text", x = -2, y = 0.34, label = "Fitted Lines", hjust = 0) +
+  # annotate(geom = "text", x = -1.6, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
+  # annotate(geom = "text", x = -1.6, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
+  # annotate(geom = "text", x = -1.6, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
   labs(x = "GDP PER CAPITA (10k)\nVarieties of Democracy Data\n ",
        y = "",
        #caption = " \nY data from International Social Survey Program\ngrey countries reflect interpolated data points"
@@ -224,7 +228,7 @@ Fig2.4 <- df_macro %>%
 
 ```{r fig2}
 agg_png(filename = here::here("results","Fig2.png"), res = 144, width = 2000, height = 800)
-ggarrange(Fig2.1, Fig2.1_redist, Fig2.2, widths = c(1.1,1,1), nrow = 1)
+ggarrange(Fig2.1, Fig2.1_redist, Fig2.2, widths = c(1.1,1,1.1), nrow = 1)
 dev.off()
 
 knitr::include_graphics(here::here("results","Fig2.png"))
