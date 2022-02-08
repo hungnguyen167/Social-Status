@@ -348,16 +348,32 @@ rich_countries <- c("NOR","CHE","DNK","USA","AUS","DEU","AUT","SWE","JPN","NZL",
 df_macro <- df_macro %>%
   mutate(liberal_high = ifelse(iso3c %in% rich_countries, liberal, NA), 
          liberal_low = ifelse(is.na(liberal_high), liberal, NA),
-         liberal_low = ifelse(iso3c %in% c("SVN","CZE","CYP","ESP","PRT"), NA, liberal_low), # remove some questionable mid-GDP cases
+         liberal_low = ifelse(iso3c %in% c(
+                                           "SVN",
+                                           "CZE","CYP", "ISR"
+                                           #,"ESP","PRT"
+                                           ), NA, liberal_low), # remove some questionable mid-GDP cases
          liberal_high_i = ifelse(iso3c %in% rich_countries, liberal_i, NA), 
          liberal_low_i = ifelse(is.na(liberal_high), liberal_i, NA),
-         liberal_low_i = ifelse(iso3c %in% c("SVN","CZE","CYP","ESP","PRT"), NA, liberal_low_i),
+         liberal_low_i = ifelse(iso3c %in% c(
+                                             "SVN",
+                                             "CZE","CYP", "ISR"
+                                             #,"ESP","PRT"
+                                             ), NA, liberal_low_i),
          liberal_redist_high = ifelse(iso3c %in% rich_countries, liberal_redist, NA), 
          liberal_redist_low = ifelse(is.na(liberal_redist_high), liberal_redist, NA),
-         liberal_redist_low = ifelse(iso3c %in% c("SVN","CZE","CYP","ESP","PRT"), NA, liberal_redist_low), # remove some questionable mid-GDP cases
+         liberal_redist_low = ifelse(iso3c %in% c(
+                                                  "SVN",
+                                                  "CZE","CYP","ISR"
+                                                  #,"ESP","PRT"
+                                                  ), NA, liberal_redist_low), # remove some questionable mid-GDP cases
          liberal_redist_high_i = ifelse(iso3c %in% rich_countries, liberal_redist_i, NA), 
          liberal_redist_low_i = ifelse(is.na(liberal_redist_high), liberal_redist_i, NA),
-         liberal_redist_low_i = ifelse(iso3c %in% c("SVN","CZE","CYP","ESP","PRT"), NA, liberal_redist_low_i),
+         liberal_redist_low_i = ifelse(iso3c %in% c(
+                                                    "SVN",
+                                                    "CZE","CYP", "ISR"
+                                                    #,"ESP","PRT"
+                                                    ), NA, liberal_redist_low_i),
          gdp_di = ifelse(!is.na(liberal_low_i), 0, 1)) 
 
 

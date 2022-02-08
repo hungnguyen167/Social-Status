@@ -107,13 +107,13 @@ Fig2.1 <-
   geom_smooth(aes(y = corr, x = liberal_i), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
   geom_smooth(aes(y = corr, x = liberal_high), method = 'lm', se = F, color = "#20A387FF") +
   geom_smooth(aes(y = corr, x = liberal_low), method = 'lm', se = F, color = "midnightblue") +
-  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
-  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
-  # geom_segment(aes(x = 6.8, xend = 7.2, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
-  # annotate(geom = "text", x = 6.8, y = 0.34, label = "Fitted Lines", hjust = 0) +
-  # annotate(geom = "text", x = 7.3, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
-  # annotate(geom = "text", x = 7.3, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
-  # annotate(geom = "text", x = 7.3, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
+  geom_segment(aes(x = 6.8, xend = 7.22, y = 0.30, yend = 0.30), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
+  geom_segment(aes(x = 6.8, xend = 7.22, y = 0.27, yend = 0.27), color = "#20A387FF", size = 1.1) +
+  geom_segment(aes(x = 6.8, xend = 7.22, y = 0.24, yend = 0.24), color = "midnightblue", size = 1.1) +
+  annotate(geom = "text", x = 6.8, y = 0.33, label = "Fitted Lines", hjust = 0) +
+  annotate(geom = "text", x = 7.3, y = 0.30, label = "Pooled", hjust = 0, size = 3) +
+  annotate(geom = "text", x = 7.3, y = 0.27, label = "Higher GDP", hjust = 0, size = 3) +
+  annotate(geom = "text", x = 7.3, y = 0.24, label = "Lower GDP", hjust = 0, size = 3) +
   labs(x = "LIBERAL VALUES I\nWorld Values Survey data\ngovernment v. private ownership of business",
        y = "CORRELATION within COUNTRY-YEAR\n'Government should redistribute' with\n'Differences in income are too large'"
        ) +
@@ -210,9 +210,9 @@ Fig2.4 <- df_macro %>%
   geom_smooth(aes(y = corr, x = gdp_pc_10k), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
   geom_smooth(aes(y = corr, x = gdp_hi), method = 'lm', se = F, color = "#20A387FF") +
   geom_smooth(aes(y = corr, x = gdp_lo), method = 'lm', se = F, color = "midnightblue") +
-  geom_segment(aes(x = -2, xend = -1.7, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
-  geom_segment(aes(x = -2, xend = -1.7, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
-  geom_segment(aes(x = -2, xend = -1.7, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
+  #geom_segment(aes(x = -2, xend = -1.7, y = 0.3, yend = 0.3), linetype = "dashed", color = "#B8DE29FF", size = 1.1) +
+  #geom_segment(aes(x = -2, xend = -1.7, y = 0.26, yend = 0.26), color = "#20A387FF", size = 1.1) +
+  #geom_segment(aes(x = -2, xend = -1.7, y = 0.22, yend = 0.22), color = "midnightblue", size = 1.1) +
   # annotate(geom = "text", x = -2, y = 0.34, label = "Fitted Lines", hjust = 0) +
   # annotate(geom = "text", x = -1.6, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
   # annotate(geom = "text", x = -1.6, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
@@ -228,7 +228,7 @@ Fig2.4 <- df_macro %>%
 
 ```{r fig2}
 agg_png(filename = here::here("results","Fig2.png"), res = 144, width = 2000, height = 800)
-ggarrange(Fig2.1, Fig2.1_redist, Fig2.2, widths = c(1.1,1,1.1), nrow = 1)
+ggarrange(Fig2.1, Fig2.1_redist, Fig2.3, widths = c(1.1,1,1.1), nrow = 1)
 dev.off()
 
 knitr::include_graphics(here::here("results","Fig2.png"))
@@ -236,7 +236,7 @@ knitr::include_graphics(here::here("results","Fig2.png"))
 
 ```{r fig3}
 agg_png(filename = here::here("results","Fig3.png"), res = 144, width = 1300, height = 800)
-ggarrange(Fig2.3, Fig2.4, widths = c(1,1.15))
+ggarrange(Fig2.2, Fig2.4, widths = c(1,1.15))
 dev.off()
 
 knitr::include_graphics(here::here("results","Fig3.png"))
@@ -451,9 +451,6 @@ dev.off()
 knitr::include_graphics(here::here("results", "statt_plot.png"))
 ```
 
-```{r tableform}
-knitr::include_graphics(here::here("results","tbl_redist.png"))
-```
 
 Colophon
 
