@@ -412,7 +412,8 @@ knitr::include_graphics(here::here("results","map1.png"))
 ## Better to make a table
 
 ```{r tbl_statt_map}
-agg_png(filename = here::here("results","statt_plot.png"), width = 1500, height = 1200, res = 144)
+agg_png(filename = here::here("results","statt_plot.png"), width = 1200, height = 1200, res = 144)
+
 df_tbl <- df_macro %>%
   select(iso3c, gov_redist_agree, gap_no_gov, incdiff_large_agree) %>%
   group_by(iso3c) %>%
@@ -423,45 +424,19 @@ df_tbl <- df_tbl %>%
   mutate(country = countrycode(iso3c, "iso3c", "country.name")) %>%
   select(country, iso3c, incdiff_large_agree, gov_redist_agree, gap_no_gov) %>%
   mutate(incdiff_large_agree = round(incdiff_large_agree,1),
-         gov_redist_agree = round(gov_redist_agree,1),
-         gap_no_gov = round(gap_no_gov,1))
+     	gov_redist_agree = round(gov_redist_agree,1),
+     	gap_no_gov = round(gap_no_gov,1))
 
 df_tbl <- df_tbl[order(df_tbl$incdiff_large_agree, decreasing = T),]
 
-#old plot
-ggplot(df_tbl, aes(x = gov_redist_agree ,
-                   y = incdiff_large_agree)) + 
-  geom_point(aes(size = gap_no_gov, color=gap_no_gov),
-             alpha = 0.75) + 
-  geom_text(aes(label=iso3c), 
-            position = "dodge",
-            vjust=0.3, hjust=-0.2)+
-  scale_size(guide = "none") +
-  scale_color_continuous(limits = range(0:40),
-                         type = "viridis",
-                         labels = scales::percent_format(scale = 1),
-                         guide = guide_colorbar(title = "Income gap is too large,\ngov't is not responsible",
-                               title.position = "left",
-                               title.vjust = .8, 
-                               frame.colour = "black", 
-                               ticks.colour = "black")) +
-  labs(x = "Government should redistribute",
-       y = "Differences in income is too large") +
-  theme_minimal() + theme(legend.position = "top") +
-  scale_y_continuous(labels = scales::percent_format(scale = 1), 
-                     breaks = c(40,50,60,70,80,90,100),  
-                     limits=c(40,100)) +
-  scale_x_continuous(labels = scales::percent_format(scale = 1),
-                     breaks = c(40,50,60,70,80,90,100), 
-                     limits=c(40,100)) + theme(axis.line = element_line(size = 1, colour = "black", linetype=1))
 #new plot
 ggplot() + 
   geom_point(data = df_tbl, aes(x = incdiff_large_agree , y = gap_no_gov, color=iso3c),alpha = 0.75,size=4) + 
   geom_text(data = df_tbl, aes(x =  incdiff_large_agree  , y =gap_no_gov,label=iso3c), 
             position = "dodge",
             vjust=0.3, hjust=-0.2)+
-  labs(x = "Percentage who agree vs disagree \n that incomegap is too large",
-       y = "Percentage who agree government\n should redistribute income out \n of those who agree income gap is too large") +
+  labs(x = "Percentage who agree that income gap is too large\nnot counting those who are neutral or have no opinion",
+       y = "Percentage who do not support government redistribution\n out of those who agree income gap is too large") +
   theme_minimal() + theme(legend.position = "right") +
   scale_y_continuous(labels = scales::percent_format(scale = 1), 
                      breaks = c(10,20,30,40,50,60,70,80,90,100), 
@@ -471,8 +446,9 @@ ggplot() +
                      limits=c(70,100)) + 
   theme(axis.line = element_line(size = 1, colour = "black", linetype=1)) + scale_colour_viridis_d(guide="none") 
  
+dev.off()
 
-write.csv(df_tbl, file = here::here("results","tbl_redist.csv"), row.names = F)
+knitr::include_graphics(here::here("results", "statt_plot.png"))
 ```
 
 ```{r tableform}
