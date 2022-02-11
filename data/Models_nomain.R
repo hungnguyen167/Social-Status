@@ -544,4 +544,4 @@ M_bayes.28 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 
 length(ls(pattern="M\\_[0-9]")) ## 448 models 01-Feb-22 
 length(ls(pattern="M_b"))       ## 28 bayesian models (07-Feb-22)
 
-save(list = ls(pattern="M_b"), file = "bayesian_mods.RData")
+save(list = ls(pattern="M_b"), file = here::here("data","bayesian_mods.RData"))
