@@ -76,8 +76,8 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.1 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
-
+M_bayes.1 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
+summary(M_bayes.1)
 
 
 
@@ -95,7 +95,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.2 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.2 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 ### gini
@@ -111,7 +111,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.3 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.3 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 ### gdp
@@ -128,7 +128,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.4 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.4 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 ### immigration
 cvs <- c("(1|iso3c_wave)","pct_fb_i_C")
@@ -143,7 +143,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.5 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.5 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 
@@ -165,7 +165,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.6 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.6 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 ### socx_C control
 
@@ -181,7 +181,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.7 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.7 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 ### gini
 cvs <- c("(1|iso3c_wave)","(1|iso3c)","gini_disp_C")
@@ -196,7 +196,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.8 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.8 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gdp
 
 cvs <- c("(1|iso3c_wave)","(1|iso3c)","gdp_pc_10k_C")
@@ -211,7 +211,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.9 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.9 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### immigration
 cvs <- c("(1|iso3c_wave)","(1|iso3c)","pct_fb_i_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, data = df_na)
@@ -225,7 +225,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.10 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.10 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 ## WITH GDP INTERACTIONS
@@ -252,7 +252,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.11 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.11 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 ### socx_C control
@@ -269,7 +269,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.12 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.12 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gini
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "gini_disp_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
@@ -285,7 +285,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.13 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.13 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### immigration
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "pct_fb_i_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
@@ -300,7 +300,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.14 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.14 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 ########################################################################################################################
@@ -328,7 +328,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.15 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.15 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### socx_C control
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "socx_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, data = df_na)
@@ -342,7 +342,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.16 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.16 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gini
 
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "gini_disp_C")
@@ -357,7 +357,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.17 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.17 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gdp
  
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "gdp_pc_10k_C")
@@ -372,7 +372,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.18 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.18 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### immigration
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "pct_fb_i_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, data = df_na)
@@ -387,7 +387,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.19 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.19 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 ## With Country-Year and Country
 ### bare models
@@ -407,7 +407,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.20 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.20 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### socx_C control
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "socx_C")
@@ -422,7 +422,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.21 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.21 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gini
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "gini_disp_C")
@@ -437,7 +437,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.22 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.22 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gdp
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "gdp_pc_10k_C")
@@ -452,7 +452,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.23 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.23 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### immigration
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "pct_fb_i_C")
@@ -467,7 +467,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.24 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.24 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 ## With GDP interactions
 ### Country-Year Only
@@ -490,7 +490,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.25 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.25 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### socx_C control
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "socx_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
@@ -505,7 +505,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.26 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.26 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gini
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "gini_disp_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
@@ -521,7 +521,7 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.27 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.27 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### immigration
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "pct_fb_i_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
@@ -537,10 +537,11 @@ pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
 f <- get(pref_mod)@call[["formula"]]
 
 
-M_bayes.28 <- brm(formula = f, data = df_na, warmup = 1000, iter = 2000, cores = 2, seed = 123)
+M_bayes.28 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 
-length(ls(pattern="M_")) ## 448 models 01-Feb-22 + 28 bayesian models (07-Feb-22)
+length(ls(pattern="M\\_[0-9]")) ## 448 models 01-Feb-22 
+length(ls(pattern="M_b"))       ## 28 bayesian models (07-Feb-22)
 
-
+save(list = ls(pattern="M_b"), file = "bayesian_mods.RData")
