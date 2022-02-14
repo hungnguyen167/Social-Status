@@ -110,36 +110,66 @@ df_tbl <- df_tbl %>%
      	corr = round(corr,2))
 
 df_tbl <- as.data.frame(df_tbl[order(df_tbl$incdiff_large_agree, decreasing = T),])
+
+# position adjustments for final plot
+tops <- c("PHL","LVA","HRV","CYP")
+lefts <- c("HUN","ZAF","AUT")
+bots <- c(tops,lefts)
+topss <- df_tbl %>%
+  subset(iso3c %in% tops)
+leftss <- df_tbl %>%
+  subset(iso3c %in% lefts)
+botss <- df_tbl %>%
+  subset(!(iso3c %in% bots))
 ```
 
 ### Plot F1
 
 ```{r tbl_statt_map}
-mid = 0.51
+mid = 0.48
+
 agg_png(filename = here::here("results","statt_plot.png"), width = 1200, height = 1200, res = 144)
 
 #new plot
-df_tbl %>%
-ggplot(aes(x = incdiff_large_agree , y = gap_no_gov, color = corr)) + 
-  geom_point( 
+ggplot() + 
+  geom_point(data = df_tbl, 
+             aes(x = incdiff_large_agree , y = gap_no_gov, color = corr),
              alpha = 0.75, 
              size=4) + 
-  geom_text(label=df_tbl$iso3c, 
-             position = "dodge",
-             vjust=0.3, hjust=-0.2)+
-  labs(x = "Percentage who agree that income gap is too large\nnot counting those who are neutral or have no opinion",
-       y = "Percentage who do not support government redistribution\n out of those who agree income gap is too large") +
-  theme_minimal() + theme(legend.position = "right") +
-    scale_color_gradient2(midpoint=mid, low="#29AF7FFF", mid="gray55", high="#440154FF", space="Lab") +
+  #bottom labels
+  geom_text(data = botss, 
+            label = botss$iso3c, 
+            aes(x = incdiff_large_agree , y = gap_no_gov, color = corr),
+            position = "dodge",
+            vjust=2 
+            )+
+  #top labels
+  geom_text(data = topss, 
+            label = topss$iso3c, 
+            aes(x = incdiff_large_agree , y = gap_no_gov, color = corr),
+            position = "dodge",
+            vjust=-1.2 
+            )+
+  #left labels
+  geom_text(data = leftss, 
+            label = leftss$iso3c, 
+            aes(x = incdiff_large_agree , y = gap_no_gov, color = corr),
+            position = "dodge",
+            hjust=1
+            )+
+  scale_color_gradient2(midpoint=mid, low="#FDE725FF", mid="#29AF7FFF", high="#440154FF", space="Lab") +
   scale_y_continuous(labels = scales::percent_format(scale = 1), 
                       breaks = c(10,20,30,40,50,60,70,80,90,100), 
                       limits=c(0,40)) +
-   scale_x_continuous(labels = scales::percent_format(scale = 1),
+  scale_x_continuous(labels = scales::percent_format(scale = 1),
                       breaks = c(40,50,60,70,80,90,100),  
                       limits=c(70,100)) + 
-  theme(axis.line = element_line(size = 1, colour = "black", linetype=1))
-#+ scale_colour_viridis_d(guide="none")
- 
+  labs(x = "Percentage who agree that income gap is too large\nnot counting those who are neutral or have no opinion",
+       y = "Percentage who do not support government redistribution\n out of those who agree income gap is too large",
+       color = "Within\nCountry\nCorrelation") +
+  theme_classic() + 
+  theme(legend.position = "right")
+
 dev.off()
 
 knitr::include_graphics(here::here("results", "statt_plot.png"))
