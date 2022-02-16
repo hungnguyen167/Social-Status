@@ -37,7 +37,7 @@ df_macro <- readRDS(here::here("data", "df_macro.RDS"))
 
 ## Descriptives
 
-### Table 1. Cases by Country-Wave
+### Table X. Cases by Country-Wave
 
 ```{r tbl1, include = T, echo = T}
 # Cross-tab years and countries
@@ -61,7 +61,7 @@ confidence_gov_label <- "I am going to name a number of organizations. For each 
 democratic_label <- "And how democratically is this country being governed today? Again using a scale from 1 to 10, where 1 means that it is “not at all democratic” and 10 means that it is “completely democratic,” what position would you choose?"
 ```
 
-## Macro-Correlations
+### Macro-Correlations
 
 
 ```{r var_dvs}
@@ -75,7 +75,7 @@ df_macro_corr <- df_macro %>%
   round(.,2)
 ```
 
-### Puzzling correlation check
+#### Puzzling correlation check
 
 The positive correlation of liberal_redist and gov_redist is puzzling. Why would a country have more support for people (versus the govt) taking more responsibility to provide for their own needs and agree that the government should reduce income differences?
 
@@ -90,6 +90,75 @@ This is now fixed in the source load for the WVS so re-creating the plot will no
 #   geom_label(aes(label = iso3c))
 
 ```
+
+### Table 1. Descriptives
+
+```{r t1desc}
+tbl1 <- as.data.frame(matrix(nrow = 22, ncol = 7))
+
+colnames(tbl1) <- c("Variable", "Mean", "SD", "Min", "Max", "Obs", "Source")
+tbl1[,1] <- c("Country-Wave-Level Variables", "YGovRedist", "YIncDiff", "Liberal Values I, raw", "Liberal Values I, interp", "Liberal Values II, raw", "Liberal Values II, interp", "Lack of Trust, raw", "Lack of Trust, interp", "Corruption Perceptions, raw", "Corruption Perceptions, interp", "GDP per capita", "Social Spending", "Percent Foreign-Born", "Gini, Disposable", "Waves per Country", "Individual-Level-Variables", "YGovRedist", "YIncDiff", "Age in Years", "Female", "Education in Years")
+
+# get summary stats
+tbl1c1 <- df_macro %>%
+  select(gov_redist, incdiff_large, lib_redistZ, lib_redistZ_i, libZ, libZ_i, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, gdp_pc_10k, socx, pct_fb_i, gini_disp) %>%
+  summarise_all(.funs = c("mean", "sd", "min", "max"), na.rm = T) %>%
+  round(.,3)
+
+tbl1[2:15,2] <- t(tbl1c1[1,1:14])
+tbl1[2:15,3] <- t(tbl1c1[1,15:28])
+tbl1[2:15,4] <- t(tbl1c1[1,29:42])
+tbl1[2:15,5] <- t(tbl1c1[1,43:56])
+
+# get N
+tbl1[2:15,6] <- c(sum(!is.na(df_macro$gov_redist)),
+                  sum(!is.na(df_macro$incdiff_large)),
+                  sum(!is.na(df_macro$lib_redistZ)),
+                  sum(!is.na(df_macro$lib_redistZ_i)),
+                  sum(!is.na(df_macro$libZ)),
+                  sum(!is.na(df_macro$libZ_i)),
+                  sum(!is.na(df_macro$noconf_govZ)),
+                  sum(!is.na(df_macro$noconf_govZ_i)),
+                  sum(!is.na(df_macro$cpiZ)),
+                  sum(!is.na(df_macro$cpiZ_i)),
+                  sum(!is.na(df_macro$gdp_pc_10k)),
+                  sum(!is.na(df_macro$socx)),
+                  sum(!is.na(df_macro$pct_fb_i)),
+                  sum(!is.na(df_macro$gini_disp)))
+
+# countries per wave
+tbl1[16,2:5] <- df_macro %>%
+  group_by(iso3c) %>%
+  mutate(count = n()) %>%
+  summarise_all(.funs = "mean") %>%
+  select(count) %>%
+  summarise_all(.funs = c("mean", "sd", "min", "max"))
+
+# individual level
+tbl1c1 <- df_na %>%
+  select(gov_redist, incdiff_large, ageC, female, educyrs) %>%
+  summarise_all(.funs = c("mean", "sd", "min", "max"), na.rm = T) %>%
+  round(.,3)
+
+tbl1[18:22,2] <- t(tbl1c1[1,1:5])
+tbl1[18:22,3] <- t(tbl1c1[1,6:10])
+tbl1[18:22,4] <- t(tbl1c1[1,11:15])
+tbl1[18:22,5] <- t(tbl1c1[1,16:20])
+
+# individual n's
+tbl1[18:22,6] <- c(sum(!is.na(df_na$gov_redist)),
+                   sum(!is.na(df_na$incdiff_large)),
+                   sum(!is.na(df_na$ageC)),
+                   sum(!is.na(df_na$female)),
+                   sum(!is.na(df_na$educyrs))
+                   )
+
+tbl1[2:22,7] <- c("ISSP", "ISSP", "IVS", "IVS", "IVS", "IVS", "IVS", "IVS", "CPI", "CPI", "V-Dem", "OECD", "World Bank", "Solt (2020)", "", "", "ISSP", "ISSP", "ISSP", "ISSP", "ISSP")
+
+write.csv(tbl1, file = here::here("results", "tbl1.csv"), row.names = F)
+```
+
+
 ## Figure 1
 
 ### Prep Data

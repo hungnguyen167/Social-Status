@@ -1,14 +1,11 @@
 ---
-title: "Attitudes toward Redistribution"
+title: "Analysis NHST"
 output:
   html_document:
     df_print: paged
 ---
 
 TO DO:
-
-? - It cannot be that there is only one wave of Netherlands data, something is wrong with our data compile
-? - Two countries still missing GDP, fill in 
 
 Nate - get newer measure of socx from OECD, other macro-level variables (GDP in particular)
 
@@ -26,9 +23,6 @@ _____________________________________________________________________________
 $~$
 $~$
 
-Working paper available here: https://docs.google.com/document/d/1mST25rKYZ5wChRj5WyhxH_65RUa9MNR2OsO5B4-qcwY/edit#
-
-Github repo: https://github.com/hungnguyen167/Social-Status
 
 
 
