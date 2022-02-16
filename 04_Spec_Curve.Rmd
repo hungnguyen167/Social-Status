@@ -161,11 +161,16 @@ fig4_bot
 ```
 
 ```{r}
-agg_png(here::here("results","Fig4.png"), height = 800, width = 1200, res = 144)
+agg_png(here::here("results","Fig6.png"), height = 800, width = 1200, res = 144)
 ggarrange(fig4,fig4_bot, heights = c(0.8,1), ncol = 1)
 dev.off()
 
-knitr::include_graphics(here::here("results", "Fig4.png"))
+knitr::include_graphics(here::here("results", "Fig6.png"))
+```
+### Bayes spec curve
+
+```{r bayes}
+
 ```
 
 Colophon

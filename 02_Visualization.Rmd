@@ -245,7 +245,7 @@ knitr::include_graphics(here::here("results", "statt_plot.png"))
 ```
 
 
-## Figure X. Appendix
+## Figure 2. Appendix
 
 ### Prep Wave Plot
 
@@ -358,7 +358,7 @@ dev.off()
 
 knitr::include_graphics(here::here("results","multiplot.png"))
 ```
-## Fig 2. Main. Correlation of Redist Variables and Context Vars
+## Fig 4 and 5. Main. Correlation of Redist Variables and Context Vars
 
 After observing the variation in the correlation between inclarge and incdiff by country. We suspect that attitudes toward the role of government are in play. We suspect these come from institutionalized norms. 
 
@@ -388,7 +388,7 @@ Fig2.1 <-
   annotate(geom = "text", x = 7.3, y = 0.30, label = "Pooled", hjust = 0, size = 3) +
   annotate(geom = "text", x = 7.3, y = 0.27, label = "Higher GDP", hjust = 0, size = 3) +
   annotate(geom = "text", x = 7.3, y = 0.24, label = "Lower GDP", hjust = 0, size = 3) +
-  labs(x = "LIBERAL VALUES I\nWorld Values Survey data\ngovernment v. private ownership of business",
+  labs(x = "LIBERAL VALUES I\nIntegrated Values Survey data\ngovernment v. private ownership of business",
        y = "CORRELATION within COUNTRY-YEAR\n'Government should redistribute' with\n'Differences in income are too large'"
        ) +
   theme_classic()
@@ -419,7 +419,7 @@ Fig2.1_redist <-
   # annotate(geom = "text", x = 7.3, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
   # annotate(geom = "text", x = 7.3, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
   # annotate(geom = "text", x = 7.3, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
-  labs(x = "LIBERAL VALUES II\nWorld Values Survey data\ngovernment v. individual provide for needs",
+  labs(x = "LIBERAL VALUES II\nIntegrated Values Survey data\ngovernment v. individual provide for needs",
        y = ""
        ) +
   theme_classic()
@@ -466,7 +466,7 @@ Fig2.3 <- df_macro %>%
   geom_smooth(aes(y = corr, x = noconf_govZ), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
   geom_smooth(aes(y = corr, x = noconf_govZ_hi), method = 'lm', se = F, color = "#20A387FF") +
   geom_smooth(aes(y = corr, x = noconf_govZ_low), method = 'lm', se = F, color = "midnightblue") +
-  labs(x = "LACK OF TRUST IN GOV\nWorld Values Survey Data\n ",
+  labs(x = "LACK OF TRUST IN GOV\nIntegrated Values Survey Data\n ",
        y = "",
        #caption = " \nY data from International Social Survey Program\ngrey countries in left-panel interpolated with country-means"
        ) +
@@ -491,7 +491,7 @@ Fig2.4 <- df_macro %>%
   # annotate(geom = "text", x = -1.6, y = 0.3, label = "Pooled", hjust = 0, size = 3) +
   # annotate(geom = "text", x = -1.6, y = 0.26, label = "Higher GDP", hjust = 0, size = 3) +
   # annotate(geom = "text", x = -1.6, y = 0.22, label = "Lower GDP", hjust = 0, size = 3) +
-  labs(x = "GDP PER CAPITA (10k)\nVarieties of Democracy Data\n ",
+  labs(x = "GDP PER CAPITA (10k)\nVarieties of Democracy data\n ",
        y = "",
        #caption = " \nY data from International Social Survey Program\ngrey countries reflect interpolated data points"
        ) +
@@ -501,76 +501,23 @@ Fig2.4 <- df_macro %>%
 ### Plot Arranged Figure
 
 ```{r fig2}
-agg_png(filename = here::here("results","Fig2.png"), res = 144, width = 2000, height = 800)
+agg_png(filename = here::here("results","Fig4.png"), res = 144, width = 2000, height = 800)
 ggarrange(Fig2.1, Fig2.1_redist, Fig2.3, widths = c(1.1,1,1.1), nrow = 1)
 dev.off()
 
-knitr::include_graphics(here::here("results","Fig2.png"))
+knitr::include_graphics(here::here("results","Fig4.png"))
 ```
 
 ```{r fig3}
-agg_png(filename = here::here("results","Fig3.png"), res = 144, width = 1300, height = 800)
+agg_png(filename = here::here("results","Fig5.png"), res = 144, width = 1300, height = 800) +
+  theme(text = element_text())
 ggarrange(Fig2.2, Fig2.4, widths = c(1,1.15))
 dev.off()
 
-knitr::include_graphics(here::here("results","Fig3.png"))
+knitr::include_graphics(here::here("results","Fig5.png"))
 ```
 
 
-
-### Figure ? Map
-
-setup data
-
-```{r map}
-w_map <- ne_countries(returnclass = "sf") %>%
-  st_transform("+proj=eqearth") %>%
-  mutate(id = iso_a3) %>%
-  select(id, geometry)
-
-macro_map <- df_macro %>%
-  mutate(id = iso3c) %>%
-  select(id, gap_no_gov, gov_redist, incdiff_large) %>%
-  group_by(id) %>%
-  summarise_all(mean, na.rm = T) %>%
-  ungroup()
-
-macro_map <- w_map %>%
-  left_join(macro_map, by = "id") %>%
-  subset(id != "ATA")
-
-
-  
-```
-
-plot
-
-```{r map_plot}
-agg_png(filename = here::here("results","map1.png"), width = 1000, height = 800, res = 144)
-macro_map %>%
-  ggplot(aes(fill = gap_no_gov)) +
-  geom_sf(size = 0.15, colour = "black") +
-  scale_fill_continuous(limits = range(0:40),
-                        type = "viridis",
-                        guide = guide_colourbar(#label.position = "top",
-                                                #barwidth = 10, barheight = .5,
-                                                #ticks.linwidth = 1
-                                frame.colour = "black", 
-                                ticks.colour = "black"
-                          ),
-                        labels = scales::percent_format(scale = 1),
-                        na.value = "grey90") +
-  lims(x = c(-10100000,14000000)) +
-  coord_sf(label_axes = "----") +
-  labs(fill = "Percent of sample agreeing that\nincome gap is too large but\ndisagreeing that government is\nresponsible to reduce it",
-       title = NULL) +
-  theme_classic() +
-  theme(legend.position = "bottom",
-         legend.direction = "horizontal")
-dev.off()
-
-knitr::include_graphics(here::here("results","map1.png"))
-```
 
 
 

@@ -18,6 +18,6 @@
 "Individual-Level-Variables",NA,NA,NA,NA,NA,""
 "YGovRedist",3.754,1.147,1,5,124928,"ISSP"
 "YIncDiff",4.115,0.972,1,5,124928,"ISSP"
-"Age, Centered",46.13,16.406,15,75,124407,"ISSP"
+"Age in Years",46.13,16.406,15,75,124407,"ISSP"
 "Female",0.527,0.499,0,1,124746,"ISSP"
 "Education in Years",11.715,3.838,0,23,118246,"ISSP"
