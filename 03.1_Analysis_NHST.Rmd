@@ -128,28 +128,29 @@ saveRDS(df_ame, here::here("data", "df_ame.RDS"))
 
 Get Bayes specifications
 ```{r bayesame}
-model_list_bayes <- mget(ls(pattern="M_b"))
+model_list_bayes <- ls(pattern="M_b")
 
-   df_ame_bayes <- as.data.frame(matrix(nrow = length(model_list_bayes), ncol = 3))
+df_ame_bayes <- as.data.frame(matrix(nrow = length(model_list_bayes), ncol = 3))
 
-colnames(df_ame_bayes) <- c("Model", "mod_b", "mod_se")
-
-model_names <- names(model_list_bayes)
-
-for (m in 1:length(model_list_bayes)) {
+colnames(df_ame_bayes) <- c("formula", "mod_b", "mod_se")
+rownames(df_ame_bayes) <- model_list_bayes
+count <- 1
+for (m in model_list_bayes) {
   
   #mn <- as.name(model_names[m])
+  model <- get(m)
   
-  df_ame_bayes[m,1] <- paste(as.character(model_list_bayes[[m]][["formula"]][["formula"]]), sep = "", collapse = "")
+  f <- model[["formula"]][["formula"]]
+  df_ame_bayes[count,"formula"] <- paste(as.character(f[2]), as.character(f[1]), as.character(f[3]))
  
   # Hung, can you get the coefficients here? They are not named in the summary object as far as I can tell... 
-  temp <- as.data.frame(summary(get(model_names[m]))[["coefficients"]])
+  temp <- as.data.frame(fixef(model))
   
   temp <- temp[grepl('cpiZ|noconf_govZ|libZ|lib_redistZ|incdiff_large', rownames(temp)), 1:2]
   
-  df_ame_bayes[m,"mod_b"] <- temp[grepl(":", rownames(temp)),1]
-  df_ame_bayes[m, "mod_se"] <- temp[grepl(":", rownames(temp)),2]
-  
+  df_ame_bayes[count,"mod_b"] <- temp[grepl(":", rownames(temp)),1]
+  df_ame_bayes[count, "mod_se"] <- temp[grepl(":", rownames(temp)),2]
+  count <- count + 1
 }
 
 df_ame_bayes <- df_ame_bayes %>%
