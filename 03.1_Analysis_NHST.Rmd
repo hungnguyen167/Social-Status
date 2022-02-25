@@ -127,12 +127,22 @@ saveRDS(df_ame, here::here("data", "df_ame.RDS"))
 ```
 
 Get Bayes specifications
+
+The Bayes models were produced by the file [Models_nomain.R](../data/Models_nomain.R) and saved as [bayesian_mods.RData](../data/bayesian_mods.RData) as they consume a considerable amount of time to run depending on processor. If the user sucessfully passed the above code and produced df_ame, then they also produced Bayes models. Here we simply load the models and create a dataframe of those results, again selecting if this already exists or not.
 ```{r bayesame}
+
+if (file.exists(here::here("data", "df_ame_bayes.RDS"))) { 
+  df_ame_bayes <- readRDS(here::here("data", "df_ame_bayes.RDS"))
+
+    } else 
+ { 
+   load(here::here("data", "bayesian_mods.RData"))
+   
 model_list_bayes <- ls(pattern="M_b")
 
 df_ame_bayes <- as.data.frame(matrix(nrow = length(model_list_bayes), ncol = 3))
 
-colnames(df_ame_bayes) <- c("formula", "mod_b", "mod_se")
+colnames(df_ame_bayes) <- c("Model", "mod_b", "mod_se")
 rownames(df_ame_bayes) <- model_list_bayes
 count <- 1
 for (m in model_list_bayes) {
@@ -160,7 +170,7 @@ df_ame_bayes <- df_ame_bayes %>%
          mod_imputed = ifelse(grepl("_i", df_ame_bayes$Model), "Yes", "No"),
          ri_cyear = ifelse(grepl("iso3c_wave", df_ame_bayes$Model), "Yes", "No"),
          ri_country = ifelse(grepl("iso3c)", df_ame_bayes$Model), "Yes", "No"),
-         estimation = ifelse(grepl("lmer", df_ame_bayes$Model), "GLM", "OLS"),
+         estimation = "Bayes",
          control_gdp = ifelse(grepl("gdp", df_ame_bayes$Model), "Yes", "No"),
          control_gini = ifelse(grepl("gini", df_ame_bayes$Model), "Yes", "No"),
          control_socx = ifelse(grepl("socx", df_ame_bayes$Model), "Yes", "No"),
@@ -173,6 +183,8 @@ df_ame_bayes <- df_ame_bayes %>%
   arrange(mod_b) %>%
   mutate(count = row_number())
 
+saveRDS(df_ame_bayes, here::here("data", "df_ame_bayes.RDS"))
+}
 
 ```
 
