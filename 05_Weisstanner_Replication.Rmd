@@ -1,0 +1,19 @@
+---
+title: "01.2_Macro Data Prep"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup}
+pacman::p_load("tidyverse", "countrycode")
+
+
+knitr::opts_chunk$set(message = F, warning = F)
+```
+
+```{r}
+
+```
+
+

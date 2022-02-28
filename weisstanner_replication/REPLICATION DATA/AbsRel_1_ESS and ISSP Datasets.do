@@ -32,11 +32,17 @@ global finalvars "survey wave country year month iso iso2 countryn weight redist
 *	}
 
 *	ISSP:
-	foreach isspyear of numlist 1987 1992 1999 2009 {
+
+    do "DATASETS\ISSP 1987\cr_ISSP_1987.do"
+	    keep $finalvars
+		keep if $countrysample
+		save ESS_ISSP_DATA.dta, replace
+		
+	foreach isspyear of numlist 1992 1999 2009 {
 		do "DATASETS\ISSP `isspyear'\cr_ISSP_`isspyear'.do"
 		keep $finalvars
 		keep if $countrysample
-		*append using ESS_ISSP_DATA.dta
+		append using ESS_ISSP_DATA.dta
 		save ESS_ISSP_DATA.dta, replace
 	}
 cd "C:\GitHub\Social-Status-V\weisstanner_replication\REPLICATION DATA\"

@@ -9,7 +9,7 @@ grstyle init
 grstyle set plain, horizontal grid
 grstyle set color RdYlBu
 
-use AbsRel_FINAL.dta, clear
+use AbsRel_FINAL_REP.dta, clear
 xtset cwave
 
 *** TABLE 1, MODEL 1:
@@ -33,11 +33,13 @@ xtreg redist_dum c.absgr5_wa##c.relgr5_wa c.hinc_decile i.educ_tert i.female age
 		gen zero_relgr5_wa = 0
 		su relgr5_wa if e(sample)
 	margins, dydx(absgr5_wa) at(relgr5_wa=(`r(min)' -6(2)6 `r(max)'))
+	* note we can adjust the level() here given the much smaller sample for better visualization
 		marginsplot, recastci(rline) ciopts(col(gs0) lpatt(shortdash)) plotopts(mcol(none) lcol(gs0)) ///
 			addplot(rarea d_relgr5_wa zero_relgr5_wa x_relgr5_wa if x_relgr5_wa < 7, col(gs11%50) lwidth(none) ///
 			below yaxis(2) ysc(axis(2) off) ylab(0 6, axis(2)) xlab(-6(2)6, grid gmin gmax glc(gs15)) ylab(-0.010 "-0.010" 0 "0" 0.010 "0.010" 0.020 "0.020" 0.030 "0.030" 0.040 "0.040" 0.050 "0.050" 0.060 "0.060", grid gmin gmax glc(gs15) angle(0) axis(1))) ///
 			yline(0, lcol(gs0)) ytitle("Marginal effect" "of absolute income growth") xsize(4) scale(*1.5) legend(off) title("{bf:A. Effect of absolute stagnation}" "{bf:by relative stagnation}" " ", size(*0.8) pos(11)) xtitle("Relative income growth")
-
+    graph export "C:\GitHub\Social-Status-V\weisstanner_replication\REPLICATION DATA\results\Fig1A.png", as(png) replace
+			
 		cap drop x_absgr5_wa d_absgr5_wa zero_absgr5_wa
 		kdensity absgr5_wa if e(sample), gen(x_absgr5_wa d_absgr5_wa)
 		gen zero_absgr5_wa = 0
@@ -47,7 +49,8 @@ xtreg redist_dum c.absgr5_wa##c.relgr5_wa c.hinc_decile i.educ_tert i.female age
 			addplot(rarea d_absgr5_wa zero_absgr5_wa x_absgr5_wa if x_absgr5_wa < 7, col(gs11%50) lwidth(none) ///
 			below yaxis(2) ysc(axis(2) off) ylab(0 1, axis(2)) xlab(-8(2)12, grid gmin gmax glc(gs15)) ylab(-0.060 "-0.060" -0.050 "-0.050" -0.040 "-0.040" -0.030 "-0.030" -0.020 "-0.020" -0.010 "-0.010" 0 "0" 0.010 "0.010" 0.020 "0.020", grid gmin gmax glc(gs15) angle(0) axis(1))) ///
 			yline(0, lcol(gs0)) ytitle("Marginal effect" "of relative income growth") xsize(4) scale(*1.5) legend(off) title("{bf:B. Effect of relative stagnation}" "{bf:by absolute stagnation}" "", size(*0.8) pos(11)) xtitle("Absolute income growth")
-		
+	graph export "C:\GitHub\Social-Status-V\weisstanner_replication\REPLICATION DATA\results\Fig1B.png", as(png) replace
+	
 	margins, at((p10) absgr5_wa (p10) relgr5_wa) at((p10) absgr5_wa (p90) relgr5_wa) at((p90) absgr5_wa (p10) relgr5_wa) at((p90) absgr5_wa (p90) relgr5_wa)
 		
 ***	INTERACTION ABS*Income:
@@ -59,7 +62,8 @@ xtreg redist_dum c.absgr5_wa##c.hinc_decile c.relgr5_wa i.educ_tert i.female age
 		marginsplot, recastci(rline) ciopts(col(gs0) lpatt(shortdash)) plotopts(mcol(none) lcol(gs0)) ///
 			xlab(1/10, grid gmin gmax glc(gs15)) ylab(-0.010 "-0.010" 0 "0" 0.010 "0.010" 0.020 "0.020" 0.030 "0.030" 0.040 "0.040", grid gmin gmax glc(gs15) angle(0) axis(1)) ///
 			yline(0, lcol(gs0)) ytitle("Marginal effect" "of absolute income growth") xsize(4) scale(*1.5) legend(off) title("{bf:C. Effect of absolute stagnation}" "{bf:by income decile}" "", size(*0.8) pos(11)) xtitle("Income decile")
-	
+    graph export "C:\GitHub\Social-Status-V\weisstanner_replication\REPLICATION DATA\results\Fig1C.png", as(png) replace 
+			
 		cap drop x_absgr5_wa d_absgr5_wa zero_absgr5_wa
 		kdensity absgr5_wa if e(sample), gen(x_absgr5_wa d_absgr5_wa)
 		gen zero_absgr5_wa = 0
@@ -69,8 +73,10 @@ xtreg redist_dum c.absgr5_wa##c.hinc_decile c.relgr5_wa i.educ_tert i.female age
 			addplot(rarea d_absgr5_wa zero_absgr5_wa x_absgr5_wa if x_absgr5_wa < 7, col(gs11%50) lwidth(none) ///
 			below yaxis(2) ysc(axis(2) off) ylab(0 1, axis(2)) xlab(-8(2)12, grid gmin gmax glc(gs15)) ylab(-0.060 "-0.060" -0.050 "-0.050" -0.040 "-0.040" -0.030 "-0.030" -0.020 "-0.020" -0.010 "-0.010" 0 "0" 0.010 "0.010" 0.020 "0.020", grid gmin gmax glc(gs15) angle(0) axis(1))) ///
 			yline(0, lcol(gs0)) ytitle("Marginal effect" "of income decile") xsize(4) scale(*1.5) legend(off) title("{bf:D. Effect of income decile}" "{bf:by absolute stagnation}" "", size(*0.8) pos(11)) xtitle("Absolute income growth")
+    graph export "C:\GitHub\Social-Status-V\weisstanner_replication\REPLICATION DATA\results\Fig1D.png", as(png) replace
 
-
+	
+	/*
 ***	TABLE 1, MODELS 4 AND 5 (OTHER DEP. VARS.)
 
 	* Govt responsible to provide decent living standard for unemployed - 4- and 5-point scale combined:
@@ -168,7 +174,8 @@ xtreg redist_dum c.absgr5_wa##c.hinc_decile c.relgr5_wa i.educ_tert i.female age
 	* Non-tertiary-educated respondents only:
 	xtreg redist_dum c.absgr5_wa c.relgr5_wa c.hinc_decile i.female age i.unemployed i.wave unemp socexp gini_mkt gdppc if inrange(age, 18, 65) & educ_tert == 0, re robust
 		outreg2 using robust2, word append alpha(0.001, 0.01, 0.05, 0.1) symbol(***, **, *, +) bdec(3) drop(i.wave) addstat(R2 overall, e(r2_o)) adec(2)
-		
+*/
+/*		
 *** APPENDIX 1: DESCRIPTIVE STATISTICS
 
 su redist_dum c.absgr5_wa c.relgr5_wa c.hinc_decile i.educ_tert i.female age i.unemployed unemp socexp gini_mkt gdppc if inrange(age, 18, 65) & e(sample) [aw=weight]
@@ -195,6 +202,6 @@ xtreg redist_dum c.absgr5_wa##i.party_support5_inclmissing c.relgr5_wa c.hinc_de
 			addplot(rarea d_absgr5_wa zero_absgr5_wa x_absgr5_wa if x_absgr5_wa < 7, col(gs11%50) lwidth(none) ///
 			below yaxis(2) ysc(axis(2) off) ylab(0 1, axis(2)) xlab(-8(2)12, grid gmin gmax glc(gs15)) ylab(-0.060 "-0.060" -0.050 "-0.050" -0.040 "-0.040" -0.030 "-0.030" -0.020 "-0.020" -0.010 "-0.010" 0 "0" 0.010 "0.010" 0.020 "0.020", grid gmin gmax glc(gs15) angle(0) axis(1))) ///
 			yline(0, lcol(gs0)) ytitle("Marginal effect" "of relative income growth") xsize(4) scale(*1.5) legend(off) title("{bf:B. Effect of relative stagnation}" "{bf:by absolute stagnation}" "", size(*0.8) pos(11)) xtitle("Absolute income growth")
-
+*/
 
 			

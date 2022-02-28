@@ -1,5 +1,5 @@
 ---
-title: "Attitudes toward Redistribution"
+title: "01.2_Macro Data Prep"
 output:
   html_document:
     df_print: paged
@@ -52,6 +52,7 @@ wvs <- readRDS(here::here("data","ivs_aggregated.rds")) %>%
 ```
 
 ### Wrangling/interpolation
+
 ```{r loaddata2, message = F, warning = F}
 
 
@@ -135,7 +136,7 @@ gini <- rbind(gini, gini_19, gini_20)
 
 ```
 
-
+### Merges
 
 ```{r merge, message = F, warning = F}
 
@@ -184,6 +185,7 @@ rm(gini,socx,crpt, wvs_2)
 rm(imm_long)
 ```
 
+### More WRangling
 
 ```{r wrangle}
 # make a complete data frame
@@ -218,7 +220,7 @@ df_na %>%
 ```
 
 
-
+### Save
 
 ```{r saveout}
 # The variables names are not intuitive, change them
@@ -312,7 +314,7 @@ df_macro <- df_macro %>%
 #### Setup Fig
 ```
 
-
+### Correlations
 
 ```{r figx}
 # get all correlations
@@ -420,6 +422,7 @@ df_na <- df_na %>%
 ```
 
 
+
 ```{r prep_data}
 df_na <- df_na %>%
   dplyr::select(-c(gini_disp, socx)) 
@@ -445,6 +448,7 @@ df_na$gov_redist_C <- df_na$gov_redist - mean(df_na$gov_redist, na.rm = T)
 df_na$pct_fb_i_C <- df_na$pct_fb_i - mean(df_na$pct_fb_i, na.rm = T)
 ```
 
+## Final DF
 ```{r save}
 
 # with missing cases removed

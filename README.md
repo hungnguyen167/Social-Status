@@ -37,5 +37,7 @@ This affected the following code:
 AbsRel_0.3_Finalise_LIS_estimates_CODE.do
 AbsRel_1_ESS and ISSP Datasets.do
 AbsRel_2_Label variables.do
+AbsRel_3_Models.do
 
-Then we ran the above two code chunks in that order.
+Then we ran the above two code chunks in that order. We can confirm that these models produce the original results, even on the smaller sample. The confidence intervals are not surprisingly much larger.
+
