@@ -31,6 +31,7 @@ nl87 <- subset(nl87, nl87$v3 == 7)
 dk99 <- read_dta(paste(wd, "ZA3562_v1-0-0.dta", sep=""))
 ie99 <- read_dta(paste(wd, "ZA3613_v1-0-0.dta", sep=""))
 nl09 <- read_dta(paste(wd, "ZA5995_v1-0-0.dta", sep=""))
+ca09 <- read_dta(paste(wd, "ZA5389_v1-0-0.dta", sep=""))
 
 rm(wd)
 

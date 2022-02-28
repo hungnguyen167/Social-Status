@@ -311,7 +311,7 @@ df_macro <- df_macro %>%
          confidence_gov_i = ifelse(is.na(confidence_gov), confidence_gov_i, confidence_gov),
          liberal_redist_i = ifelse(is.na(liberal_redist), liberal_redist_i, liberal_redist))
 
-#### Setup Fig
+
 ```
 
 ### Correlations
