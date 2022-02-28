@@ -142,8 +142,7 @@ model_list_bayes <- ls(pattern="M_b")
 
 df_ame_bayes <- as.data.frame(matrix(nrow = length(model_list_bayes), ncol = 3))
 
-colnames(df_ame_bayes) <- c("formula", "mod_b", "mod_se")
-rownames(df_ame_bayes) <- model_list_bayes
+colnames(df_ame_bayes) <- c("Model", "mod_b", "mod_se")
 count <- 1
 for (m in model_list_bayes) {
   
@@ -151,8 +150,7 @@ for (m in model_list_bayes) {
   model <- get(m)
   
   f <- model[["formula"]][["formula"]]
-  df_ame_bayes[count,"formula"] <- paste(as.character(f[2]), as.character(f[1]), as.character(f[3]))
- 
+  df_ame_bayes[count,"Model"] <- paste(as.character(f[2]), as.character(f[1]), as.character(f[3]))
   # Hung, can you get the coefficients here? They are not named in the summary object as far as I can tell... 
   temp <- as.data.frame(fixef(model))
   
