@@ -1,12 +1,21 @@
 # SETUP
 
-## Load libraries and dataset. Install if packages do not exist!
+## Load libraries and data set. Install if packages do not exist!
 
 library(lme4)
 library(modelsummary)
 library(brms)
 
 ## Functions
+
+# For each Heuristic
+## Basic - no ivs
+## Model with social spending
+## Model basic with individual controls
+## Model with GDP
+## Model with GDP interaction
+## Model with GDP interaction and social spending
+## Model with GDP interaction and individual controls
 
 ### A function to generate models
 
