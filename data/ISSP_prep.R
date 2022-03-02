@@ -16,6 +16,7 @@ socin2 <- read_dta(paste(wd, "ZA5891_v1-1-0.dta", sep = ""))
 # Inequality 2019 not in the cumulative file
 socin3 <- read_dta(paste0(wd, "ZA7600_v1-0-0.dta"))
 
+
 # Environment Modulel
 # (if we are only going to use the incd variable, we should merge this)
 env93 <- read_dta(paste(wd, "ZA2450.dta",sep=""))
@@ -32,6 +33,10 @@ dk99 <- read_dta(paste(wd, "ZA3562_v1-0-0.dta", sep=""))
 ie99 <- read_dta(paste(wd, "ZA3613_v1-0-0.dta", sep=""))
 nl09 <- read_dta(paste(wd, "ZA5995_v1-0-0.dta", sep=""))
 ca09 <- read_dta(paste(wd, "ZA5389_v1-0-0.dta", sep=""))
+nl99 <- read_dta(paste(wd, "ZA3293_v1-0-0.dta", sep =""))
+socin09 <- read_dta(paste0(wd, "ZA5400_v4-0-0.dta")) # Belgium & Findland 2009
+
+
 
 rm(wd)
 

@@ -1622,12 +1622,12 @@ ie99 <- ie99 %>%
 ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 # Netherlands 
-# nelab <- lapply(nl09, attr, "label") 
+nl09_lab <- lapply(nl09, attr, "label") 
 
 colnames(nl09) <- tolower(colnames(nl09))
 nl09 <- nl09 %>%
   mutate(
-    degree = NA,
+    degree = ifelse(degree == 9, NA, degree),
     cntry = 528,
     year = 2013,
     wave = 2009,
@@ -1674,7 +1674,7 @@ nl09 <- nl09 %>%
     ),
     selfemp = case_when(
       emprel %in% c(2,3,4) ~ 1,
-      emprel == 1 ~ 2,
+      emprel == 1 ~ 0,
       TRUE ~ NA_real_
     ),
     rincZ = ntile(nl_rinc, 10),
@@ -1775,6 +1775,271 @@ ca09 <- ca09 %>%
   )
 
 ca09 <- dplyr::select(ca09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+
+
+# Netherlands 1999
+nl99_lab <- lapply(nl99, attr, "label") 
+nl99 <- nl99 %>%
+  mutate(
+    degree = ifelse(degree %in% c(0,99), NA, degree-1),
+    cntry = 528,
+    year = 1999,
+    wave = 1999,
+    incdiff = v35,
+    inclarge = v34,
+    ageC = case_when(
+        (age>75) & (age < 99) ~ 75,
+        age == 99 ~ NA_real_,
+        TRUE ~ as.numeric(age)
+    ),
+    age = case_when(                 # trim at 75     
+       age %in% c(16:24) ~ 1,        # Changed to 7 categories
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       (age >= 75) & (age < 99) ~ 7,
+       TRUE ~ NA_real_
+     ),
+    female = ifelse(sex == 9, NA, sex - 1),
+    educyrs = case_when(   
+       educyrs > 22 & educyrs < 95 ~ 23, 
+       educyrs == 95 ~ 8,
+       educyrs == 96 ~ 13,
+       educyrs %in% c(97:99) ~ NA_real_,
+       TRUE ~ as.numeric(educyrs)
+    ),
+    child = case_when(
+      hhcycle %in% c(2,3,4,6,7,8,10,12,14,16,18,20,22,24,26,28) ~ 1,
+      hhcycle %in% c(1,5,9,11,13,15,17,19,21,23,25,27,95) ~ 0,
+      TRUE ~ NA_real_ 
+    ), 
+    married = case_when( 
+       marital %in% c(1:2) ~ 1, # widowed = married
+       marital %in% c(3:5) ~ 0, # divorced, separated = not married
+       TRUE ~ NA_real_
+    ),
+    union = case_when(
+      union %in% c(2,3) ~ 0,
+      union == 1 ~ 1,
+      TRUE ~ NA_real_
+    ),
+    sparent = case_when(
+      hhcycle %in% c(2,3,4) ~ 1, 
+      hhcycle %in% c(1,5:95) ~ 0,
+      TRUE ~ NA_real_
+    ),
+    selfemp = ifelse(
+      selfemp %in% c(1,2),
+      -1*(selfemp-2),
+      NA_real_
+    ),
+    rincZ = ntile(v23, 10),
+    hincZ = ntile(income, 10),
+    rincO = v23,
+    wrkst = ifelse(wrkst == 4, 8, wrkst),
+    wrkhrs = ifelse(wrkhrs > 59, 60, wrkhrs),
+    egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
+    egp6 = car::recode(egp, recodes = egp6),
+    isei = occupar::isco88toISEI92(isco88),
+    isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA), # Truncate isco88 values
+    fisco88 = v62,
+    fisco88_2digit = ifelse(!is.na(fisco88), trunc(fisco88/100), NA),
+    f_egp = occupar::isco88toEGP(fisco88, n.employees = NULL, self.employed = NULL), # nemploy and selfemp missing (labels unkown) - some might be incorrectly coded.
+    f_egp6 = car::recode(f_egp,recodes = egp6_2),
+    f_isei = occupar::isco88toISEI92(fisco88),
+    misco88 = NA,
+    misco88_2digit = NA,
+    m_egp = NA,
+    m_egp6 = NA,
+    m_isei = NA,
+    spisco88_2digit = NA
+  )
+
+nl99 <- dplyr::select(nl99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+
+
+# Belgium 2009
+colnames(socin09) <- tolower(colnames(socin09))
+
+
+be09 <- socin09 %>%
+  filter(v5 ==56) %>%
+  mutate(
+    degree = ifelse(degree %in% c(8,9), NA, degree),
+    cntry = v5,
+    year = 2009,
+    wave = 2009,
+    incdiff = v33,
+    inclarge = v32,
+    ageC = case_when(
+        (age > 75) & (age < 99) ~ 75,
+        age == 99 ~ NA_real_,
+        TRUE ~ as.numeric(age)
+    ),
+    age = case_when(                 # trim at 75     
+       age %in% c(16:24) ~ 1,        # Changed to 7 categories
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       (age >= 75) & (age < 99) ~ 7,
+       TRUE ~ NA_real_
+     ),
+    female = ifelse(sex == 9, NA, sex - 1),
+    educyrs = case_when(   
+       educyrs > 22 & educyrs < 95 ~ 23, 
+       educyrs == 95 ~ 8,
+       educyrs == 96 ~ 13,
+       educyrs %in% c(97:99) ~ NA_real_,
+       TRUE ~ as.numeric(educyrs)
+    ),
+    child = case_when(
+      hhcycle %in% c(2,3,4,6,7,8,10,12,14,16,18,20,22,24,26,28) ~ 1,
+      hhcycle %in% c(1,5,9,11,13,15,17,19,21,23,25,27,95) ~ 0,
+      TRUE ~ NA_real_ 
+    ), 
+    married = case_when( 
+       marital %in% c(1:2) ~ 1, # widowed = married
+       marital %in% c(3:5) ~ 0, # divorced, separated = not married
+       TRUE ~ NA_real_
+    ),
+    union = case_when(
+      union %in% c(2,3) ~ 0,
+      union == 1 ~ 1,
+      TRUE ~ NA_real_
+    ),
+    sparent = case_when(
+      hhcycle %in% c(2,3,4) ~ 1, 
+      hhcycle %in% c(1,5:95) ~ 0,
+      TRUE ~ NA_real_
+    ),
+    selfemp = case_when(
+      wrktype %in% c(1:3) ~ 0,
+      wrktype == 4 ~ 1,
+      TRUE ~ NA_real_
+    ),
+    rincZ = ntile(be_rinc, 10),
+    hincZ = ntile(be_inc, 10),
+    rincO = be_rinc,
+    wrkst = case_when(
+        wrkst == 4 ~ 8,
+        wrkst %in% c(97:99) ~ NA_real_,
+        TRUE ~ as.numeric(wrkst)
+      ),
+    wrkhrs = case_when(
+        wrkhrs > 59 & wrkhrs < 97 ~ 60,
+        wrkhrs %in% c(97:99) ~ NA_real_,
+        TRUE ~ as.numeric(wrkhrs)
+      ),
+    egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
+    egp6 = car::recode(egp, recodes = egp6),
+    isei = occupar::isco88toISEI92(isco88),
+    isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA), # Truncate isco88 values
+    fisco88 = v57,
+    fisco88_2digit = ifelse(!is.na(fisco88), trunc(fisco88/100), NA),
+    f_egp = occupar::isco88toEGP(fisco88, n.employees = NULL, self.employed = NULL), # nemploy and selfemp missing (labels unkown) - some might be incorrectly coded.
+    f_egp6 = car::recode(f_egp,recodes = egp6_2),
+    f_isei = occupar::isco88toISEI92(fisco88),
+    misco88 = v60,
+    misco88_2digit = ifelse(!is.na(misco88), trunc(misco88/100), NA),
+    m_egp = occupar::isco88toEGP(misco88, n.employees = NULL, self.employed = NULL), # nemploy and selfemp missing (labels unkown) - some might be incorrectly coded.
+    m_egp6 = car::recode(m_egp,recodes = egp6_2),
+    m_isei = occupar::isco88toISEI92(misco88),
+    spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
+  ) %>% 
+  select(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+
+# Finland 2009
+fi09 <- socin09 %>%
+  filter(v5 == 246) %>%
+  mutate(
+    degree = ifelse(degree %in% c(8,9), NA, degree),
+    cntry = v5,
+    year = 2009,
+    wave = 2009,
+    incdiff = v33,
+    inclarge = v32,
+    ageC = case_when(
+        (age > 75) & (age < 99) ~ 75,
+        age == 99 ~ NA_real_,
+        TRUE ~ as.numeric(age)
+    ),
+    age = case_when(                 # trim at 75     
+       age %in% c(16:24) ~ 1,        # Changed to 7 categories
+       age %in% c(25:34) ~ 2,
+       age %in% c(35:44) ~ 3,
+       age %in% c(45:54) ~ 4,
+       age %in% c(55:64) ~ 5,
+       age %in% c(65:74) ~ 6,
+       (age >= 75) & (age < 99) ~ 7,
+       TRUE ~ NA_real_
+     ),
+    female = ifelse(sex == 9, NA, sex - 1),
+    educyrs = case_when(   
+       educyrs > 22 & educyrs < 95 ~ 23, 
+       educyrs == 95 ~ 8,
+       educyrs == 96 ~ 13,
+       educyrs %in% c(97:99) ~ NA_real_,
+       TRUE ~ as.numeric(educyrs)
+    ),
+    child = case_when(
+      hhcycle %in% c(2,3,4,6,7,8,10,12,14,16,18,20,22,24,26,28) ~ 1,
+      hhcycle %in% c(1,5,9,11,13,15,17,19,21,23,25,27,95) ~ 0,
+      TRUE ~ NA_real_ 
+    ), 
+    married = case_when( 
+       marital %in% c(1:2) ~ 1, # widowed = married
+       marital %in% c(3:5) ~ 0, # divorced, separated = not married
+       TRUE ~ NA_real_
+    ),
+    union = case_when(
+      union %in% c(2,3) ~ 0,
+      union == 1 ~ 1,
+      TRUE ~ NA_real_
+    ),
+    sparent = case_when(
+      hhcycle %in% c(2,3,4) ~ 1, 
+      hhcycle %in% c(1,5:95) ~ 0,
+      TRUE ~ NA_real_
+    ),
+    selfemp = case_when(
+      wrktype %in% c(1:3) ~ 0,
+      wrktype == 4 ~ 1,
+      TRUE ~ NA_real_
+    ),
+    rincZ = ntile(fi_rinc, 10),
+    hincZ = ntile(fi_inc, 10),
+    rincO = fi_rinc,
+    wrkst = case_when(
+        wrkst == 4 ~ 8,
+        wrkst %in% c(97:99) ~ NA_real_,
+        TRUE ~ as.numeric(wrkst)
+      ),
+    wrkhrs = case_when(
+        wrkhrs > 59 & wrkhrs < 97 ~ 60,
+        wrkhrs %in% c(97:99) ~ NA_real_,
+        TRUE ~ as.numeric(wrkhrs)
+      ),
+    egp = occupar::isco88toEGP(isco88, n.employees = nemploy, self.employed = selfemp),
+    egp6 = car::recode(egp, recodes = egp6),
+    isei = occupar::isco88toISEI92(isco88),
+    isco88_2digit = ifelse(!is.na(isco88), trunc(isco88/100), NA), # Truncate isco88 values
+    fisco88 = v57,
+    fisco88_2digit = ifelse(!is.na(fisco88), trunc(fisco88/100), NA),
+    f_egp = occupar::isco88toEGP(fisco88, n.employees = NULL, self.employed = NULL), # nemploy and selfemp missing (labels unkown) - some might be incorrectly coded.
+    f_egp6 = car::recode(f_egp,recodes = egp6_2),
+    f_isei = occupar::isco88toISEI92(fisco88),
+    misco88 = v60,
+    misco88_2digit = ifelse(!is.na(misco88), trunc(misco88/100), NA),
+    m_egp = occupar::isco88toEGP(misco88, n.employees = NULL, self.employed = NULL), # nemploy and selfemp missing (labels unkown) - some might be incorrectly coded.
+    m_egp6 = car::recode(m_egp,recodes = egp6_2),
+    m_isei = occupar::isco88toISEI92(misco88),
+    spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
+  ) %>% 
+  select(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 ```
 
 ### ISSP 2019
@@ -1921,8 +2186,8 @@ socin3 <- dplyr::select(socin3,c(cntry, year, wave, age, ageC, female, educyrs, 
 ## Merge data sets  
 
 
-mer1 <- plyr::rbind.fill(dk99,ie99,ie87,nl87)
-mer2 <- plyr::rbind.fill(mer1,nl09,ca09)
+mer1 <- plyr::rbind.fill(dk99,ie99,ie87,nl87, nl99)
+mer2 <- plyr::rbind.fill(mer1,nl09,ca09, be09, fi09)
 mer2$rincZ <- as.vector(mer2$rincZ)
 mer2$hincZ <- as.vector(mer2$hincZ)
 df <- plyr::rbind.fill(mer2,socin)
