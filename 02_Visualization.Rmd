@@ -45,12 +45,15 @@ options(knitr.kable.NA = '')
 tab1 <- df_na %>%
   dplyr::group_by(country, wave) %>%
   dplyr::summarize(n=n()) %>%
-  spread(wave, n) %>%
+  spread(wave, n) 
+
+tab1 %>%
   kable(., 
         #col.names = c("Country", "1987", "1992", "1999", "2009", "2019"), 
-        caption = "Country Sample Size by Wave, ISSP 'Social Inequality (SI)", format.args = list(big.mark = ","))
+        caption = "Country Sample Size by Wave, ISSP 'Social Inequality (SI)", format.args = list(big.mark = ",")) %>%
+kable_styling()
 
-kable_styling(tab1)
+write.csv2(tab1, here::here("results", "country_wave_N.csv"))
 ```
 ### Table 2. Descriptives w/ Question Wording
 
@@ -153,7 +156,7 @@ tbl1[18:22,6] <- c(sum(!is.na(df_na$gov_redist)),
                    sum(!is.na(df_na$educyrs))
                    )
 
-tbl1[2:22,7] <- c("ISSP", "ISSP", "IVS", "IVS", "IVS", "IVS", "IVS", "IVS", "CPI", "CPI", "V-Dem", "OECD", "World Bank", "Solt (2020)", "", "", "ISSP", "ISSP", "ISSP", "ISSP", "ISSP")
+tbl1[2:22,7] <- c("ISSP", "ISSP", "IVS", "IVS", "IVS", "IVS", "IVS", "IVS", "CPI", "CPI", "V-Dem", "OECD", "World Bank", "Solt", "", "", "ISSP", "ISSP", "ISSP", "ISSP", "ISSP")
 
 write.csv(tbl1, file = here::here("results", "tbl1.csv"), row.names = F)
 ```
@@ -224,7 +227,7 @@ ggplot() +
             label = leftss$iso3c, 
             aes(x = incdiff_large_agree , y = gap_no_gov, color = corr),
             position = "dodge",
-            hjust=1
+            hjust=1.35
             )+
   scale_color_gradient2(midpoint=mid, low="#FDE725FF", mid="#29AF7FFF", high="#440154FF", space="Lab") +
   scale_y_continuous(labels = scales::percent_format(scale = 1), 
@@ -347,7 +350,7 @@ assign(paste0("mmm",fitted_models$iso3c[j]), plot1)
 # now gather all and plot with ggarrange
 
 agg_png(filename = here::here("results","multiplot.png"), res = 72, width = 1200, height = 1200)
-ggarrange(mmmPOOLED, mmmAUS, mmmAUT, mmmBGR, mmmCAN, mmmCHE, mmmCHL, 
+ggarrange(mmmPOOLED, mmmAUS, mmmAUT, mmmBEL, mmmBGR, mmmCAN, mmmCHE, mmmCHL, 
 mmmCYP, mmmCZE, mmmDEU, mmmDNK, mmmESP, mmmFIN, mmmFRA, 
 mmmGBR, mmmHRV, mmmHUN, mmmIRL, mmmISR, mmmITA, mmmJPN, 
 mmmLVA, mmmNLD, mmmNOR, mmmNZL, mmmPHL, mmmPOL, mmmPRT, 

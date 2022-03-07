@@ -8,7 +8,6 @@ output:
 ```{r setup}
 pacman::p_load("tidyverse", "countrycode")
 
-
 knitr::opts_chunk$set(message = F, warning = F)
 ```
 
@@ -108,14 +107,9 @@ imm_long <- imm_long %>%
 
 ```{r loaddata3, message = F, warning = F}
 # Take averages of social spending and Gini to get the most possible countries
-socx_19 <- socx %>%
-  subset(year > 2010) %>%
-  group_by(iso3c) %>%
-  summarise_all(mean, na.rm = T) %>%
-  mutate(year = 2019)
 
 socx_20 <- socx %>%
-  subset(year > 2010) %>%
+  subset(year > 2015) %>%
   group_by(iso3c) %>%
   summarise_all(mean, na.rm = T) %>%
   mutate(year = 2020)
@@ -128,9 +122,7 @@ gini_20 <- gini %>%
   subset(year == 2017) %>%
   mutate(year = 2020)
 
-socx <- socx %>% subset(year < 2019)
-
-socx <- rbind(socx, socx_19, socx_20)
+socx <- rbind(socx, socx_20)
 gini <- rbind(gini, gini_19, gini_20)
 
 
@@ -146,8 +138,6 @@ df_na <- left_join(df_na, gini, by = c("iso3c","year"))
 df_na <- left_join(df_na, socx, by = c("iso3c","year"))
 df_na <- left_join(df_na, imm_long, by = c("iso3c","year"))
 df_na <- left_join(df_na, crpt, by = c("iso3c_wave"))
-
-
 
 # the WVS/IVS has repeated years, collapse them
 
@@ -240,7 +230,7 @@ df_na <- df_na %>%
 
 # create a macro-level dataset
 df_macro <- df_na %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, socx_perhead, cpi, cpi_ii, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, filled_vdem_gdp_interpol, regime, gap_no_gov, gov_redist_agree, incdiff_large_agree, pct_sample_tertiary, pct_sample_65older, pct_fb_i) %>%
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, cpi, cpi_ii, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, filled_vdem_gdp_interpol, regime, gap_no_gov, gov_redist_agree, incdiff_large_agree, pct_sample_tertiary, pct_sample_65older, pct_fb_i) %>%
   group_by(iso3c, wave) %>%
   summarise_all(mean, na.rm = T) %>%
   ungroup()
@@ -261,14 +251,10 @@ df_macro <- df_macro %>%
          socx = ifelse(iso3c == "CYP" & wave == 1999, 18, socx),
          socx = ifelse(iso3c == "CYP" & wave == 2009, 25, socx),
          socx = ifelse(iso3c == "HRV" & wave == 2019, 30, socx),
-         socx = ifelse(iso3c == "JPN" & wave == 2019, 25, socx),
-         socx = ifelse(iso3c == "NZL" & wave == 2019, 25, socx),
-         socx = ifelse(iso3c == "SVN" & wave == 2019, 21, socx),
-         socx = ifelse(iso3c == "ZAF" & wave == 2019, 25, socx),
-         socx = ifelse(iso3c == "ZAF" & wave == 2019, 25, socx),
          socx = ifelse(iso3c == "HUN" & wave == 1987, 20, socx),
          socx = ifelse(iso3c == "HUN" & wave == 1992, 35, socx),
          socx = ifelse(iso3c == "HUN" & wave == 1998, 40, socx),
+         socx = ifelse(iso3c == "JPN" & wave == 2019, 25, socx),
          socx = ifelse(iso3c == "PHL" & wave == 1992, 2, socx),
          socx = ifelse(iso3c == "PHL" & wave == 1999, 2.5, socx),
          socx = ifelse(iso3c == "PHL" & wave == 2009, 3, socx),
@@ -280,6 +266,8 @@ df_macro <- df_macro %>%
          socx = ifelse(iso3c == "RUS" & wave == 2019, 20, socx),
          socx = ifelse(iso3c == "SVK" & wave == 1992, 20, socx),
          socx = ifelse(iso3c == "SVN" & wave == 1992, 25, socx),
+         socx = ifelse(iso3c == "ZAF" & wave == 2019, 25, socx),
+         socx = ifelse(iso3c == "ZAF" & wave == 2019, 25, socx),
          socx = ifelse(iso3c == "THA" & wave == 2019, 6, socx),
          gini_disp = ifelse(iso3c == "PHL" & wave == 2019, 42, gini_disp),
          gini_disp = ifelse(iso3c == "PHL" & wave == 2019, 42, gini_disp),
@@ -326,7 +314,7 @@ c_corrs = df_na %>% # have to use equal sign here because it is a function
          incdiff_large_Z = scale(incdiff_large)) %>%
   do(model = lm(gov_redist_Z ~ incdiff_large_Z, data = .)) #run regression for each country
 
-for (j in 1:96) {
+for (j in 1:102) {
 c_corrs$corr[j] <- c_corrs[[3]][[j]][["coefficients"]][2]
 }
 
