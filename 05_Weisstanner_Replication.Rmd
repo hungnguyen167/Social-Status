@@ -193,7 +193,7 @@ See file "AbsRel_4_Models_Adjusted.do"
 ```{r stata_export}
 #make smaller
 df_rep <- df_rep %>%
-  select(-c(radright_vote_re,radright_vote_pro,radright_aff,radleft_vote_re,radleft_vote_pro,radleft_aff,radright,radleft,popcentre_vote_re,popcentre_vote_pro,popcentre_aff,popcentre))
+  select(c(redist_dum_libZ_i, redist_dum, redist_dum_libZ_redist_i, redist_dum_notrust, redist_dum_cpi, absgr5_wa, relgr5_wa, hinc_decile, educ_tert, female, age, unemployed, wave, unemp, socexp, gini_mkt, gdppc, incdiff, iso3c))
 
 save.dta13(df_rep, here::here("weisstanner_replication", "REPLICATION DATA", "AbsRel_ADJUSTED.dta"))
 ```
