@@ -34,7 +34,7 @@ xtreg redist_dum c.absgr5_wa##c.relgr5_wa c.hinc_decile i.educ_tert i.female age
 		su relgr5_wa if e(sample)
 	margins, dydx(absgr5_wa) at(relgr5_wa=(`r(min)' -6(2)6 `r(max)'))
 	* note we can adjust the level() here given the much smaller sample for better visualization
-		marginsplot, recastci(rline) ciopts(col(gs0) lpatt(shortdash)) plotopts(mcol(none) lcol(gs0)) ///
+		marginsplot, level(90) recastci(rline) ciopts(col(gs0) lpatt(shortdash)) plotopts(mcol(none) lcol(gs0)) ///
 			addplot(rarea d_relgr5_wa zero_relgr5_wa x_relgr5_wa if x_relgr5_wa < 7, col(gs11%50) lwidth(none) ///
 			below yaxis(2) ysc(axis(2) off) ylab(0 6, axis(2)) xlab(-6(2)6, grid gmin gmax glc(gs15)) ylab(-0.010 "-0.010" 0 "0" 0.010 "0.010" 0.020 "0.020" 0.030 "0.030" 0.040 "0.040" 0.050 "0.050" 0.060 "0.060", grid gmin gmax glc(gs15) angle(0) axis(1))) ///
 			yline(0, lcol(gs0)) ytitle("Marginal effect" "of absolute income growth") xsize(4) scale(*1.5) legend(off) title("{bf:A. Effect of absolute stagnation}" "{bf:by relative stagnation}" " ", size(*0.8) pos(11)) xtitle("Relative income growth")
@@ -45,7 +45,7 @@ xtreg redist_dum c.absgr5_wa##c.relgr5_wa c.hinc_decile i.educ_tert i.female age
 		gen zero_absgr5_wa = 0
 		su absgr5_wa if e(sample)
 	margins, dydx(relgr5_wa) at(absgr5_wa=(`r(min)' -6(2)10 `r(max)'))
-		marginsplot, recastci(rline) ciopts(col(gs0) lpatt(shortdash)) plotopts(mcol(none) lcol(gs0)) ///
+		marginsplot, level(90) recastci(rline) ciopts(col(gs0) lpatt(shortdash)) plotopts(mcol(none) lcol(gs0)) ///
 			addplot(rarea d_absgr5_wa zero_absgr5_wa x_absgr5_wa if x_absgr5_wa < 7, col(gs11%50) lwidth(none) ///
 			below yaxis(2) ysc(axis(2) off) ylab(0 1, axis(2)) xlab(-8(2)12, grid gmin gmax glc(gs15)) ylab(-0.060 "-0.060" -0.050 "-0.050" -0.040 "-0.040" -0.030 "-0.030" -0.020 "-0.020" -0.010 "-0.010" 0 "0" 0.010 "0.010" 0.020 "0.020", grid gmin gmax glc(gs15) angle(0) axis(1))) ///
 			yline(0, lcol(gs0)) ytitle("Marginal effect" "of relative income growth") xsize(4) scale(*1.5) legend(off) title("{bf:B. Effect of relative stagnation}" "{bf:by absolute stagnation}" "", size(*0.8) pos(11)) xtitle("Absolute income growth")
@@ -59,7 +59,7 @@ xtreg redist_dum c.absgr5_wa##c.hinc_decile c.relgr5_wa i.educ_tert i.female age
 	outreg2 using results, word append alpha(0.001, 0.01, 0.05, 0.1) symbol(***, **, *, +) bdec(3) drop(i.wave) addstat(R2 overall, e(r2_o)) adec(2)
 
 	margins, dydx(absgr5_wa) at(hinc_decile=(1/10))
-		marginsplot, recastci(rline) ciopts(col(gs0) lpatt(shortdash)) plotopts(mcol(none) lcol(gs0)) ///
+		marginsplot, level(90) recastci(rline) ciopts(col(gs0) lpatt(shortdash)) plotopts(mcol(none) lcol(gs0)) ///
 			xlab(1/10, grid gmin gmax glc(gs15)) ylab(-0.010 "-0.010" 0 "0" 0.010 "0.010" 0.020 "0.020" 0.030 "0.030" 0.040 "0.040", grid gmin gmax glc(gs15) angle(0) axis(1)) ///
 			yline(0, lcol(gs0)) ytitle("Marginal effect" "of absolute income growth") xsize(4) scale(*1.5) legend(off) title("{bf:C. Effect of absolute stagnation}" "{bf:by income decile}" "", size(*0.8) pos(11)) xtitle("Income decile")
     graph export "C:\GitHub\Social-Status-V\weisstanner_replication\REPLICATION DATA\results\Fig1C.png", as(png) replace 
@@ -69,7 +69,7 @@ xtreg redist_dum c.absgr5_wa##c.hinc_decile c.relgr5_wa i.educ_tert i.female age
 		gen zero_absgr5_wa = 0
 		su absgr5_wa if e(sample)
 	margins, dydx(hinc_decile) at(absgr5_wa=(`r(min)' -6(2)10 `r(max)'))
-		marginsplot, recastci(rline) ciopts(col(gs0) lpatt(shortdash)) plotopts(mcol(none) lcol(gs0)) ///
+		marginsplot, level(90) recastci(rline) ciopts(col(gs0) lpatt(shortdash)) plotopts(mcol(none) lcol(gs0)) ///
 			addplot(rarea d_absgr5_wa zero_absgr5_wa x_absgr5_wa if x_absgr5_wa < 7, col(gs11%50) lwidth(none) ///
 			below yaxis(2) ysc(axis(2) off) ylab(0 1, axis(2)) xlab(-8(2)12, grid gmin gmax glc(gs15)) ylab(-0.060 "-0.060" -0.050 "-0.050" -0.040 "-0.040" -0.030 "-0.030" -0.020 "-0.020" -0.010 "-0.010" 0 "0" 0.010 "0.010" 0.020 "0.020", grid gmin gmax glc(gs15) angle(0) axis(1))) ///
 			yline(0, lcol(gs0)) ytitle("Marginal effect" "of income decile") xsize(4) scale(*1.5) legend(off) title("{bf:D. Effect of income decile}" "{bf:by absolute stagnation}" "", size(*0.8) pos(11)) xtitle("Absolute income growth")
