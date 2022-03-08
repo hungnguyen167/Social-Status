@@ -1,21 +1,9 @@
 ---
-title: "Attitudes toward Redistribution"
+title: "04. Spec Curvey. Attitudes toward Redistribution"
 output:
   html_document:
     df_print: paged
 ---
-
-
-$~$
-$~$
-
-#### **Nate Breznau, Lisa Heukamp, Hung H.V. Nguyen, Tom Knuf, Arne Köller, Sören Goldenstein**
-#### **University of Bremen**
-
-_____________________________________________________________________________
-
-$~$
-$~$
 
 
 
@@ -38,17 +26,18 @@ knitr::opts_chunk$set(message = F, warning = F)
 
 ```
 
+## Load AMEs
 
 ```{r load dfs}
 #df <- readRDS(here::here("data","df.RDS"))
 df_ame <- readRDS(here::here("data", "df_ame.RDS"))
+df_ame_bayes <- readRDS(here::here("data", "df_ame_bayes.RDS"))
 #df_macro <- readRDS(here::here("data", "df_macro.RDS"))
 
 ```
 
 
-
-#### Plot Specification Curve
+## Spec Curve Raw
 
 ```{r fig1_main}
 # for plotting a circle
@@ -64,11 +53,20 @@ ggplot() +
   geom_errorbar(aes(x = count, ymin = mod_b-(1.96*mod_se), ymax = mod_b+(1.96*mod_se)), color = "grey") +
   labs(#color = "Effect at 95% CI", 
     x = "Models Ordered by Moderation Coefficient (Y11)", y = "Moderation Coefficient")
-
-
-
-
 ```
+
+## Bayes Spec Curve Raw
+```{r fig1_main_bayes}
+
+df_ame_bayes %>%
+ggplot() +
+  #geom_errorbar(aes(ymin = lb, ymax = ub), color = "thistle1") +
+  geom_point(aes(x = count, y = mod_b), color = "#7570B3", shape = "|", size = 3, show.legend =F) +
+  geom_errorbar(aes(x = count, ymin = mod_b-(1.96*mod_se), ymax = mod_b+(1.96*mod_se)), color = "grey") +
+  labs(#color = "Effect at 95% CI", 
+    x = "Bayes Models Ordered by Moderation Coefficient (Y11)", y = "Moderation Coefficient")
+```
+
 
 ```{r spec_by_mod_prep}
 df_ame_mod <- df_ame %>%
@@ -76,6 +74,16 @@ df_ame_mod <- df_ame %>%
   mutate(count = row_number())
 
 df_ame_mod <- df_ame_mod %>%
+  mutate(mod_b_lib = ifelse(mod_var == "A1_Liberal_values", mod_b, NA),
+         mod_b_lib2 = ifelse(mod_var == "A2_Liberal_values", mod_b, NA),
+         mod_b_trst = ifelse(mod_var == "B_No_confidence", mod_b, NA),
+         mod_b_cpi = ifelse(mod_var == "C_Corruption_percept", mod_b, NA))
+
+df_ame_bayes_mod <- df_ame_bayes %>%
+  arrange(mod_var, mod_b) %>%
+  mutate(count = row_number())
+
+df_ame_bayes_mod <- df_ame_bayes_mod %>%
   mutate(mod_b_lib = ifelse(mod_var == "A1_Liberal_values", mod_b, NA),
          mod_b_lib2 = ifelse(mod_var == "A2_Liberal_values", mod_b, NA),
          mod_b_trst = ifelse(mod_var == "B_No_confidence", mod_b, NA),
@@ -170,7 +178,56 @@ knitr::include_graphics(here::here("results", "Fig6.png"))
 ### Bayes spec curve
 
 ```{r bayes}
+mcount = length(df_ame_mod[,1])/4 # counter to make vertical bars
 
+#agg_png(here::here("results","Fig4.png"), height = 600, width = 1200, res = 144)
+fig4 <- df_ame_mod %>%
+  ggplot() +
+  #geom_errorbar(aes(ymin = lb, ymax = ub), color = "thistle1") +
+  geom_errorbar(aes(x = count, ymin = mod_b-(2.576*mod_se), ymax = mod_b+(2.576*mod_se)), color = "grey", width = 0) +
+  geom_point(aes(x = count, y = mod_b_lib), color = "#73D055FF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_point(aes(x = count, y = mod_b_lib2), color = "#73D055FF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_point(aes(x = count, y = mod_b_trst), color = "#287D8EFF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_point(aes(x = count, y = mod_b_cpi), color = "#453781FF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_vline(xintercept = mcount, color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = (2*mcount), color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = (3*mcount), color = "grey", linetype = "dashed") +
+  geom_hline(yintercept = 0, color = "grey") +
+  labs(#color = "Effect at 95% CI", 
+    x = "", 
+    y = "Moderation Coefficient\n(XY-standardized)") +
+  ylim(-0.12,0.14) +
+  #xlim(0,338) +
+  scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
+  annotate(geom = "text", x = mcount/2, y = 0.12, label = "Liberal Values I\ngov v private\nbusinesses", color = "#73D055FF", size = 3) +
+  annotate(geom = "text", x = mcount+(mcount/2), y = 0.12, label = "Liberal Values II\ngov v individual\nresponsible", color = "#73D055FF", size = 3) +
+  annotate(geom = "text", x = 2*mcount+(mcount/2), y = 0.12, label = "Lack of Trust\n in Government\n ", color = "#287D8EFF", size = 3) +
+  annotate(geom = "text", x = 3*mcount+(mcount/2), y = 0.12, label = "Corruption Perceptions\n \n ", color = "#453781FF", size = 3) +
+  annotate(geom = "text", x = mcount/2, y = -0.12, label = "high abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  annotate(geom = "text", x = mcount+(mcount/2), y = -0.12, label = "high abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  annotate(geom = "text", x = 2*mcount+(mcount/2), y = -0.12, label = "medium abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  annotate(geom = "text", x = 3*mcount+(mcount/2), y = -0.12, label = "low abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank()
+  )
+
+#dev.off()
+
+#knitr::include_graphics(here::here("results","Fig4.png"))
 ```
 
 Colophon

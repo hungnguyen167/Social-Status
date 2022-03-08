@@ -8,15 +8,6 @@ library(brms)
 
 ## Functions
 
-# For each Heuristic
-## Basic - no ivs
-## Model with social spending
-## Model basic with individual controls
-## Model with GDP
-## Model with GDP interaction
-## Model with GDP interaction and social spending
-## Model with GDP interaction and individual controls
-
 ### A function to generate models
 
 create_mod <- function(dv, ivs, ixs, cvs, prefix, data, suffix=NULL, start, gdpx=FALSE, gdp) {
@@ -77,16 +68,17 @@ create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 1, data 
 #### Bayesian 
 endval <- length(ls(pattern = "M_4."))
   
-  
-list_mod <- c(paste0("M_4.", 1:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
+# select one model for each heuristic
+b <- get(M4.2)@call[["formula"]] #lack of trust
+c <- get(M4.4)@call[["formula"]] #CPI
+a2 <- get(M4.6)@call[["formula"]] #lib values II
+a1 <- get(M4.8)@call[["formula"]] #lib values I
 
-f <- get(pref_mod)@call[["formula"]]
+M_bayes.1_a1 <- brm(formula = a1, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
+M_bayes.1_a2 <- brm(formula = a2, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
+M_bayes.1_b <- brm(formula = b, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
+M_bayes.1_c <- brm(formula = c, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
-
-M_bayes.1 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
-summary(M_bayes.1)
 
 
 
@@ -550,7 +542,7 @@ M_bayes.28 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 
 
 
 
-length(ls(pattern="M\\_[0-9]")) ## 448 models 01-Feb-22 
+length(ls(pattern="M\\_[0-9]")) ## 448 models 08-Mar-22 
 length(ls(pattern="M_b"))       ## 28 bayesian models (07-Feb-22)
 
 save(list = ls(pattern="M_b"), file = here::here("data","bayesian_mods.RData"))

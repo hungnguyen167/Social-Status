@@ -12,6 +12,7 @@ knitr::opts_chunk$set(message = F, warning = F)
 ```
 
 
+## Load
 
 The data cleaning is done in the file "01.1_Data Cleaning Individual Level.Rmd" and country-data prepped in folder [prep country level data](../data/prep country level data/).
 
@@ -50,11 +51,9 @@ wvs <- readRDS(here::here("data","ivs_aggregated.rds")) %>%
          iso3c_wave = paste(iso3c,wave, sep = "_")) # fit years of WVS into nearest wave of ISSP 1987, 1992, 1999, 2009, 2019
 ```
 
-### Wrangling/interpolation
+### GDP/Regime/Immigration
 
 ```{r loaddata2, message = F, warning = F}
-
-
 
 # Institutional Logic - welfare state penetration
 # for future analyses (social policy variables?)
@@ -103,7 +102,7 @@ imm_long <- imm_long %>%
   dplyr::select(iso3c, year, pct_fb_i)
 ```
 
-### Interpolate after 2018
+### SOCX/Gini
 
 ```{r loaddata3, message = F, warning = F}
 # Take averages of social spending and Gini to get the most possible countries
@@ -175,7 +174,9 @@ rm(gini,socx,crpt, wvs_2)
 rm(imm_long)
 ```
 
-### More WRangling
+### Fix Missing
+
+Where possible
 
 ```{r wrangle}
 # make a complete data frame
@@ -197,6 +198,9 @@ df_na <- df_na %>%
 
 ```
 
+
+#### Identify Missing
+
 There is some missing data
 identify and fill in
 
@@ -210,7 +214,7 @@ df_na %>%
 ```
 
 
-### Save
+#### Create Macro-Level Data
 
 ```{r saveout}
 # The variables names are not intuitive, change them
@@ -237,9 +241,14 @@ df_macro <- df_na %>%
 
 df_macro[df_macro == "NaN"] <- NA
 
-# fill in some by hand
-#fill in a few by hand
-# philippines & thailand data https://www.social-protection.org/gimi/WSPDB.action?id=19
+
+#fill in non-OECD by hand
+# https://www.social-protection.org/gimi/WSPDB.action?id=19
+```
+
+#### Replace Missing
+
+```{r saveout2}
 df_macro <- df_macro %>%
   mutate(socx = ifelse(iso3c == "AUT" & wave == 1987, 24, socx),
          socx = ifelse(iso3c == "BGR" & wave == 1993, 25, socx),
@@ -409,7 +418,7 @@ df_na <- df_na %>%
 
 ```
 
-
+## Final Clean Up
 
 ```{r prep_data}
 df_na <- df_na %>%
@@ -436,7 +445,7 @@ df_na$gov_redist_C <- df_na$gov_redist - mean(df_na$gov_redist, na.rm = T)
 df_na$pct_fb_i_C <- df_na$pct_fb_i - mean(df_na$pct_fb_i, na.rm = T)
 ```
 
-## Final DF
+## Save DF
 ```{r save}
 
 # with missing cases removed
@@ -445,7 +454,7 @@ saveRDS(df_na, file = here::here("data","df_na.RDS"))
 saveRDS(df_macro, file = here::here("data","df_macro.RDS"))
 ```
 
-Colophon
+## Colophon
 
 ```{r colophon}
 sessionInfo()
