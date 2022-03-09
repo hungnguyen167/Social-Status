@@ -4,15 +4,15 @@ output:
   html_document:
     df_print: paged
 ---
-
-Need to subset original analysis to match predicted analysis
+Cannot knit in current format because of the source() call, fix eventually.
 
 ```{r setup}
 pacman::p_load("tidyverse", 
                "countrycode",
                "readstata13",
                "lme4",
-               "sjPlot")
+               "sjPlot",
+               "ragg")
 
 options(scipen = 999, digits = 3)
 knitr::opts_chunk$set(message = F, warning = F)
@@ -184,6 +184,14 @@ m02_rep_c <- lmer(redist_dum_cpi ~ absgr5_wa*relgr5_wa + hinc_decile + factor(ed
 tab_model(m02_rep_a1, m02_rep_a2, m02_rep_b, m02_rep_c, p.style = "stars", show.ci = F)
 ```
 
+
+### M03 with new DV
+```{r replication_new}
+# for decile figure
+m03lib <- lmer(redist_dum_libZ_i ~ relgr5_wa + absgr5_wa*hinc_decile + factor(educ_tert) + female + age + factor(unemployed) + factor(wave) + unemp + socexp + gini_mkt + gdppc + (1 | cwave), data = subset(df_rep, !is.na(df_rep$libZ_i)))
+
+tab_model(m03, m03lib, p.style = "stars", show.ci = F)
+```
 ## Compare Margins
 
 We use Stata to compare our new marginal graphs with those of the original study.
@@ -192,8 +200,127 @@ See file "AbsRel_4_Models_Adjusted.do"
 
 ```{r stata_export}
 #make smaller
+
 df_rep <- df_rep %>%
-  select(c(redist_dum_libZ_i, redist_dum, redist_dum_libZ_redist_i, redist_dum_notrust, redist_dum_cpi, absgr5_wa, relgr5_wa, hinc_decile, educ_tert, female, age, unemployed, wave, unemp, socexp, gini_mkt, gdppc, incdiff, iso3c))
+  select(c(redist_dum_libZ_i, redist_dum, redist_dum_libZ_redist_i, redist_dum_notrust, redist_dum_cpi, absgr5_wa, relgr5_wa, hinc_decile, educ_tert, female, age, unemployed, wave, unemp, socexp, gini_mkt, gdppc, incdiff, iso3c, cwave))
 
 save.dta13(df_rep, here::here("weisstanner_replication", "REPLICATION DATA", "AbsRel_ADJUSTED.dta"))
+
+rm(df_rep_x)
+```
+
+Case study USA and FIN
+
+Liberal values are very strong in USA, we can build a counterfactual to see how absolute and relative inequality affects income deciles.
+
+```{r prep_usa}
+# 1st idea was to map values
+df_rep_p <- df_rep %>%
+  mutate(hinc_3 = ifelse(hinc_decile == 1 | hinc_decile == 2, 1,
+                  ifelse(hinc_decile == 4 | hinc_decile == 5, 2,
+                  ifelse(hinc_decile == 9 | hinc_decile == 10, 3, NA)))) %>%
+  subset(iso3c = "USA") %>%
+  select(hinc_3, absgr5_wa, relgr5_wa, redist_dum, redist_dum_libZ_i, redist_dum_libZ_redist_i, redist_dum_notrust, redist_dum_cpi, wave) %>%
+  group_by(hinc_3, wave) %>%
+  summarise_all(c(mean, sd), na.rm = T) %>%
+  subset(!is.na(hinc_3)) %>%
+  mutate(hinc_cat = ifelse(hinc_3 == 1, "Low",
+                    ifelse(hinc_3 == 2, "Mid",
+                    ifelse(hinc_3 == 3, "High"))),
+         label = paste(hinc_cat,wave, sep = "_"))
+
+```
+
+### Call margins function
+
+```{r marginfunc}
+source(here::here("weisstanner_replication", "margin_function.R"))
+```
+
+#### Fig 6A USA Orig
+```{r plot_usa}
+agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6a.png"), width = 550, height = 500, res = 144)
+df_rep_marg%>%
+  ggplot() +
+  #USA
+  geom_point(aes(x = factor(hinc_decile), y = redist_usa, color = lib)) +
+  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_usa-(redist_usa_sd), ymax = redist_usa+(redist_usa_sd), color = lib), width = 0.2) +
+  theme_classic() +
+  labs(x = "Income Decile", y = "Average Marginal\nSupport for Redistribution", color = "Liberal Values I") +
+  scale_color_manual(values = c("#39568CFF",
+                                "#3CBB75FF")) +
+  scale_y_continuous(labels = scales::percent,
+                     limits = 0:100) +
+  theme(
+    legend.position = "none"
+  )
+dev.off()
+
+knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6a.png"))
+```
+#### Fig 6B USA Low Abs
+```{r plot_usa_lo}
+agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6b.png"), width = 550, height = 600, res = 144)
+df_rep_marg%>%
+  ggplot() +
+  #USA
+  geom_point(aes(x = factor(hinc_decile), y = redist_usa_lo, color = lib)) +
+  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_usa_lo-(redist_usa_lo_sd), ymax = redist_usa_lo+(redist_usa_lo_sd), color = lib), width = 0.2) +
+  theme_classic() +
+  labs(x = "Income Decile", y = "Average Marginal\nSupport for Redistribution", color = "Liberal\nValues I") +
+  scale_color_manual(values = c("#39568CFF",
+                                "#3CBB75FF")) +
+  scale_y_continuous(labels = scales::percent,
+                     limits = 0:100) +
+  guides(color = guide_legend(nrow = 2)) +
+  theme(legend.position = "bottom")
+dev.off()
+
+knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6b.png"))
+```
+#### Fig 6C FIN Orig
+```{r plot_fin}
+agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6c.png"), width = 525, height = 500, res = 144)
+df_rep_marg%>%
+  ggplot() +
+  #FIN
+  geom_point(aes(x = factor(hinc_decile), y = redist_fin, color = lib)) +
+  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_fin-(redist_fin_sd), ymax = redist_fin+(redist_fin_sd), color = lib), width = 0.2) +
+  theme_classic() +
+  ylim(0.15,1) +
+  labs(x = "Income Decile", y = "", color = "Liberal Values I") +
+  scale_color_manual(values = c("#453781FF",
+                                "#20A387FF")) +
+    scale_y_continuous(labels = scales::percent,
+                     limits = 0:100) +
+  theme(
+    legend.position = "none"
+  )
+dev.off()
+
+knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6c.png"))
+
+```
+### Fig 6D FIN Abs Low
+```{r plot_fin_lo}
+agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6d.png"), width = 525, height = 600, res = 144)
+df_rep_marg%>%
+  ggplot() +
+  #USA
+  geom_point(aes(x = factor(hinc_decile), y = redist_fin_lo, color = lib)) +
+  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_fin_lo-(redist_fin_lo_sd), ymax = redist_fin_lo+(redist_fin_lo_sd), color = lib), width = 0.2) +
+  theme_classic() +
+  labs(x = "Income Decile", y = "", color = "Liberal\nValues I") +
+  scale_color_manual(values = c("#453781FF",
+                                "#20A387FF")) +
+  scale_y_continuous(labels = scales::percent,
+                     limits = 0:100) +
+  guides(color = guide_legend(nrow = 2)) +
+  theme(legend.position = "bottom",
+        legend.box = "vertical") 
+dev.off()
+
+knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6d.png"))
+
+
 ```
