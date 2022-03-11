@@ -10,44 +10,67 @@ library(brms)
 
 ### A function to generate models
 
-create_mod <- function(dv, ivs, ixs, cvs, prefix, data, suffix=NULL, start, gdpx=FALSE, gdp) {
-    count <- start
-    for(iv in ivs){
-      for (ix in ixs) {
-        if(gdpx){
-            f <<- as.formula(paste(dv, 
-                                 paste(iv, ix, paste(iv, ix, gdp, sep = " : "), paste(cvs, collapse = " + "), sep = " + "),
-                                 sep = "~"))
-        }
-        else{
-            f <<- as.formula(paste(dv, 
-                                 paste(iv, ix, paste(iv, ix,sep = " : "), paste(cvs, collapse = " + "), sep = " + "),
-                                 sep = "~"))
-        }
-        print(f)
-        mod <- lmer(f, data = data)
-        assign(paste0(prefix, count, suffix), mod, envir = .GlobalEnv)
-        count = count +1
+create_mod <- function(dv, ivs, ixs, cvs, prefix, data, start, gdpx=FALSE, gdp) {
+  count <- start
+  for(iv in ivs){
+    for (ix in ixs) {
+      if(gdpx){
+        f <<- as.formula(paste(dv, 
+                               paste(iv, ix, paste(iv, ix, gdp, sep = " : "), paste(cvs, collapse = " + "), sep = " + "),
+                               sep = "~"))
       }
-    } 
-    count <- start
+      else{
+        f <<- as.formula(paste(dv, 
+                               paste(iv, ix, paste(iv, ix,sep = " : "), paste(cvs, collapse = " + "), sep = " + "),
+                               sep = "~"))
+      }
+      print(f)
+      mod <- lmer(f, data = data)
+      assign(paste0(prefix, count), mod, envir = .GlobalEnv)
+      count = count +1
+    }
+  } 
+  count <- start
 }
 
 ### A function to retrieve goodness-of-fit statistics from models and append to a dataframe
 
 create_df_gof <- function(list_mod) {
-    df_gof <- data.frame(aic=numeric(), bic=numeric(), r2.conditional=numeric(), r2.marginal=numeric(),
+  df_gof <- data.frame(aic=numeric(), bic=numeric(), r2.conditional=numeric(), r2.marginal=numeric(),
                        icc=numeric(), rmse=numeric(),sigma=numeric(),nobs=numeric())
-    for (mod_name in list_mod){
-      mod <- get(mod_name)
-      gof <- get_gof(mod, metrics = "all")
-      row.names(gof) <- mod_name
-      df_gof <- rbind(df_gof, gof)
-    }
-    return(df_gof)
+  for (mod_name in list_mod){
+    mod <- get(mod_name)
+    gof <- get_gof(mod, metrics = "all")
+    row.names(gof) <- mod_name
+    df_gof <- rbind(df_gof, gof)
+  }
+  return(df_gof)
 }
 
 
+create_bayes <- function(list_mod){
+  for(i in c(4:8)){
+    start_val <-2
+    while(start_val <= 88){
+      val <- start_val
+      while(val <= start_val+6){
+        mod_name <- paste0("M_",as.character(i), ".", val)
+        if(mod_name %in% list_mod){
+          mod <- get(mod_name)
+          f <- mod@call[["formula"]]
+          print(sprintf("Running a Bayesian simulation for %s", mod_name))
+          bayes_mod <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 48, chains = 2, seed = 123)
+          assign(paste0(mod_name, "_bayes"), bayes_mod, envir = .GlobalEnv)
+        }
+        val = val+2
+      }
+      start_val = start_val + 16
+    }
+    
+    
+  }
+  
+}
 
 ########################################################################################################################
 ########################################################################################################################
@@ -65,21 +88,6 @@ ixs <- c("incdiff_large_C", "incdiff_large_w")
 cvs <- "(1|iso3c_wave)"
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 1, data = df_na)
 
-#### Bayesian 
-endval <- length(ls(pattern = "M_4."))
-  
-# select one model for each heuristic
-b <- get(M4.2)@call[["formula"]] #lack of trust
-c <- get(M4.4)@call[["formula"]] #CPI
-a2 <- get(M4.6)@call[["formula"]] #lib values II
-a1 <- get(M4.8)@call[["formula"]] #lib values I
-
-M_bayes.1_a1 <- brm(formula = a1, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
-M_bayes.1_a2 <- brm(formula = a2, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
-M_bayes.1_b <- brm(formula = b, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
-M_bayes.1_c <- brm(formula = c, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
-
-
 
 
 ### socx_C control
@@ -87,32 +95,12 @@ M_bayes.1_c <- brm(formula = c, data = df_na, warmup = 500, iter = 2000, cores =
 cvs <- c("(1|iso3c_wave)","socx_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = 1, data = df_na)
 
-#### Bayesian
-
-list_mod <- c(paste0("M_5.", 1:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.2 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 ### gini
 cvs <- c("(1|iso3c_wave)","gini_disp_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = 1, data = df_na)
 
-#### Bayesian 
-
-list_mod <- c(paste0("M_6.", 1:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.3 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 ### gdp
@@ -120,31 +108,10 @@ M_bayes.3 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4
 cvs <- c("(1|iso3c_wave)","gdp_pc_10k_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = 1, data = df_na)
 
-#### Bayesian
-
-list_mod <- c(paste0("M_7.", 1:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.4 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 ### immigration
 cvs <- c("(1|iso3c_wave)","pct_fb_i_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = 1, data = df_na)
-
-#### Bayesian
-
-list_mod <- c(paste0("M_8.", 1:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.5 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 
@@ -155,153 +122,61 @@ startvalue <- length(ls(pattern="M_4."))+1
 cvs <- c("(1|iso3c_wave)","(1|iso3c)")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = startvalue, data = df_na)
 
-#### Bayesian 
-endval <- length(ls(pattern = "M_4."))
 
 
-list_mod <- c(paste0("M_4.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.6 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 ### socx_C control
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","socx_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, data = df_na)
 
-#### Bayesian 
-
-list_mod <- c(paste0("M_5.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.7 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 ### gini
 cvs <- c("(1|iso3c_wave)","(1|iso3c)","gini_disp_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, data = df_na)
 
-#### Bayesian 
 
-list_mod <- c(paste0("M_6.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.8 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gdp
 
 cvs <- c("(1|iso3c_wave)","(1|iso3c)","gdp_pc_10k_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = startvalue, data = df_na)
 
-#### Bayesian 
 
-list_mod <- c(paste0("M_7.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.9 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### immigration
 cvs <- c("(1|iso3c_wave)","(1|iso3c)","pct_fb_i_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, data = df_na)
 
-#### Bayesian 
-
-list_mod <- c(paste0("M_8.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.10 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 ## WITH GDP INTERACTIONS
 startvalue <- length(ls(pattern="M_4."))+1
 ### Country-Year Only
 
-dv <- "gov_redist_C"
-ivs <- c("noconf_govZ", "cpiZ", "libZ", "lib_redistZ", "noconf_govZ_i", "cpiZ_i", "libZ_i", "lib_redistZ_i")
-ixs <- c("incdiff_large_C", "incdiff_large_w")
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C")
 
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
-           suffix = "_gdp", data = df_na)
+           data = df_na)
 
-
-#### Bayesian 
-endval <- length(ls(pattern = "M_4."))
-
-
-list_mod <- c(paste0("M_4.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.11 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 ### socx_C control
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "socx_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
-           suffix = "_gdp", data = df_na)
-
-#### Bayesian 
-
-list_mod <- c(paste0("M_5.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
+           data = df_na)
 
 
-M_bayes.12 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gini
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "gini_disp_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
-           suffix = "_gdp", data = df_na)
+           data = df_na)
 
 
-#### Bayesian 
 
-list_mod <- c(paste0("M_6.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.13 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### immigration
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "pct_fb_i_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
-           suffix = "_gdp", data = df_na)
+           data = df_na)
 
-#### Bayesian 
-
-list_mod <- c(paste0("M_8.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.14 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 
 ########################################################################################################################
@@ -318,77 +193,28 @@ startvalue <- length(ls(pattern="M_4."))+1
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = startvalue, data = df_na)
 
-#### Bayesian 
-endval <- length(ls(pattern = "M_4."))
 
-
-list_mod <- c(paste0("M_4.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.15 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### socx_C control
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "socx_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, data = df_na)
 
-#### Bayesian 
 
-list_mod <- c(paste0("M_5.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.16 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gini
 
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "gini_disp_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, data = df_na)
 
-#### Bayesian 
 
-list_mod <- c(paste0("M_6.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.17 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gdp
- 
+
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "gdp_pc_10k_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = startvalue, data = df_na)
 
-#### Bayesian 
 
-list_mod <- c(paste0("M_7.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.18 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### immigration
 cvs <- c("(1|iso3c_wave)", "ageC","female", "educyrs", "pct_fb_i_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, data = df_na)
 
-
-#### Bayesian 
-
-list_mod <- c(paste0("M_8.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.19 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 ## With Country-Year and Country
 ### bare models
@@ -397,78 +223,29 @@ startvalue <- length(ls(pattern="M_4."))+1
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = startvalue, data = df_na)
 
-#### Bayesian 
-endval <- length(ls(pattern = "M_4."))
 
-
-list_mod <- c(paste0("M_4.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.20 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### socx_C control
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "socx_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, data = df_na)
 
-#### Bayesian 
 
-list_mod <- c(paste0("M_5.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.21 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gini
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "gini_disp_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, data = df_na)
 
-#### Bayesian 
 
-list_mod <- c(paste0("M_6.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.22 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gdp
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "gdp_pc_10k_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_7.", start = startvalue, data = df_na)
 
-#### Bayesian 
 
-list_mod <- c(paste0("M_7.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.23 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### immigration
 
 cvs <- c("(1|iso3c_wave)", "(1|iso3c)","ageC","female", "educyrs", "pct_fb_i_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, data = df_na)
-
-#### Bayesian 
-
-list_mod <- c(paste0("M_8.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.24 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 
 ## With GDP interactions
 ### Country-Year Only
@@ -477,72 +254,41 @@ startvalue <- length(ls(pattern="M_4."))+1
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs")
 
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
-           suffix = "_gdp", data = df_na)
+           data = df_na)
 
 
-#### Bayesian 
-endval <- length(ls(pattern = "M_4."))
 
-
-list_mod <- c(paste0("M_4.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.25 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### socx_C control
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "socx_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_5.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
-           suffix = "_gdp", data = df_na)
-
-#### Bayesian 
-
-list_mod <- c(paste0("M_5.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
+           data = df_na)
 
 
-M_bayes.26 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### gini
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "gini_disp_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_6.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
-           suffix = "_gdp", data = df_na)
+           data = df_na)
 
 
-#### Bayesian 
 
-list_mod <- c(paste0("M_6.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.27 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
 ### immigration
 cvs <- c("(1|iso3c_wave)", "gdp_pc_10k_C", "ageC","female", "educyrs", "pct_fb_i_C")
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startvalue, gdpx=TRUE, gdp = "gdp_pc_10k_C", 
-           suffix = "_gdp", data = df_na)
-
-
-#### Bayesian 
-
-list_mod <- c(paste0("M_8.", startvalue:endval))
-df_gof <- create_df_gof(list_mod =  list_mod)
-pref_mod <- row.names(df_gof[df_gof$aic == min(df_gof$aic),])
-
-f <- get(pref_mod)@call[["formula"]]
-
-
-M_bayes.28 <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 4, chains = 2, seed = 123)
+           data = df_na)
 
 
 
-length(ls(pattern="M\\_[0-9]")) ## 448 models 08-Mar-22 
-length(ls(pattern="M_b"))       ## 28 bayesian models (07-Feb-22)
 
-save(list = ls(pattern="M_b"), file = here::here("data","bayesian_mods.RData"))
+
+# Create a Bayesian simulation for each heuristic for each configuration (4*28 = 112 models in total). Consider running on the cloud as this might take days
+
+list_mod <- ls(pattern="^M\\_[0-9]\\.[0-9]{1,3}$")
+create_bayes(list_mod)
+
+
+
+length(list_mod) ## 448 models 08-Mar-22 
+length(ls(pattern="[0-9]_bayes$"))      ## 112 bayesian models (11-Mar-22)
+
+save(list=ls(pattern="^M\\_[0-9]\\.[0-9]{1,3}$"), file = here::here("data", "all_mods.RData"))
+save(list = ls(pattern="[0-9]_bayes$"), file = here::here("data","bayesian_mods.RData"))
