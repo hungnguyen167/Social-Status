@@ -1,6 +1,7 @@
 ---
 title: "05 Weisstanner Replication"
 output:
+  word_document: default
   html_document:
     df_print: paged
 ---

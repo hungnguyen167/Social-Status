@@ -53,6 +53,21 @@ df_macro <- readRDS(here::here("data", "df_macro.RDS"))
 
 ```
 
+### Macro-Correlations
+
+```{r macro_corrs}
+macro_corr <- df_macro %>% 
+  dplyr::select(gov_redist, incdiff_large, corr, 
+         libZ, libZ_i, lib_redistZ, lib_redistZ_i, 
+         noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, 
+         gdp_pc_10k, socx, pct_fb_i, gini_disp) %>%
+  cor(., use = "pairwise.complete.obs") %>%
+  round(2)
+
+macro_corr[upper.tri(macro_corr)] <- ""
+
+write.csv(macro_corr, here::here("results","Tbl2.csv"), row.names = F)
+```
 
 ### All Plausible Models
 
