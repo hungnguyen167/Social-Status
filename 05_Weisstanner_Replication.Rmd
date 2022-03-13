@@ -130,49 +130,74 @@ We now calculate the predicted association based on heuristic and att to inequal
 #### Prediction Models
 
 ```{r hmodelp}
-m04_1p <- lm(redist_dum ~ factor(wave) + redist_ineq*libZ_i + (1 | cwave), data = df_rep) 
 
-m04_2p <- lm(redist_dum ~ factor(wave) + redist_ineq*lib_redistZ_i + (1 | cwave), data = df_rep)
+m04_1p <- lmer(redist_dum ~ redist_ineq*libZ_i + (1 | cwave), data = df_rep)
 
-m04_3p <- lm(redist_dum ~ factor(wave) + redist_ineq*noconf_govZ_i + (1 | cwave), data = df_rep)
+m04_2p <- lmer(redist_dum ~ redist_ineq*lib_redistZ_i + (1 | cwave), data = df_rep)
 
-m04_4p <- lm(redist_dum ~ factor(wave) + redist_ineq*cpiZ_i + (1 | cwave), data = df_rep)
+m04_3p <- lmer(redist_dum ~ redist_ineq*noconf_govZ_i + (1 | cwave), data = df_rep)
+
+m04_4p <- lmer(redist_dum ~ redist_ineq*cpiZ_i + (1 | cwave), data = df_rep)
 # create dataframe where heuristics are lowest
 
 df_rep_x <- df_rep %>%
-  mutate(libZ_i = -2,
-         lib_redistZ_i = -2,
-         noconf_govZ_i = -2,
-         cpiZ_i = -1.5)
+  mutate(libZ_i = ifelse(!is.na(libZ_i), -2, NA),
+         lib_redistZ_i = ifelse(!is.na(lib_redistZ_i), -2, NA),
+         noconf_govZ_i = ifelse(!is.na(noconf_govZ_i), -2, NA),
+         cpiZ_i = ifelse(!is.na(cpiZ_i), -1.5, NA))
 
-# get predicted values
-df_rep$redist_dum_a1 <- predict.lm(m04_1p, newdata = df_rep_x)
+# get predicted values for normal and low lib scores
+df_rep$redist_dum_a1_liblo <- predict(m04_1p, newdata = df_rep_x, na.action = "na.exclude")
+df_rep$redist_dum_a1 <- predict(m04_1p, newdata = df_rep, na.action = "na.exclude")
 
-df_rep$redist_dum_a2 <- predict.lm(m04_2p, newdata = df_rep_x)
+df_rep$redist_dum_a2_liblo <- predict(m04_2p, newdata = df_rep_x, na.action = "na.exclude")
+df_rep$redist_dum_a2 <- predict(m04_2p, newdata = df_rep, na.action = "na.exclude")
 
-df_rep$redist_dum_b <- predict.lm(m04_3p, newdata = df_rep_x)
+df_rep$redist_dum_b_liblo <- predict(m04_3p, newdata = df_rep_x, na.action = "na.exclude")
+df_rep$redist_dum_b <- predict(m04_3p, newdata = df_rep, na.action = "na.exclude")
 
-df_rep$redist_dum_c <- predict.lm(m04_4p, newdata = df_rep_x)
+df_rep$redist_dum_c_liblo <- predict(m04_4p, newdata = df_rep_x, na.action = "na.exclude")
+df_rep$redist_dum_c <- predict(m04_4p, newdata = df_rep, na.action = "na.exclude")
 
 #trim into categories
 df_rep <- df_rep %>%
-  mutate(redist_dum_a1 = ifelse(redist_dum_a1 < 0, 0, ifelse(redist_dum_a1 > 1, 1, redist_dum_a1)),
-         redist_dum_libZ_i = round(redist_dum_a1, 0),
+  #lib values I normal
+  mutate(
+         #lib values I normal
+         redist_dum_a1 = ifelse(redist_dum_a1 < 0, 0, ifelse(redist_dum_a1 > 1, 1, redist_dum_a1)),
+         redist_dum_lib = round(redist_dum_a1, 0),
+         #lib values I low
+         redist_dum_a1_liblo = ifelse(redist_dum_a1_liblo < 0, 0, ifelse(redist_dum_a1_liblo > 1, 1, redist_dum_a1_liblo)),
+         redist_dum_lib_low = round(redist_dum_a1_liblo, 0),
+         #lib values II normal
          redist_dum_a2 = ifelse(redist_dum_a2 < 0, 0, ifelse(redist_dum_a2 > 1, 1, redist_dum_a2)),
-         redist_dum_libZ_redist_i = round(redist_dum_a2, 0),
+         redist_dum_lib_redist = round(redist_dum_a2, 0),
+         #lib values II low
+         redist_dum_a2_liblo = ifelse(redist_dum_a2_liblo < 0, 0, ifelse(redist_dum_a2_liblo > 1, 1, redist_dum_a2_liblo)),
+         redist_dum_lib_redist_low = round(redist_dum_a2_liblo, 0),
+         #lack trust normal
          redist_dum_b = ifelse(redist_dum_b < 0, 0, ifelse(redist_dum_b > 1, 1, redist_dum_b)),
          redist_dum_notrust = round(redist_dum_b, 0),
+         #lack trust low
+         redist_dum_b_liblo = ifelse(redist_dum_b_liblo < 0, 0, ifelse(redist_dum_b_liblo > 1, 1, redist_dum_b_liblo)),
+         redist_dum_notrust_low = round(redist_dum_b_liblo, 0),
+         #cpi normal
          redist_dum_c = ifelse(redist_dum_c < 0, 0, ifelse(redist_dum_c > 1, 1, redist_dum_c)),
-         redist_dum_cpi = round(redist_dum_c, 0))
+         redist_dum_cpi = round(redist_dum_c, 0),
+         #cpi low
+         redist_dum_c_liblo = ifelse(redist_dum_c_liblo < 0, 0, ifelse(redist_dum_c_liblo > 1, 1, redist_dum_c_liblo)),
+         redist_dum_cpi_low = round(redist_dum_c_liblo, 0))
 
 ```
 
 #### Replication Models
 
-```{r expansion}
-m02_rep_a1 <- lmer(redist_dum_libZ_i ~ absgr5_wa*relgr5_wa + hinc_decile + factor(educ_tert) + female + age + factor(unemployed) + factor(wave) + unemp + socexp + gini_mkt + gdppc + (1 | cwave), data = df_rep)
+these models should confirm that we can accurately proxy the original measure and come to similar results
 
-m02_rep_a2 <- lmer(redist_dum_libZ_redist_i ~ absgr5_wa*relgr5_wa + hinc_decile + factor(educ_tert) + female + age + factor(unemployed) + factor(wave) + unemp + socexp + gini_mkt + gdppc + (1 | cwave), data = df_rep)
+```{r expansion}
+m02_rep_a1 <- lmer(redist_dum_lib ~ absgr5_wa*relgr5_wa + hinc_decile + factor(educ_tert) + female + age + factor(unemployed) + factor(wave) + unemp + socexp + gini_mkt + gdppc + (1 | cwave), data = df_rep)
+
+m02_rep_a2 <- lmer(redist_dum_lib_redist ~ absgr5_wa*relgr5_wa + hinc_decile + factor(educ_tert) + female + age + factor(unemployed) + factor(wave) + unemp + socexp + gini_mkt + gdppc + (1 | cwave), data = df_rep)
 
 m02_rep_b <- lmer(redist_dum_notrust ~ absgr5_wa*relgr5_wa + hinc_decile + factor(educ_tert) + female + age + factor(unemployed) + factor(wave) + unemp + socexp + gini_mkt + gdppc + (1 | cwave), data = df_rep)
 
@@ -189,9 +214,11 @@ tab_model(m02_rep_a1, m02_rep_a2, m02_rep_b, m02_rep_c, p.style = "stars", show.
 ### M03 with new DV
 ```{r replication_new}
 # for decile figure
-m03lib <- lmer(redist_dum_libZ_i ~ relgr5_wa + absgr5_wa*hinc_decile + factor(educ_tert) + female + age + factor(unemployed) + factor(wave) + unemp + socexp + gini_mkt + gdppc + (1 | cwave), data = subset(df_rep, !is.na(df_rep$libZ_i)))
+m03lib <- lmer(redist_dum_lib ~ relgr5_wa + absgr5_wa*hinc_decile + factor(educ_tert) + female + age + factor(unemployed) + factor(wave) + unemp + socexp + gini_mkt + gdppc + (1 | cwave), data = subset(df_rep, !is.na(df_rep$libZ_i)))
 
-tab_model(m03, m03lib, p.style = "stars", show.ci = F)
+m03liblo <- lmer(redist_dum_lib_low ~ relgr5_wa + absgr5_wa*hinc_decile + factor(educ_tert) + female + age + factor(unemployed) + factor(wave) + unemp + socexp + gini_mkt + gdppc + (1 | cwave), data = subset(df_rep, !is.na(df_rep$libZ_i)))
+
+tab_model(m03, m03lib, m03liblo, p.style = "stars", show.ci = F)
 ```
 ## Compare Margins
 
@@ -201,6 +228,10 @@ See file "AbsRel_4_Models_Adjusted.do"
 
 ```{r stata_export}
 #make smaller
+# fix a change in naming convention
+df_rep$redist_dum_libZ_i <- df_rep$redist_dum_lib_low
+df_rep$redist_dum_libZ_redist_i <- df_rep$redist_dum_lib_redist_low
+# note that notrust and cpi are now the original rather than the low values, we are not using them in the paper, but they would need to be changed by name here to use them
 
 df_rep <- df_rep %>%
   select(c(redist_dum_libZ_i, redist_dum, redist_dum_libZ_redist_i, redist_dum_notrust, redist_dum_cpi, absgr5_wa, relgr5_wa, hinc_decile, educ_tert, female, age, unemployed, wave, unemp, socexp, gini_mkt, gdppc, incdiff, iso3c, cwave))
@@ -213,24 +244,7 @@ rm(df_rep_x)
 Case study USA and FIN
 
 Liberal values are very strong in USA, we can build a counterfactual to see how absolute and relative inequality affects income deciles.
-
-```{r prep_usa}
-# 1st idea was to map values
-df_rep_p <- df_rep %>%
-  mutate(hinc_3 = ifelse(hinc_decile == 1 | hinc_decile == 2, 1,
-                  ifelse(hinc_decile == 4 | hinc_decile == 5, 2,
-                  ifelse(hinc_decile == 9 | hinc_decile == 10, 3, NA)))) %>%
-  subset(iso3c = "USA") %>%
-  select(hinc_3, absgr5_wa, relgr5_wa, redist_dum, redist_dum_libZ_i, redist_dum_libZ_redist_i, redist_dum_notrust, redist_dum_cpi, wave) %>%
-  group_by(hinc_3, wave) %>%
-  summarise_all(c(mean, sd), na.rm = T) %>%
-  subset(!is.na(hinc_3)) %>%
-  mutate(hinc_cat = ifelse(hinc_3 == 1, "Low",
-                    ifelse(hinc_3 == 2, "Mid",
-                    ifelse(hinc_3 == 3, "High"))),
-         label = paste(hinc_cat,wave, sep = "_"))
-
-```
+In the margins function we calculate average marginal effects using the abs and rel income by decile but applying it to the entire dataset.
 
 ### Call margins function
 
@@ -238,8 +252,9 @@ df_rep_p <- df_rep %>%
 source(here::here("weisstanner_replication", "margin_function.R"))
 ```
 
-#### Fig 6A USA Orig
-```{r plot_usa}
+#### Fig 6A Original Margins
+
+```{r plot6A}
 agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6a.png"), width = 550, height = 500, res = 144)
 df_rep_marg%>%
   ggplot() +
