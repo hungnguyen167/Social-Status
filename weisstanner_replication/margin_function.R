@@ -217,13 +217,25 @@ df_rep_fin_hinc_10lo <- df_rep_fin %>%
 
 ## Set up DF
 # adjust data
-df_rep_marg <- as.data.frame(matrix(nrow = 10, ncol = 1))
-colnames(df_rep_marg) <- c("hinc_decile")
-df_rep_marg$hinc_decile <- c(1,2,3,4,5,6,7,8,9,10)
+df_rep_marg <- as.data.frame(matrix(nrow = 10, ncol = 14))
 
-df_rep_margf <- as.data.frame(matrix(nrow = 10, ncol = 1))
-colnames(df_rep_margf) <- c("hinc_decile")
+df_rep_margf <- as.data.frame(matrix(nrow = 10, ncol = 14))
+
+colnames(df_rep_marg) <- c("hinc_decile", "redist_o_obs_obs_m",      "redist_o_obs_obs_sd",    
+                           "redist_o_obs_lib_m",      "redist_o_obs_lib_sd",     "redist_o_obs_liblow_m",  
+                           "redist_o_obs_liblow_sd",  "redist_o_stag_obs_m",     "redist_o_stag_obs_sd",   
+                           "redist_o_stag_lib_m",     "redist_o_stag_lib_sd",    "redist_o_stag_liblow_m", 
+                           "redist_o_stag_liblow_sd", "country")
+
+colnames(df_rep_margf) <- c("hinc_decile", "redist_o_obs_obs_m",      "redist_o_obs_obs_sd",    
+                            "redist_o_obs_lib_m",      "redist_o_obs_lib_sd",     "redist_o_obs_liblow_m",  
+                            "redist_o_obs_liblow_sd",  "redist_o_stag_obs_m",     "redist_o_stag_obs_sd",   
+                            "redist_o_stag_lib_m",     "redist_o_stag_lib_sd",    "redist_o_stag_liblow_m", 
+                            "redist_o_stag_liblow_sd", "country")
+
+
 df_rep_margf$hinc_decile <- c(1,2,3,4,5,6,7,8,9,10)
+df_rep_marg$hinc_decile <- c(1,2,3,4,5,6,7,8,9,10)
 
 ### USA Original
 df_rep_usa$redist_dum_1 <- predict(m03, newdata = df_rep_usa_hinc_1)
@@ -240,14 +252,12 @@ df_rep_usa$redist_dum_10 <- predict(m03, newdata = df_rep_usa_hinc_10)
 df_rep_marg$redist_o_obs_obs_m <- df_rep_usa %>%
   select(redist_dum_1:redist_dum_10) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_marg$redist_o_obs_obs_sd <- df_rep_usa %>%
   select(redist_dum_1:redist_dum_10) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 ### FIN Original
 df_rep_fin$redist_dum_1 <- predict(m03, newdata = df_rep_fin_hinc_1)
@@ -264,14 +274,13 @@ df_rep_fin$redist_dum_10 <- predict(m03, newdata = df_rep_fin_hinc_10)
 df_rep_margf$redist_o_obs_obs_m <- df_rep_fin %>%
   select(redist_dum_1:redist_dum_10) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_margf$redist_o_obs_obs_sd <- df_rep_fin %>%
   select(redist_dum_1:redist_dum_10) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
+
 ### USA Simulated, Lib Observed
 
 df_rep_usa$redist_dum_1_lib <- predict(m03lib, newdata = df_rep_usa_hinc_1)
@@ -288,14 +297,12 @@ df_rep_usa$redist_dum_10_lib <- predict(m03lib, newdata = df_rep_usa_hinc_10)
 df_rep_marg$redist_o_obs_lib_m <- df_rep_usa %>%
   select(redist_dum_1_lib:redist_dum_10_lib) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_marg$redist_o_obs_lib_sd <- df_rep_usa %>%
   select(redist_dum_1_lib:redist_dum_10_lib) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 ### FIN Simulated, Lib Observed
 
@@ -313,14 +320,12 @@ df_rep_fin$redist_dum_10_lib <- predict(m03lib, newdata = df_rep_fin_hinc_10)
 df_rep_margf$redist_o_obs_lib_m <- df_rep_fin %>%
   select(redist_dum_1_lib:redist_dum_10_lib) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_margf$redist_o_obs_lib_sd <- df_rep_fin %>%
   select(redist_dum_1_lib:redist_dum_10_lib) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 ### USA Simulated, Lib Low
 
@@ -338,13 +343,13 @@ df_rep_usa$redist_dum_10_lib_low <- predict(m03liblo, newdata = df_rep_usa_hinc_
 df_rep_marg$redist_o_obs_liblow_m <- df_rep_usa %>%
   select(redist_dum_1_lib_low:redist_dum_10_lib_low) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_marg$redist_o_obs_liblow_sd <- df_rep_usa %>%
   select(redist_dum_1_lib_low:redist_dum_10_lib_low) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
+  t() 
+
 ### FIN Simulated, Lib Low
   
   
@@ -362,14 +367,15 @@ df_rep_fin$redist_dum_10_lib_low <- predict(m03liblo, newdata = df_rep_fin_hinc_
 df_rep_margf$redist_o_obs_liblow_m <- df_rep_fin %>%
   select(redist_dum_1_lib_low:redist_dum_10_lib_low) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_margf$redist_o_obs_liblow_sd <- df_rep_fin %>%
   select(redist_dum_1_lib_low:redist_dum_10_lib_low) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
-#################################################33
+  t() 
+
+#################################################
+
 ### USA Stagnation
 df_rep_usa$redist_dum_1lo <- predict(m03, newdata = df_rep_usa_hinc_1lo)
 df_rep_usa$redist_dum_2lo <- predict(m03, newdata = df_rep_usa_hinc_2lo)
@@ -385,14 +391,12 @@ df_rep_usa$redist_dum_10lo <- predict(m03, newdata = df_rep_usa_hinc_10lo)
 df_rep_marg$redist_o_stag_obs_m <- df_rep_usa %>%
   select(redist_dum_1lo:redist_dum_10lo) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_marg$redist_o_stag_obs_sd <- df_rep_usa %>%
   select(redist_dum_1lo:redist_dum_10lo) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 ### FIN Stagnation
 df_rep_fin$redist_dum_1lo <- predict(m03, newdata = df_rep_fin_hinc_1lo)
@@ -409,14 +413,13 @@ df_rep_fin$redist_dum_10lo <- predict(m03, newdata = df_rep_fin_hinc_10lo)
 df_rep_margf$redist_o_stag_obs_m <- df_rep_fin %>%
   select(redist_dum_1lo:redist_dum_10lo) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_margf$redist_o_stag_obs_sd <- df_rep_fin %>%
   select(redist_dum_1lo:redist_dum_10lo) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
+
 ### USA Stagnation, Lib Original
 df_rep_usa$redist_dum_1_liblo <- predict(m03lib, newdata = df_rep_usa_hinc_1lo)
 df_rep_usa$redist_dum_2_liblo <- predict(m03lib, newdata = df_rep_usa_hinc_2lo)
@@ -432,14 +435,12 @@ df_rep_usa$redist_dum_10_liblo <- predict(m03lib, newdata = df_rep_usa_hinc_10lo
 df_rep_marg$redist_o_stag_lib_m <- df_rep_usa %>%
   select(redist_dum_1_liblo:redist_dum_10_liblo) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_marg$redist_o_stag_lib_sd <- df_rep_usa %>%
   select(redist_dum_1_liblo:redist_dum_10_liblo) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 ### FIN Stagnation, Lib Original
 df_rep_fin$redist_dum_1_liblo <- predict(m03lib, newdata = df_rep_fin_hinc_1lo)
@@ -456,14 +457,12 @@ df_rep_fin$redist_dum_10_liblo <- predict(m03lib, newdata = df_rep_fin_hinc_10lo
 df_rep_margf$redist_o_stag_lib_m <- df_rep_fin %>%
   select(redist_dum_1_liblo:redist_dum_10_liblo) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_margf$redist_o_stag_lib_sd <- df_rep_fin %>%
   select(redist_dum_1_liblo:redist_dum_10_liblo) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 ### USA Stagnation, Lib Low
 df_rep_usa$redist_dum_1_liblo_low <- predict(m03liblo, newdata = df_rep_usa_hinc_1lo)
@@ -480,14 +479,12 @@ df_rep_usa$redist_dum_10_liblo_low <- predict(m03liblo, newdata = df_rep_usa_hin
 df_rep_marg$redist_o_stag_liblow_m <- df_rep_usa %>%
   select(redist_dum_1_liblo_low:redist_dum_10_liblo_low) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_marg$redist_o_stag_liblow_sd <- df_rep_usa %>%
   select(redist_dum_1_liblo_low:redist_dum_10_liblo_low) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 ### FIN Stagnation, Lib Low
 df_rep_fin$redist_dum_1_liblo_low <- predict(m03liblo, newdata = df_rep_fin_hinc_1lo)
@@ -504,17 +501,15 @@ df_rep_fin$redist_dum_10_liblo_low <- predict(m03liblo, newdata = df_rep_fin_hin
 df_rep_margf$redist_o_stag_liblow_m <- df_rep_fin %>%
   select(redist_dum_1_liblo_low:redist_dum_10_liblo_low) %>%
   summarise_all(c(mean), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_margf$redist_o_stag_liblow_sd <- df_rep_fin %>%
   select(redist_dum_1_liblo_low:redist_dum_10_liblo_low) %>%
   summarise_all(c(sd), na.rm = T) %>%
-  t() %>%
-  as.data.frame()
+  t() 
 
 df_rep_marg$country <-  "USA"
-df_rep_marg$country <- "Finland"
+df_rep_margf$country <- "Finland"
 
 df_rep_marg <- rbind(df_rep_marg, df_rep_margf)
 

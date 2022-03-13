@@ -251,16 +251,21 @@ In the margins function we calculate average marginal effects using the abs and 
 ```{r marginfunc}
 source(here::here("weisstanner_replication", "margin_function.R"))
 ```
-
-#### Fig 6A Original Margins
+"",      "",    
+                           "",      "",     "",  
+                           "",  "",     "",   
+                           "redist_o_stag_lib_m",     "redist_o_stag_lib_sd",    "redist_o_stag_liblow_m", 
+                           "redist_o_stag_liblow_sd", 
+                         
+#### Fig 6A.1 Original Margins
 
 ```{r plot6A}
-agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6a.png"), width = 550, height = 500, res = 144)
+agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6a1.png"), width = 550, height = 350, res = 144)
 df_rep_marg%>%
-  ggplot() +
+  ggplot() + 
   #USA
-  geom_point(aes(x = factor(hinc_decile), y = redist_usa, color = lib)) +
-  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_usa-(redist_usa_sd), ymax = redist_usa+(redist_usa_sd), color = lib), width = 0.2) +
+  geom_point(aes(x = factor(hinc_decile), y = redist_o_obs_obs_m, color = country)) +
+  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_o_obs_obs_m-(redist_o_obs_obs_sd), ymax = redist_o_obs_obs_m+(redist_o_obs_obs_sd), color = country), width = 0.2) +
   theme_classic() +
   labs(x = "Income Decile", y = "Average Marginal\nSupport for Redistribution", color = "Liberal Values I") +
   scale_color_manual(values = c("#39568CFF",
@@ -272,41 +277,66 @@ df_rep_marg%>%
   )
 dev.off()
 
-knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6a.png"))
+knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6a1.png"))
 ```
-#### Fig 6B USA Low Abs
+
+#### Fig 6A.2 Original Stagnated Margins
+
+```{r plot6A2}
+agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6a2.png"), width = 550, height = 350, res = 144)
+df_rep_marg%>%
+  ggplot() + 
+  #USA
+  geom_point(aes(x = factor(hinc_decile), y = redist_o_stag_obs_m, color = country)) +
+  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_o_stag_obs_m-(redist_o_stag_obs_sd), ymax = redist_o_stag_obs_m+(redist_o_stag_obs_sd), color = country), width = 0.2) +
+  theme_classic() +
+  labs(x = "Income Decile", y = "Average Marginal\nSupport for Redistribution", color = "Liberal Values I") +
+  scale_color_manual(values = c("#39568CFF",
+                                "#3CBB75FF")) +
+  scale_y_continuous(labels = scales::percent,
+                     limits = 0:100) +
+  theme(
+    legend.position = "none"
+  )
+dev.off()
+
+knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6a2.png"))
+```
+#### Fig 6B.1 Adjusted Predictions, Original
+
 ```{r plot_usa_lo}
-agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6b.png"), width = 550, height = 600, res = 144)
+agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6b1.png"), width = 550, height = 350, res = 144)
 df_rep_marg%>%
   ggplot() +
   #USA
-  geom_point(aes(x = factor(hinc_decile), y = redist_usa_lo, color = lib)) +
-  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_usa_lo-(redist_usa_lo_sd), ymax = redist_usa_lo+(redist_usa_lo_sd), color = lib), width = 0.2) +
+  geom_point(aes(x = factor(hinc_decile), y = redist_o_obs_lib_m, color = country)) +
+  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_o_obs_lib_m-(redist_o_obs_lib_sd), ymax = redist_o_obs_lib_m+(redist_o_obs_lib_sd), color = country), width = 0.2) +
   theme_classic() +
-  labs(x = "Income Decile", y = "Average Marginal\nSupport for Redistribution", color = "Liberal\nValues I") +
+  labs(x = "Income Decile", y = "", color = "Liberal\nValues I") +
   scale_color_manual(values = c("#39568CFF",
                                 "#3CBB75FF")) +
   scale_y_continuous(labels = scales::percent,
                      limits = 0:100) +
   guides(color = guide_legend(nrow = 2)) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "none")
 dev.off()
 
-knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6b.png"))
+knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6b1.png"))
 ```
-#### Fig 6C FIN Orig
+#### Fig 6B.2 Adjusted Predictions, Stagnated
+
 ```{r plot_fin}
-agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6c.png"), width = 525, height = 500, res = 144)
+agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6b2.png"), width = 550, height = 350, res = 144)
 df_rep_marg%>%
   ggplot() +
-  #FIN
-  geom_point(aes(x = factor(hinc_decile), y = redist_fin, color = lib)) +
-  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_fin-(redist_fin_sd), ymax = redist_fin+(redist_fin_sd), color = lib), width = 0.2) +
+  #FIN 
+  geom_point(aes(x = factor(hinc_decile), y = redist_o_stag_lib_m, color = country)) +
+  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_o_stag_lib_m-(redist_o_stag_lib_sd), ymax = redist_o_stag_lib_m+(redist_o_stag_lib_sd), color = country), width = 0.2) +
   theme_classic() +
   ylim(0.15,1) +
   labs(x = "Income Decile", y = "", color = "Liberal Values I") +
-  scale_color_manual(values = c("#453781FF",
-                                "#20A387FF")) +
+  scale_color_manual(values = c("#39568CFF",
+                                "#3CBB75FF")) +
     scale_y_continuous(labels = scales::percent,
                      limits = 0:100) +
   theme(
@@ -314,21 +344,23 @@ df_rep_marg%>%
   )
 dev.off()
 
-knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6c.png"))
+knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6b2.png"))
 
 ```
-### Fig 6D FIN Abs Low
+
+### Fig 6C Adjusted Predictions, Abs Low, Lib Low
+
 ```{r plot_fin_lo}
-agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6d.png"), width = 525, height = 600, res = 144)
+agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6c.png"), width = 550, height = 425, res = 144)
 df_rep_marg%>%
   ggplot() +
-  #USA
-  geom_point(aes(x = factor(hinc_decile), y = redist_fin_lo, color = lib)) +
-  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_fin_lo-(redist_fin_lo_sd), ymax = redist_fin_lo+(redist_fin_lo_sd), color = lib), width = 0.2) +
+  #USA 
+  geom_point(aes(x = factor(hinc_decile), y = redist_o_stag_liblow_m, color = country)) +
+  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_o_stag_liblow_m-(redist_o_stag_liblow_sd), ymax = redist_o_stag_liblow_m+(redist_o_stag_liblow_sd), color = country), width = 0.2) +
   theme_classic() +
   labs(x = "Income Decile", y = "", color = "Liberal\nValues I") +
-  scale_color_manual(values = c("#453781FF",
-                                "#20A387FF")) +
+  scale_color_manual(values = c("#39568CFF",
+                                "#3CBB75FF")) +
   scale_y_continuous(labels = scales::percent,
                      limits = 0:100) +
   guides(color = guide_legend(nrow = 2)) +
@@ -336,7 +368,6 @@ df_rep_marg%>%
         legend.box = "vertical") 
 dev.off()
 
-knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6d.png"))
-
+knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6c.png"))
 
 ```
