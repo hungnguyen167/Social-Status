@@ -251,11 +251,7 @@ In the margins function we calculate average marginal effects using the abs and 
 ```{r marginfunc}
 source(here::here("weisstanner_replication", "margin_function.R"))
 ```
-"",      "",    
-                           "",      "",     "",  
-                           "",  "",     "",   
-                           "redist_o_stag_lib_m",     "redist_o_stag_lib_sd",    "redist_o_stag_liblow_m", 
-                           "redist_o_stag_liblow_sd", 
+
                          
 #### Fig 6A.1 Original Margins
 
