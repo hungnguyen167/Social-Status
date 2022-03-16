@@ -267,6 +267,8 @@ df_rep_marg%>%
   geom_point(aes(x = factor(hinc_decile), y = redist_o_obs_obs_m, color = country)) +
   geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_o_obs_obs_m-(redist_o_obs_obs_sd), ymax = redist_o_obs_obs_m+(redist_o_obs_obs_sd), color = country), width = 0.2) +
   theme_classic() +
+    annotate("text", x = 3, y = .25, label = "U.S.", color = "#3CBB75FF") +
+  annotate("text", x = 8, y = .83, label = "Finland", color = "#39568CFF") +
   labs(x = "Income Decile", y = "Average Marginal\nSupport for Redistribution", color = "Liberal Values I") +
   scale_color_manual(values = c("#39568CFF",
                                 "#3CBB75FF")) +
@@ -347,11 +349,36 @@ dev.off()
 knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6b2.png"))
 
 ```
-
-### Fig 6C Adjusted Predictions, Abs Low, Lib Low
+### Fig 7 Adjusted Predictions, Abs Obs, Lib Low
 
 ```{r plot_fin_lo}
-agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6c.png"), width = 550, height = 425, res = 144)
+agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig7a.png"), width = 550, height = 350, res = 144)
+df_rep_marg%>%
+  ggplot() +
+  #USA 
+  geom_point(aes(x = factor(hinc_decile), y = redist_o_obs_liblow_m, color = country)) +
+  geom_errorbar(aes(x = factor(hinc_decile), ymin = redist_o_obs_liblow_m-(redist_o_obs_liblow_sd), ymax = redist_o_obs_liblow_m+(redist_o_obs_liblow_sd), color = country), width = 0.2) +
+  theme_classic() +
+  labs(x = "Income Decile", y = "Average Marginal\nSupport for Redistribution", color = "Liberal\nValues I") +
+  annotate("text", x = 5, y = .5, label = "U.S.", color = "#3CBB75FF") +
+  annotate("text", x = 8, y = .98, label = "Finland", color = "#39568CFF") +
+  scale_color_manual(values = c("#39568CFF",
+                                "#3CBB75FF")) +
+  scale_y_continuous(labels = scales::percent,
+                     limits = 0:100) +
+  guides(color = guide_legend(nrow = 2)) +
+  theme(legend.position = "none",
+        legend.box = "vertical") 
+dev.off()
+
+knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig7a.png"))
+
+```
+
+### Fig 7 Adjusted Predictions, Abs Low, Lib Low
+
+```{r plot_fin_lo}
+agg_png(here::here("weisstanner_replication","REPLICATION DATA","results","Fig7b.png"), width = 550, height = 350, res = 144)
 df_rep_marg%>%
   ggplot() +
   #USA 
@@ -364,10 +391,10 @@ df_rep_marg%>%
   scale_y_continuous(labels = scales::percent,
                      limits = 0:100) +
   guides(color = guide_legend(nrow = 2)) +
-  theme(legend.position = "bottom",
+  theme(legend.position = "none",
         legend.box = "vertical") 
 dev.off()
 
-knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig6c.png"))
+knitr::include_graphics(here::here("weisstanner_replication","REPLICATION DATA","results","Fig7b.png"))
 
 ```
