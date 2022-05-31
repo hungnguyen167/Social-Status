@@ -1,5 +1,5 @@
 ---
-title: "04. Spec Curvey. Attitudes toward Redistribution"
+title: "04. Spec Curve"
 output:
   html_document:
     df_print: paged

@@ -1,5 +1,5 @@
 ---
-title: "Attitudes toward Redistribution"
+title: "03.1 Main Analysis NHST"
 output:
   html_document:
     df_print: paged

@@ -5,6 +5,7 @@ output:
     df_print: paged
 ---
 
+Not used in the paper, provides the same kind of evidence. Possibly redundant.
 
 ```{r, include = F}
 rm(list = ls())

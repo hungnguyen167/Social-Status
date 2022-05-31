@@ -1,12 +1,9 @@
 ---
-title: "Attitudes toward Redistribution"
+title: "Data Cleaning 1. Individual-Level"
 output:
   html_document:
     df_print: paged
 ---
-
-"Attitudes toward Redistribution"
-
 
 # Individual Level Data Cleaning File
 
