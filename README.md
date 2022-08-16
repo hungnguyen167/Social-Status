@@ -7,8 +7,11 @@ Obtained original Stata code from author.
 Altered do files to extract the variable 'incdiff' measuring 'attitudes toward inequality' from each Social Inequality ISSP module
 
 cr_ISSP_1987.do
+
 cr_ISSP_1992.do
+
 cr_ISSP_1999.do
+
 cr_ISSP_2009.do
 
 Added ISSP source .dta files, changed code to use these files instead of Weisstanner's naming convention, e.g., "ISSP 1992 Inequality - ZA2310_SPSS.dta" in the 'use' command would be changed to simply "ZA2310.dta"
