@@ -11,7 +11,7 @@ output:
 
 Social Inequality, Cumulation (1987, 1992, 1999, 2009 & 2009)
 Social Inequality, 2019
-Environment (XXXX, XXXX & XXXX)
+Environment Module code left in file, but not used in this paper as it is missing key variables
 $~$
 $~$
 
@@ -48,78 +48,21 @@ Netherlands 2009 added manually "ZA5995_v1-0-0.dta"
 
 * Spain 1992 not enough demographic variables, Brazil 1999 methodological problems
 
-*1.B. Environment*
-
-
-
-Notes:
-
-
---- AWAITING SOLUTIONS ---
-
-A. nl87 and ie87 cannot be integrated into the socin file, needs occupation recoding before integrating but the categories are not compatible.
-
-C. There are values of 11 in the socin$wrkst variable, these are probably from a country-specific question and need to be checked
-
-E. We should include the other income differences question for all surveys where it is available, Nate did this for the cumulative file so far as *inclarge*
-
-F. There are still values that fall outside of 0-5 in *incdiff* and *inclarge*
-
-G. Missing data -9 -8 found in the educyrs variable
-=======
-   
-   
-   
---- DONE ---   
-   
-   HUNG - can you follow my coding schemes for 2-digit ISCO and apply them to mothers and fathers in Australia 1987, Italy 87 & 92 & env93, Great Britain 87 & 92 & env93, & Poland 87 please? You will find the hand recodes in the code chunk 'isco88_2'. I haven't finished coding the other countries into 2-digit isco, will finish at some point, although we have most by now. - DONE
-   
-   HUNG - we need to get spouse isco and spouse isco88_2digit, can you please add these everywhere? please name them spisco88 and spisco88_2digit. Of course for many countries there will be missing spisco88 in the earlier surveys, but spouse isco will be really important in determining the status of a housewife/partner. - DONE
-
-D. I changed the variable 'year' to reflect the actual year when the survey was fielded in each country - sometimes it is not the same as 'wave', but having the year accurate as possible makes it better for merging in macro data. 
-
-E. Made a variable 'reduce' that is = to 'incdiff' but has 9 recoded into NA and has 8 recoded into neutral, also reversed the coding so that higher values = more agreement
-
-F. Recoded 'wrkst' so that they matched across all surveys (not just full-time, part-time, less than part time). Env00 uses a slightly different list than the others. Now wrkst doesn't have value "4". 
-
-G. Mistake with Australia - it should not have ISCO68 in env93, it is isco88. this explains why so many values go tdropped in the conversion
-
---- DONE ---
-
-
-
-
---- TO BE EXECUTED ---
-
-B. Need to use the supplementary file to divide East and West Germany at some point. Or maybe not. If we think of Germany as a political unit where policy change is or is not possible, it makes sense to use all of Germany (whatever that means at the time) to look for majority constellations. 
-
-C. We should see if there is any way to remove the NA from child, maybe they can safely be recoded to zero? 
-
-
---- TO BE EXECUTED ---
-
-
 
 ## SETUP
 
-```{r, include = F}
-# optional fast way to clear environment
-rm(list = ls())
-```
-
-
-```{r setup, include=FALSE}
+```{r setup}
 
 library(pacman)
 
 pacman::p_load("tidyverse","knitr","haven","car","plyr","e1071","stargazer","lavaan","kableExtra","MASS","glm.predict","brant", "semTools", "tidylog", "countrycode", "Hmisc", "ineq")
 
-#remotes::install_github("DiogoFerrari/occupar")
-#remotes::install_github("pdparker/isco88conversion")
+remotes::install_github("DiogoFerrari/occupar")
+remotes::install_github("pdparker/isco88conversion")
 library(occupar, isco88conversion)
 
 # We don't want to see messages in the final document
-knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(message = F, warning = F)
 
 # worked up in /data/ISSP_prep.R
 
@@ -140,6 +83,7 @@ socin <- socin %>%
   mutate(
      incdiff = v33,
      inclarge = v32,
+     corrupt_top = v22,
      cntry = v5,
      year = v4,
      wave = v4,
@@ -1217,7 +1161,7 @@ socin <- socin %>%
 
 # Select relevant variables
 
-socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+socin <- dplyr::select(socin, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, corrupt_top, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 ```
 
@@ -1242,6 +1186,7 @@ nl87 <- nl87 %>%
      wave = 1987,
      incdiff = v49,
      inclarge = v48,
+     corrupt_top = NA,
      age = v82,
      ageC = ifelse(age > 75, 75, age),
      age = case_when(                 # trim at 75     
@@ -1349,7 +1294,7 @@ nl87 <- nl87 %>%
 # 
 #   
 # 
- nl87 <- dplyr::select(nl87, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+ nl87 <- dplyr::select(nl87, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, corrupt_top, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 # Ireland 1987
 
@@ -1363,6 +1308,7 @@ nl87 <- nl87 %>%
      wave = 1987,
      incdiff = v49,
      inclarge = v48,
+     corrupt_top = NA,
      age = v82,
      ageC = ifelse(age > 75, 75, age),
      age = case_when(                 # trim at 75     
@@ -1452,7 +1398,7 @@ nl87 <- nl87 %>%
 # 
 # 
 # 
- ie87 <- dplyr::select(ie87, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+ ie87 <- dplyr::select(ie87, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, corrupt_top, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
  
 
 
@@ -1469,6 +1415,7 @@ dk99 <- dk99 %>%
     wave = 1999,
     incdiff = v57,
     inclarge = v56,
+    corrupt_top = v9804,
     ageC = ifelse(age > 75, 75, age),
     age = case_when(                 # trim at 75     
        age %in% c(16:24) ~ 1,        # Changed to 7 categories
@@ -1539,7 +1486,7 @@ dk99 <- dk99 %>%
 
   
 
-dk99 <- dplyr::select(dk99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit,spisco88_2digit)
+dk99 <- dplyr::select(dk99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, corrupt_top, isco88, isco88_2digit, fisco88_2digit, misco88_2digit,spisco88_2digit)
 
 # Ireland 1999
 
@@ -1554,6 +1501,7 @@ ie99 <- ie99 %>%
     wave = 1999,
     incdiff = v35,
     inclarge = v34,
+    corrupt_top = v8,
     ageC = ifelse(age > 75, 75, age),
     age = case_when(                 # trim at 75     
        age %in% c(16:24) ~ 1,        # Changed to 7 categories
@@ -1616,7 +1564,7 @@ ie99 <- ie99 %>%
   )
 
 
-ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+ie99 <- dplyr::select(ie99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, corrupt_top, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 # Netherlands 
 nl09_lab <- lapply(nl09, attr, "label") 
@@ -1630,6 +1578,7 @@ nl09 <- nl09 %>%
     wave = 2009,
     incdiff = v33,
     inclarge = v32,
+    corrupt_top = v17,
     ageC = ifelse(age > 75, 75, age),
     age = case_when(                 # trim at 75     
        age %in% c(16:24) ~ 1,        # Changed to 7 categories
@@ -1696,7 +1645,7 @@ nl09 <- nl09 %>%
     spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
   )
 
-nl09 <- dplyr::select(nl09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+nl09 <- dplyr::select(nl09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, corrupt_top, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 # Canada 
 
@@ -1709,6 +1658,7 @@ ca09 <- ca09 %>%
     wave = 2009,
     incdiff = v33,
     inclarge = v32,
+    corrupt_top = v17,
     ageC = ifelse(age > 75, 75, age),
     age = case_when(                 # trim at 75     
        age %in% c(16:24) ~ 1,        # Changed to 7 categories
@@ -1771,7 +1721,7 @@ ca09 <- ca09 %>%
     spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
   )
 
-ca09 <- dplyr::select(ca09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+ca09 <- dplyr::select(ca09, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, corrupt_top, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 
 # Netherlands 1999
@@ -1784,6 +1734,7 @@ nl99 <- nl99 %>%
     wave = 1999,
     incdiff = v35,
     inclarge = v34,
+    corrupt_top = v8,
     ageC = case_when(
         (age>75) & (age < 99) ~ 75,
         age == 99 ~ NA_real_,
@@ -1854,7 +1805,7 @@ nl99 <- nl99 %>%
     spisco88_2digit = NA
   )
 
-nl99 <- dplyr::select(nl99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+nl99 <- dplyr::select(nl99, cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, corrupt_top, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 
 # Belgium 2009
@@ -1870,6 +1821,7 @@ be09 <- socin09 %>%
     wave = 2009,
     incdiff = v33,
     inclarge = v32,
+    corrupt_top = v17,
     ageC = case_when(
         (age > 75) & (age < 99) ~ 75,
         age == 99 ~ NA_real_,
@@ -1947,7 +1899,7 @@ be09 <- socin09 %>%
     m_isei = occupar::isco88toISEI92(misco88),
     spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
   ) %>% 
-  select(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+  select(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, corrupt_top, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 
 # Finland 2009
 fi09 <- socin09 %>%
@@ -1959,6 +1911,7 @@ fi09 <- socin09 %>%
     wave = 2009,
     incdiff = v33,
     inclarge = v32,
+    corrupt_top = v17,
     ageC = case_when(
         (age > 75) & (age < 99) ~ 75,
         age == 99 ~ NA_real_,
@@ -2036,7 +1989,7 @@ fi09 <- socin09 %>%
     m_isei = occupar::isco88toISEI92(misco88),
     spisco88_2digit = ifelse(!is.na(spisco88), trunc(spisco88/100), NA)
   ) %>% 
-  select(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
+  select(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, corrupt_top, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit)
 ```
 
 ### ISSP 2019
@@ -2048,6 +2001,7 @@ socin3 <- socin3 %>%
   mutate(
     incdiff = v22,
     inclarge = v21,
+    corrupt_top = NA,
     cntry = country,
     year = dateyr,
     wave = 2019,
@@ -2168,7 +2122,7 @@ socin3 <- socin3 %>%
 
 
 # Select relevant variables 
-socin3 <- dplyr::select(socin3,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit))
+socin3 <- dplyr::select(socin3,c(cntry, year, wave, age, ageC, female, educyrs, degree, child, married, rincZ, hincZ, rincO, isei, egp, egp6, f_egp, f_egp6, f_isei, m_egp, m_egp6, m_isei, union, sparent, wrkhrs, wrkst, incdiff, inclarge, corrupt_top, isco88, isco88_2digit, fisco88_2digit, misco88_2digit, spisco88_2digit))
 
 
 

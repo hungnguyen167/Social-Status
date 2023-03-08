@@ -57,7 +57,7 @@ df_macro <- readRDS(here::here("data", "df_macro.RDS"))
 
 ```{r macro_corrs}
 macro_corr <- df_macro %>% 
-  dplyr::select(gov_redist, incdiff_large, corr, 
+  dplyr::select(gov_redist, incdiff_large, corrupt_top, corr, 
          libZ, libZ_i, lib_redistZ, lib_redistZ_i, 
          noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, 
          gdp_pc_10k, socx, pct_fb_i, gini_disp) %>%
@@ -69,7 +69,18 @@ macro_corr[upper.tri(macro_corr)] <- ""
 write.csv(macro_corr, here::here("results","Tbl2.csv"), row.names = F)
 ```
 
-### All Plausible Models
+
+### Individual Level Models
+
+We want to model the relationship within countries only, to try and isolate the moderating effect of individual attitudes. Although it is likely, if not certain that context shapes attitudes and attitude formation processes, we 'force' all contextual factors to work through the individual's perception of corruption. 
+
+```{r ilevel}
+
+m00 <- lmer(gov_redist ~ female + educyrs + incdiff_large_w*corrupt_top_w + (1|cyear), data = df_na)
+```
+
+
+### All Plausible Country-Level Models
 
 #### Moderation models, for specification curve
 

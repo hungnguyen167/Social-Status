@@ -181,19 +181,23 @@ Where possible
 ```{r wrangle}
 # make a complete data frame
 df_na <- df_na %>%
+  mutate(corrupt_top = ifelse(corrupt_top > 5, NA, corrupt_top),
+         corrupt_top_r = -1*corrupt_top + 6) %>%
   group_by(iso3c) %>%
   # calculate the mean for each country
   mutate(incdiff_b = mean(incdiff, na.rm = T),
          inclarge_b = mean(inclarge, na.rm = T),
          reduce_b = mean(reduce, na.rm = T),
-         reduce_large_b = mean(reduce_large, na.rm = T)) %>%
+         reduce_large_b = mean(reduce_large, na.rm = T),
+         corrupt_top_b = mean(corrupt_top, na.rm = T)) %>%
   ungroup() %>%
   # calculate the mean-centered values by subtracting the means
   mutate(incdiff_w = incdiff - incdiff_b,
          inclarge_w = inclarge - inclarge_b,
          reduce_w = reduce - reduce_b,
          reduce_large_w = reduce_large - reduce_large_b,
-         democratic = regime)
+         democratic = regime,
+         corrupt_top_w = corrupt_top - corrupt_top_b)
 
 
 ```
@@ -234,7 +238,7 @@ df_na <- df_na %>%
 
 # create a macro-level dataset
 df_macro <- df_na %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, cpi, cpi_ii, liberal, liberal_i, liberal_redist, liberal_redist_i, confidence_gov, confidence_gov_i, democratic, filled_vdem_gdp_interpol, regime, gap_no_gov, gov_redist_agree, incdiff_large_agree, pct_sample_tertiary, pct_sample_65older, pct_fb_i) %>%
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, gini_disp, gini_mkt, socx, cpi, cpi_ii, liberal, liberal_i, liberal_redist, liberal_redist_i, corrupt_top, confidence_gov, confidence_gov_i, democratic, filled_vdem_gdp_interpol, regime, gap_no_gov, gov_redist_agree, incdiff_large_agree, pct_sample_tertiary, pct_sample_65older, pct_fb_i) %>%
   group_by(iso3c, wave) %>%
   summarise_all(mean, na.rm = T) %>%
   ungroup()
@@ -403,7 +407,7 @@ df_macro <- df_macro %>%
          noconf_govZ_hi = ifelse(!is.na(liberal_high_i), noconf_govZ, NA),
          gdp_lo = ifelse(!is.na(liberal_low_i), gdp_pc_10k, NA),
          gdp_hi = ifelse(!is.na(liberal_high_i), gdp_pc_10k, NA)) %>%
-  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_high_i, liberal_low_i, cpi_high, cpi_low, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, liberal_redist_high, liberal_redist_low, liberal_redist_high_i, liberal_redist_low_i, confidence_gov, confidence_gov_i, cpi, cpi_ii, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i, lib_redistZ, lib_redistZ_i, gap_no_gov, gov_redist_agree, incdiff_large_agree)
+  dplyr::select(iso3c, wave, gov_redist, incdiff_large, corr, gini_disp, gini_mkt, socx, gdp_pc_10k, pct_fb_i, liberal, liberal_i, liberal_high, liberal_low, liberal_high_i, liberal_low_i, cpi_high, cpi_low, corrupt_top, noconf_govZ_low, noconf_govZ_hi, gdp_lo, gdp_hi, gdp_di, liberal_redist, liberal_redist_i, liberal_redist_high, liberal_redist_low, liberal_redist_high_i, liberal_redist_low_i, confidence_gov, confidence_gov_i, cpi, cpi_ii, noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, libZ, libZ_i, lib_redistZ, lib_redistZ_i, gap_no_gov, gov_redist_agree, incdiff_large_agree)
 
 
 # create within and between values
