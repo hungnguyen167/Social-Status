@@ -16,9 +16,6 @@ pacman::p_load("tidyverse",
                "ggpubr", 
                "ragg", 
                "kableExtra", 
-               "lme4",
-               'rnaturalearth',
-               'sf', 
                "ggmap", 
                "countrycode")
 
@@ -200,7 +197,7 @@ botss <- df_tbl %>%
 ```{r tbl_statt_map}
 mid = 0.48
 
-agg_png(filename = here::here("results","statt_plot.png"), width = 1200, height = 1200, res = 144)
+agg_png(filename = here::here("results","Fig1.png"), width = 1200, height = 1200, res = 144)
 
 #new plot
 ggplot() + 
@@ -244,7 +241,7 @@ ggplot() +
 
 dev.off()
 
-knitr::include_graphics(here::here("results", "statt_plot.png"))
+knitr::include_graphics(here::here("results", "Fig1.png"))
 ```
 
 
@@ -254,10 +251,6 @@ knitr::include_graphics(here::here("results", "statt_plot.png"))
 
 This is not ideal but it is necessary to get ggarrange to plot all 5 waves in the legend because no single country has all five waves
 
-```{r reg_all, message = F, warning = F}
-m01 <- lm(gov_redist ~ incdiff_large, data = df_na) # the regression from the equation above
-summary(m01)
-```
 ### Pooled Part
 
 ```{r corall, message = F, warning = F}
@@ -349,7 +342,7 @@ assign(paste0("mmm",fitted_models$iso3c[j]), plot1)
 ```{r reg_each_plot, message = F, warning = F}
 # now gather all and plot with ggarrange
 
-agg_png(filename = here::here("results","multiplot.png"), res = 72, width = 1200, height = 1200)
+agg_png(filename = here::here("results","Fig2.png"), res = 72, width = 1200, height = 1200)
 ggarrange(mmmPOOLED, mmmAUS, mmmAUT, mmmBEL, mmmBGR, mmmCAN, mmmCHE, mmmCHL, 
 mmmCYP, mmmCZE, mmmDEU, mmmDNK, mmmESP, mmmFIN, mmmFRA, 
 mmmGBR, mmmHRV, mmmHUN, mmmIRL, mmmISR, mmmITA, mmmJPN, 
@@ -359,7 +352,7 @@ mmmRUS, mmmSVK, mmmSVN, mmmSWE, mmmTHA, mmmUSA, mmmZAF, common.legend = TRUE)
 dev.off()
 
 
-knitr::include_graphics(here::here("results","multiplot.png"))
+knitr::include_graphics(here::here("results","Fig2.png"))
 ```
 ## Fig 4 and 5. Main. Correlation of Redist Variables and Context Vars
 
@@ -477,6 +470,29 @@ Fig2.3 <- df_macro %>%
 
 ```
 
+### Individul-level corruption
+
+Using the ISSP's own question on corruption in political careers.
+
+```{r issp}
+df_macro <- df_macro %>%
+  mutate(corrupt_hi = ifelse(!is.na(gdp_hi), corrupt_top_r, NA),
+         corrupt_lo = ifelse(!is.na(gdp_lo), corrupt_top_r, NA))
+
+Fig2_micro <- df_macro %>%
+  ggplot() +
+    geom_text(aes(y = corr, x = corrupt_top_r, label = iso3c), color = "black", size = 3) +
+  geom_smooth(aes(y = corr, x = corrupt_top_r), method = 'lm', se = F, linetype = "dashed", color = "#B8DE29FF") +
+  geom_smooth(aes(y = corr, x = corrupt_hi), method = 'lm', se = F, color = "#20A387FF") +
+  geom_smooth(aes(y = corr, x = corrupt_lo), method = 'lm', se = F, color = "midnightblue") +
+      labs(x = "Corruption in Political Careers\nISSP Data\n ",
+       y = "",
+       ) +
+  theme_classic()
+
+```
+
+
 ### Plot GDP
 
 ```{r figx4}
@@ -512,9 +528,9 @@ knitr::include_graphics(here::here("results","Fig4.png"))
 ```
 
 ```{r fig3}
-agg_png(filename = here::here("results","Fig5.png"), res = 144, width = 1300, height = 800) +
+agg_png(filename = here::here("results","Fig5.png"), res = 144, width = 2000, height = 800) +
   theme(text = element_text())
-ggarrange(Fig2.2, Fig2.4, widths = c(1,1.15))
+ggarrange(Fig2.2, Fig2_micro, Fig2.4, widths = c(1.1, 1, 1), nrow=1)
 dev.off()
 
 knitr::include_graphics(here::here("results","Fig5.png"))
