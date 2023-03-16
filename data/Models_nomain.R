@@ -1,6 +1,6 @@
 # SETUP
 
-## Load libraries and data set. Install if packages do not exist!
+## Load libraries. Install if packages do not exist!
 
 library(lme4)
 library(modelsummary)
@@ -48,29 +48,31 @@ create_df_gof <- function(list_mod) {
 }
 
 
-create_bayes <- function(list_mod){
-  for(i in c(4:8)){
-    start_val <-2
-    while(start_val <= 88){
-      val <- start_val
-      while(val <= start_val+6){
-        mod_name <- paste0("M_",as.character(i), ".", val)
-        if(mod_name %in% list_mod){
-          mod <- get(mod_name)
-          f <- mod@call[["formula"]]
-          print(sprintf("Running a Bayesian simulation for %s", mod_name))
-          bayes_mod <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 48, chains = 2, seed = 123)
-          assign(paste0(mod_name, "_bayes"), bayes_mod, envir = .GlobalEnv)
-        }
-        val = val+2
-      }
-      start_val = start_val + 16
-    }
-    
-    
-  }
-  
-}
+# Decided against Bayesian estimation. Gains here are unclear.
+
+# create_bayes <- function(list_mod){
+#   for(i in c(4:8)){
+#     start_val <-2
+#     while(start_val <= 88){
+#       val <- start_val
+#       while(val <= start_val+6){
+#         mod_name <- paste0("M_",as.character(i), ".", val)
+#         if(mod_name %in% list_mod){
+#           mod <- get(mod_name)
+#           f <- mod@call[["formula"]]
+#           print(sprintf("Running a Bayesian simulation for %s", mod_name))
+#           bayes_mod <- brm(formula = f, data = df_na, warmup = 500, iter = 2000, cores = 48, chains = 2, seed = 123)
+#           assign(paste0(mod_name, "_bayes"), bayes_mod, envir = .GlobalEnv)
+#         }
+#         val = val+2
+#       }
+#       start_val = start_val + 16
+#     }
+#     
+#     
+#   }
+#   
+# }
 
 ########################################################################################################################
 ########################################################################################################################
@@ -82,8 +84,8 @@ create_bayes <- function(list_mod){
 ## With Country-Year only
 ### bare models
 dv <- "gov_redist_C"
-ivs <- c("noconf_govZ", "cpiZ", "libZ", "lib_redistZ", "noconf_govZ_i", 
-         "cpiZ_i", "libZ_i", "lib_redistZ_i")
+ivs <- c("noconf_govZ", "cpiZ", "noconf_govZ_i", 
+         "cpiZ_i", "corrupt_top_w", "gdp_pc_10k_C")
 ixs <- c("incdiff_large_C", "incdiff_large_w")
 cvs <- "(1|iso3c_wave)"
 create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_4.", start = 1, data = df_na)
@@ -282,13 +284,13 @@ create_mod(dv=dv, ivs=ivs, ixs=ixs, cvs = cvs, prefix = "M_8.", start = startval
 
 # Create a Bayesian simulation for each heuristic for each configuration (4*28 = 112 models in total). Consider running on the cloud as this might take days
 
-list_mod <- ls(pattern="^M\\_[0-9]\\.[0-9]{1,3}$")
-create_bayes(list_mod)
-
-
-
-length(list_mod) ## 448 models 08-Mar-22 
-length(ls(pattern="[0-9]_bayes$"))      ## 112 bayesian models (11-Mar-22)
-
-save(list=ls(pattern="^M\\_[0-9]\\.[0-9]{1,3}$"), file = here::here("data", "all_mods.RData"))
-save(list = ls(pattern="[0-9]_bayes$"), file = here::here("data","bayesian_mods.RData"))
+# list_mod <- ls(pattern="^M\\_[0-9]\\.[0-9]{1,3}$")
+# create_bayes(list_mod)
+# 
+# 
+# 
+# length(list_mod) ## 448 models 08-Mar-22 
+# length(ls(pattern="[0-9]_bayes$"))      ## 112 bayesian models (11-Mar-22)
+# 
+# save(list=ls(pattern="^M\\_[0-9]\\.[0-9]{1,3}$"), file = here::here("data", "all_mods.RData"))
+# save(list = ls(pattern="[0-9]_bayes$"), file = here::here("data","bayesian_mods.RData"))

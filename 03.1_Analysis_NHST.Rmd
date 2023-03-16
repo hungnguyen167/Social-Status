@@ -57,7 +57,7 @@ df_macro <- readRDS(here::here("data", "df_macro.RDS"))
 
 ```{r macro_corrs}
 macro_corr <- df_macro %>% 
-  dplyr::select(gov_redist, incdiff_large, corrupt_top, corr, 
+  dplyr::select(gov_redist, incdiff_large, corrupt_top_r, corr, 
          libZ, libZ_i, lib_redistZ, lib_redistZ_i, 
          noconf_govZ, noconf_govZ_i, cpiZ, cpiZ_i, 
          gdp_pc_10k, socx, pct_fb_i, gini_disp) %>%
@@ -76,11 +76,11 @@ We want to model the relationship within countries only, to try and isolate the 
 
 ```{r ilevel}
 
-m00 <- lmer(gov_redist ~ female + educyrs + incdiff_large_w*corrupt_top_w + (1|cyear), data = df_na)
+m00 <- lmer(gov_redist_C ~ female + educyrs + incdiff_large_w*corrupt_top_w + (1|cyear), data = df_na)
 ```
 
 
-### All Plausible Country-Level Models
+### All Plausible Models
 
 #### Moderation models, for specification curve
 
@@ -114,7 +114,7 @@ for (m in 1:length(model_list)) {
   
   temp <- as.data.frame(summary(get(model_names[m]))[["coefficients"]])
   
-  temp <- temp[grepl('cpiZ|noconf_govZ|libZ|lib_redistZ|incdiff_large', rownames(temp)), 1:2]
+  temp <- temp[grepl('cpiZ|noconf_govZ|libZ|corrupt_top|lib_redistZ|incdiff_large|gdp_pc_10k_C', rownames(temp)), 1:2]
   
   df_ame[m,"mod_b"] <- temp[grepl(":", rownames(temp)),1]
   df_ame[m, "mod_se"] <- temp[grepl(":", rownames(temp)),2]
@@ -130,9 +130,10 @@ for (m in 1:length(model_list)) {
 ```{r ameclean}
 df_ame <- df_ame %>%
   mutate(mod_var = ifelse(grepl("noconf_govZ", Model, fixed = T), "B_No_confidence", 
-                   ifelse(grepl("cpiZ", Model), "C_Corruption_percept",
-                   ifelse(grepl("libZ", Model), "A1_Liberal_values", "A2_Liberal_values"))),
-         mod_imputed = ifelse(grepl("_i", df_ame$Model), "Yes", "No"),
+                   ifelse(grepl("cpiZ", Model), "A2_Corruption_percept",
+                   ifelse(grepl("corrupt_top", Model), "A1_Corrupt_micro",
+         ifelse(grepl("gdp_pc_10k_C:", Model), "C_GDP", NA)))),
+         mod_imputed = ifelse(grepl("cpiZ_i|noconf_govZ_i", df_ame$Model), "Yes", "No"),
          ri_cyear = ifelse(grepl("iso3c_wave", df_ame$Model), "Yes", "No"),
          ri_country = ifelse(grepl("iso3c)", df_ame$Model), "Yes", "No"),
          estimation = ifelse(grepl("lmer", df_ame$Model), "GLM", "OLS"),
@@ -152,65 +153,65 @@ saveRDS(df_ame, here::here("data", "df_ame.RDS"))
 
 ```
 
-Get Bayes specifications
+<!-- Get Bayes specifications -->
 
-The Bayes models were produced by the file [Models_nomain.R](../data/Models_nomain.R) and saved as [bayesian_mods.RData](../data/bayesian_mods.RData) as they consume a considerable amount of time to run depending on processor. If the user sucessfully passed the above code and produced df_ame, then they also produced Bayes models. Here we simply load the models and create a dataframe of those results, again selecting if this already exists or not.
-```{r bayesame}
+<!-- The Bayes models were produced by the file [Models_nomain.R](../data/Models_nomain.R) and saved as [bayesian_mods.RData](../data/bayesian_mods.RData) as they consume a considerable amount of time to run depending on processor. If the user sucessfully passed the above code and produced df_ame, then they also produced Bayes models. Here we simply load the models and create a dataframe of those results, again selecting if this already exists or not. -->
+<!-- ```{r bayesame} -->
 
-if (file.exists(here::here("data", "df_ame_bayes.RDS"))) { 
-  df_ame_bayes <- readRDS(here::here("data", "df_ame_bayes.RDS"))
+<!-- if (file.exists(here::here("data", "df_ame_bayes.RDS"))) {  -->
+<!--   df_ame_bayes <- readRDS(here::here("data", "df_ame_bayes.RDS")) -->
 
-    } else 
- { 
-   load(here::here("data", "bayesian_mods.RData"))
-   
-model_list_bayes <- ls(pattern="M_b")
+<!--     } else  -->
+<!--  {  -->
+<!--    load(here::here("data", "bayesian_mods.RData")) -->
 
-df_ame_bayes <- as.data.frame(matrix(nrow = length(model_list_bayes), ncol = 3))
+<!-- model_list_bayes <- ls(pattern="M_b") -->
 
-colnames(df_ame_bayes) <- c("Model", "mod_b", "mod_se")
-count <- 1
-for (m in model_list_bayes) {
-  
-  #mn <- as.name(model_names[m])
-  model <- get(m)
-  
-  f <- model[["formula"]][["formula"]]
-  df_ame_bayes[count,"Model"] <- paste(as.character(f[2]), as.character(f[1]), as.character(f[3]))
-  # Hung, can you get the coefficients here? They are not named in the summary object as far as I can tell... 
-  temp <- as.data.frame(fixef(model))
-  
-  temp <- temp[grepl('cpiZ|noconf_govZ|libZ|lib_redistZ|incdiff_large', rownames(temp)), 1:2]
-  
-  df_ame_bayes[count,"mod_b"] <- temp[grepl(":", rownames(temp)),1]
-  df_ame_bayes[count, "mod_se"] <- temp[grepl(":", rownames(temp)),2]
-  count <- count + 1
-}
+<!-- df_ame_bayes <- as.data.frame(matrix(nrow = length(model_list_bayes), ncol = 3)) -->
 
-df_ame_bayes <- df_ame_bayes %>%
-  mutate(mod_var = ifelse(grepl("noconf_govZ", Model, fixed = T), "B_No_confidence", 
-                   ifelse(grepl("cpiZ", Model), "C_Corruption_percept",
-                   ifelse(grepl("libZ", Model), "A1_Liberal_values", "A2_Liberal_values"))),
-         mod_imputed = ifelse(grepl("_i", df_ame_bayes$Model), "Yes", "No"),
-         ri_cyear = ifelse(grepl("iso3c_wave", df_ame_bayes$Model), "Yes", "No"),
-         ri_country = ifelse(grepl("iso3c)", df_ame_bayes$Model), "Yes", "No"),
-         estimation = "Bayes",
-         control_gdp = ifelse(grepl("gdp", df_ame_bayes$Model), "Yes", "No"),
-         control_gini = ifelse(grepl("gini", df_ame_bayes$Model), "Yes", "No"),
-         control_socx = ifelse(grepl("socx", df_ame_bayes$Model), "Yes", "No"),
-         control_fb = ifelse(grepl("pct_fb", df_ame_bayes$Model), "Yes", "No"),
-         i_level_control = ifelse(grepl("female", df_ame_bayes$Model), "Yes", "No"),
-         gdp_m_interaction = ifelse(grepl(":gdp_pc_10k_C", df_ame_bayes$Model), "Yes", "No")
-         )
+<!-- colnames(df_ame_bayes) <- c("Model", "mod_b", "mod_se") -->
+<!-- count <- 1 -->
+<!-- for (m in model_list_bayes) { -->
 
-df_ame_bayes <- df_ame_bayes %>%
-  arrange(mod_b) %>%
-  mutate(count = row_number())
+<!--   #mn <- as.name(model_names[m]) -->
+<!--   model <- get(m) -->
 
-saveRDS(df_ame_bayes, here::here("data", "df_ame_bayes.RDS"))
-}
+<!--   f <- model[["formula"]][["formula"]] -->
+<!--   df_ame_bayes[count,"Model"] <- paste(as.character(f[2]), as.character(f[1]), as.character(f[3])) -->
+<!--   # Hung, can you get the coefficients here? They are not named in the summary object as far as I can tell...  -->
+<!--   temp <- as.data.frame(fixef(model)) -->
 
-```
+<!--   temp <- temp[grepl('cpiZ|noconf_govZ|libZ|lib_redistZ|incdiff_large', rownames(temp)), 1:2] -->
+
+<!--   df_ame_bayes[count,"mod_b"] <- temp[grepl(":", rownames(temp)),1] -->
+<!--   df_ame_bayes[count, "mod_se"] <- temp[grepl(":", rownames(temp)),2] -->
+<!--   count <- count + 1 -->
+<!-- } -->
+
+<!-- df_ame_bayes <- df_ame_bayes %>% -->
+<!--   mutate(mod_var = ifelse(grepl("noconf_govZ", Model, fixed = T), "B_No_confidence",  -->
+<!--                    ifelse(grepl("cpiZ", Model), "C_Corruption_percept", -->
+<!--                    ifelse(grepl("libZ", Model), "A1_Liberal_values", "A2_Liberal_values"))), -->
+<!--          mod_imputed = ifelse(grepl("_i", df_ame_bayes$Model), "Yes", "No"), -->
+<!--          ri_cyear = ifelse(grepl("iso3c_wave", df_ame_bayes$Model), "Yes", "No"), -->
+<!--          ri_country = ifelse(grepl("iso3c)", df_ame_bayes$Model), "Yes", "No"), -->
+<!--          estimation = "Bayes", -->
+<!--          control_gdp = ifelse(grepl("gdp", df_ame_bayes$Model), "Yes", "No"), -->
+<!--          control_gini = ifelse(grepl("gini", df_ame_bayes$Model), "Yes", "No"), -->
+<!--          control_socx = ifelse(grepl("socx", df_ame_bayes$Model), "Yes", "No"), -->
+<!--          control_fb = ifelse(grepl("pct_fb", df_ame_bayes$Model), "Yes", "No"), -->
+<!--          i_level_control = ifelse(grepl("female", df_ame_bayes$Model), "Yes", "No"), -->
+<!--          gdp_m_interaction = ifelse(grepl(":gdp_pc_10k_C", df_ame_bayes$Model), "Yes", "No") -->
+<!--          ) -->
+
+<!-- df_ame_bayes <- df_ame_bayes %>% -->
+<!--   arrange(mod_b) %>% -->
+<!--   mutate(count = row_number()) -->
+
+<!-- saveRDS(df_ame_bayes, here::here("data", "df_ame_bayes.RDS")) -->
+<!-- } -->
+
+<!-- ``` -->
 
 
 

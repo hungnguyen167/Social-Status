@@ -354,6 +354,72 @@ dev.off()
 
 knitr::include_graphics(here::here("results","Fig2.png"))
 ```
+
+### New Figure Corrupt_micro
+
+```{r reg_each}
+# get all intercepts and slopes
+fitted_models = df_na %>% # have to use equal sign here because it is a function
+  subset(!is.na(gov_redist) & !is.na(corrupt_top_r)) %>% # remove missing cases
+  group_by(iso3c) %>% # group by country
+  do(model = lm(gov_redist ~ corrupt_top_r, data = .)) #run regression for each country
+
+# plot all at once
+
+# now loop to create a plot for each intercept and coefficient from each country's regression
+
+for (j in 1:length(unique(fitted_models$iso3c))){
+  dfx <- df_na %>% # subset data to only that country and remove missing
+    subset(iso3c == fitted_models$iso3c[j]) %>% # this is just a shortcut to cycle through each country that has relevant variables
+    subset(!is.na(gov_redist) & !is.na(corrupt_top_r))
+  
+  plot1 <- ggplot(data = dfx, aes(x = corrupt_top_r, y = gov_redist, 
+                                  #group = wave, 
+                                  color=as.character(wave))) +
+           geom_smooth(method = 'lm', se=T) +
+           xlim(1,5) +
+           ylim(1,5) +
+    scale_color_manual( breaks = c("1987", "1992", "1999", "2009", "2019"),
+                        values = c("#B8DE29FF", "#29AF7FFF", "#2D708EFF", "#453781FF", "#440154FF")) +
+           #annotate(geom = "text", x = 2.5, y = 1.6, label = paste0("y = ",
+            #                                                  round(fitted_models$model[[j]]$coefficients[1],1),
+             #                                                 " + ",
+              #                                                round(fitted_models$model[[j]]$coefficients[2],2),"x"), hjust = 0,) +
+           annotate(geom = "text", x = 2.5, y = 1.3, label = paste("Average\nR^2 = ", round(cor(dfx$gov_redist, dfx$incdiff_large)^2,2)),
+                      hjust = 0,
+                      ) +
+           #stat_cor(label.x = 2.5, label.y = 1.3, hjust = 0, p.accuracy = 0.001) +
+           labs(title = paste0(fitted_models$iso3c[j]), color='Wave') +
+           theme_classic2() +
+        theme(axis.title = element_blank())
+             #theme(axis.title = element_blank(), legend.key.size = unit(2, 'mm'), legend.direction = "horizontal",legend.position="top", legend.justification="right", legend.margin=margin(0,0,0,0))
+    
+ 
+assign(paste0("rrr",fitted_models$iso3c[j]), plot1)
+  
+}
+         
+
+```
+
+### Plot New Corr of Corrupt_micro
+
+```{r reg_each_plot, message = F, warning = F}
+# now gather all and plot with ggarrange
+
+agg_png(filename = here::here("results","Fig2_micro.png"), res = 72, width = 1200, height = 1200)
+ggarrange(rrrAUS, rrrAUT, rrrBEL, rrrBGR, rrrCAN, rrrCHE, rrrCHL, 
+rrrCYP, rrrCZE, rrrDEU, rrrDNK, rrrESP, rrrFIN, rrrFRA, 
+rrrGBR, rrrHUN, rrrIRL, rrrISR, rrrITA, rrrJPN, 
+rrrLVA, rrrNLD, rrrNOR, rrrNZL, rrrPHL, rrrPOL, rrrPRT, 
+rrrRUS, rrrSVK, rrrSVN, rrrSWE, rrrUSA, common.legend = TRUE) 
+  
+dev.off()
+
+
+knitr::include_graphics(here::here("results","Fig2_micro.png"))
+```
+
 ## Fig 4 and 5. Main. Correlation of Redist Variables and Context Vars
 
 After observing the variation in the correlation between inclarge and incdiff by country. We suspect that attitudes toward the role of government are in play. We suspect these come from institutionalized norms. 
@@ -520,8 +586,10 @@ Fig2.4 <- df_macro %>%
 ### Plot Arranged Figure
 
 ```{r fig2}
-agg_png(filename = here::here("results","Fig4.png"), res = 144, width = 2000, height = 800)
-ggarrange(Fig2.1, Fig2.1_redist, Fig2.3, widths = c(1.1,1,1.1), nrow = 1)
+agg_png(filename = here::here("results","Fig4.png"), res = 144, width = 1250, height = 1250)
+ggarrange(Fig2.2, Fig2_micro, Fig2.3, Fig2.4, 
+          widths = c(1,1,1,1), 
+          nrow = 2, ncol=2)
 dev.off()
 
 knitr::include_graphics(here::here("results","Fig4.png"))
@@ -530,7 +598,7 @@ knitr::include_graphics(here::here("results","Fig4.png"))
 ```{r fig3}
 agg_png(filename = here::here("results","Fig5.png"), res = 144, width = 2000, height = 800) +
   theme(text = element_text())
-ggarrange(Fig2.2, Fig2_micro, Fig2.4, widths = c(1.1, 1, 1), nrow=1)
+ggarrange(Fig2.2, Fig2_micro, widths = c(1.1, 1, 1), nrow=1)
 dev.off()
 
 knitr::include_graphics(here::here("results","Fig5.png"))
