@@ -1,12 +1,4 @@
-# SETUP
 
-## Load libraries. Install if packages do not exist!
-
-library(lme4)
-library(modelsummary)
-library(brms)
-
-## Functions
 
 ### A function to generate models
 
