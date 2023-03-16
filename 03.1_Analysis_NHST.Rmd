@@ -26,10 +26,6 @@ $~$
 
 
 
-```{r, include = F}
-rm(list = ls())
-```
-
 
 ```{r setup, include=FALSE}
 library(pacman)
@@ -39,7 +35,8 @@ pacman::p_load("tidyverse", "ggpubr",
                "sjPlot",
                "arm",
                "margins",
-               "ggeffects")
+               "ggeffects",
+               "modelsummary")
 
 knitr::opts_chunk$set(message = F, warning = F)
 
