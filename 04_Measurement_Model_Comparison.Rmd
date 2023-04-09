@@ -1,0 +1,60 @@
+---
+title: "03 Measurement Model Comparison"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+1. This file complements Fig 2 (cross country-wave correlation comparison), by testing the model fit indices for a constrained model where the correlation is fixed across all country waves (M1), and a free model where it varies (M2).
+
+2. This file also compares measurement of liberal values as E037 ('liberal_redist') and/or E036 ('liberal') (gov more responsibility v. individuals, and private ownership v. gov ownership of business be increased)
+
+```{r setup}
+pacman::p_load("lavaan",
+               "tidyverse")
+
+df_na <- readRDS(here::here("data", "df_na.RDS"))
+
+```
+
+# ISSP - Measurement Models
+
+## Models - Testing Invariance
+```{r models_issp}
+
+#Basic model
+M1 <- 'gov_redist ~ incdiff_large'
+#Fixed coefficients
+M2 <- 'gov_redist ~ a*incdiff_large'
+
+#Free loading by group
+M1_fit <- sem(M1,
+              data = df_na,
+              group = "iso3c_wave")
+
+#Fixed loading
+M2_fit <- sem(M2,
+              data = df_na,
+              group = "iso3c_wave")
+
+```
+## Fit Comparison
+
+Here the significant chi-sq/df test suggests that M2 fits the observed covariance matrix far worse than M1. In fairness, M1 is justidentified so it fits 'perfectly'.
+
+```{r fit}
+lavTestLRT(M1_fit, M2_fit)
+
+# fitMeasures(M1_fit)
+# fitMeasures(M1_fit)
+```
+
+## Mod Indices
+
+Looking at the modification indices by group suggests that even if we freed the association in 3 groups, the chi-square value would only go down by 150 points or so (the highest groups have just over 50 as their modification indices, which means that is how much the chi-square would be reduced if this parameter were freed). Thus, even with a less strict model it will still fit the data significantly worse. There is no empirical evidence whatsoever that these two questions should be used to measure a single latent variable.
+
+```{r modi}
+modindices(M2_fit, minimum.value = 40)
+```
+

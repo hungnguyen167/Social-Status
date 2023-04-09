@@ -1,0 +1,192 @@
+---
+title: "04. Spec Curve"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+
+
+```{r setup, include=FALSE}
+library(pacman)
+pacman::p_load("tidyverse", "ggpubr", 
+               "ragg", "kableExtra", 
+               "lme4", 
+               "sjPlot",
+               "arm",
+               "margins",
+               "ggeffects")
+
+knitr::opts_chunk$set(message = F, warning = F)
+
+```
+
+## Load AMEs
+
+```{r load dfs}
+#df <- readRDS(here::here("data","df.RDS"))
+df_ame <- readRDS(here::here("data", "df_ame.RDS"))
+#df_ame_bayes <- readRDS(here::here("data", "df_ame_bayes.RDS"))
+#df_macro <- readRDS(here::here("data", "df_macro.RDS"))
+
+```
+
+
+## Spec Curve 
+
+
+```{r spec_by_mod_prep}
+df_ame_mod <- df_ame %>%
+  mutate(mod_b_A1 = ifelse(mod_var == "A1_Corrupt_micro", mod_b, NA),
+         mod_b_A2 = ifelse(mod_var == "A2_Corruption_percept", mod_b, NA),
+         mod_b_B = ifelse(mod_var == "B_No_confidence", mod_b, NA),
+         mod_b_C = ifelse(mod_var == "C_GDP", mod_b, NA)) %>%
+  subset(mod_var != "A1_Corrupt_micro") %>%
+  arrange(mod_var, mod_b) %>%
+  mutate(count = row_number())
+
+# In the end drop corrupt micro, it is too likely related to individuals not governments
+
+
+```
+
+
+```{r spec_by_mod_plot}
+
+mcount2 = as.numeric(length(df_ame_mod$mod_b[df_ame_mod$mod_var == "A2_Corruption_percept"]))
+mcount3 = as.numeric(length(df_ame_mod$mod_b[df_ame_mod$mod_var == "B_No_confidence"]))
+mcount4 = as.numeric(length(df_ame_mod$mod_b[df_ame_mod$mod_var == "C_GDP"]))
+
+agg_png(here::here("results","Fig4.png"), height = 600, width = 1200, res = 144)
+
+
+fig4 <- df_ame_mod %>%
+  ggplot() +
+  #geom_errorbar(aes(ymin = lb, ymax = ub), color = "thistle1") +
+  geom_errorbar(aes(x = count, ymin = mod_b-(2.576*mod_se), ymax = mod_b+(2.576*mod_se)), color = "grey", width = 0) +
+  geom_point(aes(x = count, y = mod_b_A2), color = "#28ae80", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_point(aes(x = count, y = mod_b_B), color = "#2c728e", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_point(aes(x = count, y = mod_b_C), color = "#453781FF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_vline(xintercept = mcount2, color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = mcount2+mcount3, color = "grey", linetype = "dashed") +
+  geom_hline(yintercept = 0, color = "grey") +
+  labs(#color = "Effect at 95% CI", 
+    x = "", 
+    y = "Moderation Coefficient\n(XY-standardized)") +
+  ylim(-0.12,0.03) +
+  #xlim(0,338) +
+  scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
+  annotate(geom = "text", x = mcount2/2, y = 0.02, label = "Corruption perceptions\n(CPI)", color = "#28ae80", size = 3.5) +
+  annotate(geom = "text", x = mcount2+(mcount3/2), y = 0.02, label = "Lack of Trust\n in Government (IVS)", color = "#2c728e", size = 3.5) +
+  annotate(geom = "text", x = mcount2+mcount3+(mcount4/2), y = 0.02, label = "Lower Economic\nPerformance\n(OECD/GDPpc)", color = "#453781FF", size = 3.5) +
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank()
+  )
+fig4
+dev.off()
+
+knitr::include_graphics(here::here("results","Fig4.png"))
+```
+
+```{r fig4_bottom}
+ivlabs <- c("GDP\n  interaction", "GDP\ncontrol", "Gini\ncontrol", "SocX\ncontrol", "% F.Born\ncontrol", "Imputed\nmoderator")
+
+fig4_bot <- ggplot(df_ame_mod) +
+  geom_vline(xintercept = mcount2, color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = mcount2+mcount3, color = "grey", linetype = "dashed") +
+  geom_tile(aes(x = count, y = 1, fill = factor(gdp_m_interaction)), height = 0.133, width = 0.3) +
+  geom_tile(aes(x = count, y = 0.8, fill = factor(control_gdp)), height = 0.133, width = 0.3) +
+  geom_tile(aes(x = count, y = 0.6, fill = factor(control_gini)), height = 0.133, width = 0.3) +
+  geom_tile(aes(x = count, y = 0.4, fill = factor(control_socx)), height = 0.133, width = 0.3) +
+  geom_tile(aes(x = count, y = 0.2, fill = factor(control_fb)), height = 0.133, width = 0.3) +
+  geom_tile(aes(x = count, y = 0, fill = factor(mod_imputed)), height = 0.133, width = 0.3) +
+  scale_y_continuous(breaks = c(1,0.8,0.6,0.4,0.2,0), labels=ivlabs) +
+  scale_fill_manual(values = c("white","darkblue")) +
+    theme_classic() +
+  scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
+  xlab("Models Ordered by Government Heuristic\nand Moderation Coefficient (Y11)") +
+  theme(
+    legend.position = "none",
+    axis.title.y = element_blank())
+fig4_bot
+```
+
+```{r}
+agg_png(here::here("results","Fig6.png"), height = 800, width = 1200, res = 144)
+ggarrange(fig4,fig4_bot, heights = c(0.8,1), ncol = 1)
+dev.off()
+
+knitr::include_graphics(here::here("results", "Fig6.png"))
+```
+### Bayes spec curve
+
+```{r bayes}
+mcount = length(df_ame_mod[,1])/4 # counter to make vertical bars
+
+#agg_png(here::here("results","Fig4.png"), height = 600, width = 1200, res = 144)
+fig4 <- df_ame_mod %>%
+  ggplot() +
+  #geom_errorbar(aes(ymin = lb, ymax = ub), color = "thistle1") +
+  geom_errorbar(aes(x = count, ymin = mod_b-(2.576*mod_se), ymax = mod_b+(2.576*mod_se)), color = "grey", width = 0) +
+  geom_point(aes(x = count, y = mod_b_lib), color = "#73D055FF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_point(aes(x = count, y = mod_b_lib2), color = "#73D055FF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_point(aes(x = count, y = mod_b_trst), color = "#287D8EFF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_point(aes(x = count, y = mod_b_cpi), color = "#453781FF", 
+             #shape = "|", 
+             shape = 16,
+             size = 2, show.legend =F) +
+  geom_vline(xintercept = mcount, color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = (2*mcount), color = "grey", linetype = "dashed") +
+  geom_vline(xintercept = (3*mcount), color = "grey", linetype = "dashed") +
+  geom_hline(yintercept = 0, color = "grey") +
+  labs(#color = "Effect at 95% CI", 
+    x = "", 
+    y = "Moderation Coefficient\n(XY-standardized)") +
+  ylim(-0.12,0.14) +
+  #xlim(0,338) +
+  scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
+  annotate(geom = "text", x = mcount/2, y = 0.12, label = "Liberal Values I\ngov v private\nbusinesses", color = "#73D055FF", size = 3) +
+  annotate(geom = "text", x = mcount+(mcount/2), y = 0.12, label = "Liberal Values II\ngov v individual\nresponsible", color = "#73D055FF", size = 3) +
+  annotate(geom = "text", x = 2*mcount+(mcount/2), y = 0.12, label = "Lack of Trust\n in Government\n ", color = "#287D8EFF", size = 3) +
+  annotate(geom = "text", x = 3*mcount+(mcount/2), y = 0.12, label = "Corruption Perceptions\n \n ", color = "#453781FF", size = 3) +
+  annotate(geom = "text", x = mcount/2, y = -0.12, label = "high abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  annotate(geom = "text", x = mcount+(mcount/2), y = -0.12, label = "high abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  annotate(geom = "text", x = 2*mcount+(mcount/2), y = -0.12, label = "medium abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  annotate(geom = "text", x = 3*mcount+(mcount/2), y = -0.12, label = "low abstraction", color = "grey50", size = 2.2, fontface = 'italic') +
+  theme_classic() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank()
+  )
+
+#dev.off()
+
+#knitr::include_graphics(here::here("results","Fig4.png"))
+```
+
+Colophon
+
+```{r colophon}
+sessionInfo()
+```
