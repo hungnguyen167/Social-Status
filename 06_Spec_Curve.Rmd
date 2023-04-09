@@ -155,7 +155,7 @@ fig4 <- df_ame_mod %>%
   geom_point(aes(x = count, y = mod_b_cpi), color = "#453781FF", 
              #shape = "|", 
              shape = 16,
-             size = 2, show.legend =F) +
+             size = 2, show.legend =F) + 
   geom_vline(xintercept = mcount, color = "grey", linetype = "dashed") +
   geom_vline(xintercept = (2*mcount), color = "grey", linetype = "dashed") +
   geom_vline(xintercept = (3*mcount), color = "grey", linetype = "dashed") +

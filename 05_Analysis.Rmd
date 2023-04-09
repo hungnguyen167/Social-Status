@@ -144,7 +144,9 @@ saveRDS(df_ame, here::here("data", "df_ame.RDS"))
 ## Percentage of Agree
 
 Here we compare our heuristics with the percentage of those who do not agree the government should redistribute out of those who agree inequality is too high (the 'inconsistent'
-attitude individuals)
+attitude individuals). We also compare them based on the correlation because the inconsistent too much inequality perceivers do not pattern by two of three heuristics.
+
+  
 
 ### Setup Data
 
@@ -163,25 +165,22 @@ df_tbl <- df_tbl %>%
 ```
 
 
-### Plot Figs
+### Figure 5
+
 
 #### CPI
-```{r cpip}
-df_tbl %>%
+
+##### Inconsistent
+
+```{r cpi_inc}
+p1 <- df_tbl %>%
   ggplot(aes(cpiZ_i, gap_no_gov)) +
-  geom_text_repel(aes(label = clabs)) +
-  geom_smooth(method = lm) +
-  labs(x = "Worse Economic Performance (GDPpc)",
+  geom_text_repel(aes(label = clabs), size = 3) +
+  geom_smooth(method = lm, color = "#73D055FF") +
+  labs(x = "",
        y = "% Inconsistent Attitudes\nDo not agree with gov redistribution") +
   theme_classic()
 
-df_tbl %>%
-  ggplot(aes(cpiZ_i, corr)) +
-  geom_text_repel(aes(label = clabs)) +
-  geom_smooth(method = lm) +
-  labs(x = "Worse Economic Performance (GDPpc)",
-       y = "% Inconsistent Attitudes\nDo not agree with gov redistribution") +
-  theme_classic()
 
 # df_tbl %>%
 #   ggplot(aes(cpiZ_i, gap_no_gov_opposite)) +
@@ -190,14 +189,31 @@ df_tbl %>%
   
 ```
 
+##### Correlation
+
+```{r cpi_corr}
+p4 <- df_tbl %>%
+  ggplot(aes(cpiZ_i, corr)) +
+  geom_text_repel(aes(label = clabs), size = 3) +
+  geom_smooth(method = lm, color = "#73D055FF") +
+  labs(x = "Corruption Perceptions Index",
+       y = "Correlation of Percieved Inequality\nand Support for Redistribution") +
+  theme_classic()
+```
+
+
+
 #### No Trust
-```{r trust}
-df_tbl %>%
+
+##### Inconsistent
+
+```{r trust_inc}
+p2 <- df_tbl %>%
   ggplot(aes(noconf_govZ_i, gap_no_gov)) +
-  geom_text_repel(aes(label = clabs)) +
-  geom_smooth(method = lm) +
-  labs(x = "Lack of Trust in Government",
-       y = "% Inconsistent Attitudes\nDo not agree with gov redistribution") +
+  geom_text_repel(aes(label = clabs), size = 3) +
+  geom_smooth(method = lm, color = "#287D8EFF") +
+  labs(x = "",
+       y = "") +
   theme_classic()
 
 # df_tbl %>%
@@ -206,14 +222,28 @@ df_tbl %>%
 #   geom_smooth(method = lm)
 ```
 
+##### Correlation
+
+```{r trust_corr}
+p5 <- df_tbl %>%
+  ggplot(aes(noconf_govZ_i, corr)) +
+  geom_text_repel(aes(label = clabs), size = 3) +
+  geom_smooth(method = lm, color = "#287D8EFF") +
+  labs(x = "Lack of Trust in Government",
+       y = "") +
+  theme_classic()
+```
+
 #### GDP
-```{r gdp}
-df_tbl %>%
+
+##### Inconsistent
+```{r gdp_inc}
+p3 <- df_tbl %>%
   ggplot(aes(gdp_pc_10k, gap_no_gov)) +
-  geom_text_repel(aes(label = clabs)) +
-  geom_smooth(method = lm) +
-  labs(x = "Worse Economic Performance (GDPpc)",
-       y = "% Inconsistent Attitudes\nDo not agree with gov redistribution") +
+  geom_text_repel(aes(label = clabs), size = 3) +
+  geom_smooth(method = lm, color = "#453781FF") +
+  labs(x = "",
+       y = "") +
   theme_classic()
 
 # df_tbl %>%
@@ -221,6 +251,30 @@ df_tbl %>%
 #   geom_text_repel(aes(label = clabs)) +
 #   geom_smooth(method = lm)
 ```
+##### Correlation
+
+```{r gdp_corr}
+p6 <- df_tbl %>%
+  ggplot(aes(gdp_pc_10k, corr)) +
+  geom_text_repel(aes(label = clabs), size = 3) +
+  geom_smooth(method = lm, color = "#453781FF") +
+  labs(x = "Worse Economic Performance (GDPpc)",
+       y = "") +
+  theme_classic()
+```
+
+#### Arrange
+
+```{r 6way}
+
+ggarrange(p1,p2,p3,p4,p5,p6, nrow = 2, ncol = 3, 
+          width = c(1.1,1,1,1.1,1,1), 
+          height = c(1,1,1,1.1,1.1,1.1)) %>%
+  ggexport(here::here("results", "Fig5.png"), res = 144, width = 1750, height = 1100)
+
+knitr::include_graphics(here::here("results", "Fig5.png"))
+```
+
 ## References
 
 ```{r cite}
