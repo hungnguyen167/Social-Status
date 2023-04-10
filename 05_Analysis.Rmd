@@ -5,17 +5,12 @@ output:
     df_print: paged
 ---
 
-TO DO:
-
-Nate - get newer measure of socx from OECD, other macro-level variables (GDP in particular)
-
-
 ##### ISSP, Social Inequality, Cumulation (1987, 1992, 1999, 2009 & 2019)
 
 $~$
 $~$
 
-#### **Nate Breznau, Lisa Heukamp, Hung H.V. Nguyen, Tom Knuf, Arne Köller, Sören Goldenstein**
+#### **Nate Breznau, Lisa Heukamp, Hung H.V. Nguyen, Tom Knuf**
 #### **University of Bremen**
 
 _____________________________________________________________________________
@@ -268,9 +263,9 @@ p6 <- df_tbl %>%
 ```{r 6way}
 
 ggarrange(p1,p2,p3,p4,p5,p6, nrow = 2, ncol = 3, 
-          width = c(1.1,1,1,1.1,1,1), 
-          height = c(1,1,1,1.1,1.1,1.1)) %>%
-  ggexport(here::here("results", "Fig5.png"), res = 144, width = 1750, height = 1100)
+          widths = c(1.05,1,1,1.05,1,1), 
+          heights = c(1,1,1,1.1,1.1,1.1)) %>%
+  ggexport(filename = here::here("results", "Fig5.png"), res = 144, width = 1750, height = 1100)
 
 knitr::include_graphics(here::here("results", "Fig5.png"))
 ```

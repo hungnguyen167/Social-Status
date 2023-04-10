@@ -298,7 +298,7 @@ Lets look at the association in all 34 countries now.
 
 ### Prep Data, Country Part
 
-```{r reg_each}
+```{r reg_eacha}
 # get all intercepts and slopes
 fitted_models = df_na %>% # have to use equal sign here because it is a function
   subset(!is.na(gov_redist) & !is.na(incdiff_large)) %>% # remove missing cases
@@ -345,7 +345,7 @@ assign(paste0("mmm",fitted_models$iso3c[j]), plot1)
 
 ### Plot F2
 
-```{r reg_each_plot, message = F, warning = F}
+```{r reg_each_plota, message = F, warning = F}
 # now gather all and plot with ggarrange
 
 agg_png(filename = here::here("results","Fig2.png"), res = 72, width = 1200, height = 1200)
@@ -437,7 +437,7 @@ Hypothesis: In countries where the government does less redistribution or has a 
 
 ### Plot Liberal Business Ownership Corr (Liberal Values I)
 
-```{r figx2}
+```{r figx2a}
 #agg_png(here::here("results","Fig2.png"), res = 144, height = 800, width = 1000)
 Fig2.1 <- 
   df_macro %>%
@@ -499,7 +499,7 @@ Fig2.1_redist <-
 
 ### Plot Corrupt / Corr
 
-```{r figx3}
+```{r figx3a}
 #agg_png(here::here("results","Fig3.png"), res = 144, height = 800, width = 1000)
 Fig2.2 <- df_macro %>%
   ggplot() +
