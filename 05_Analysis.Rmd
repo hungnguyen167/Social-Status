@@ -1,5 +1,5 @@
 ---
-title: "Analysis NHST"
+title: "05 Analysis"
 output:
   html_document:
     df_print: paged
@@ -7,16 +7,8 @@ output:
 
 ##### ISSP, Social Inequality, Cumulation (1987, 1992, 1999, 2009 & 2019)
 
-$~$
-$~$
 
-#### **Nate Breznau, Lisa Heukamp, Hung H.V. Nguyen, Tom Knuf**
-#### **University of Bremen**
 
-_____________________________________________________________________________
-
-$~$
-$~$
 
 
 

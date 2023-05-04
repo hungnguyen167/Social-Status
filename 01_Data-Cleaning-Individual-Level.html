@@ -1624,16 +1624,6 @@ display: none;
 </div>
 
 
-<p><span class="math inline">\(~\)</span> <span class="math inline">\(~\)</span></p>
-<div id="nate-breznau-lisa-heukamp-hung-h.v.-nguyen" class="section level4">
-<h4><strong>Nate Breznau, Lisa Heukamp &amp; Hung H.V.
-Nguyen</strong></h4>
-</div>
-<div id="university-of-bremen" class="section level4">
-<h4><strong>University of Bremen</strong></h4>
-<hr />
-<p><span class="math inline">\(~\)</span> <span class="math inline">\(~\)</span></p>
-</div>
 <div id="individual-level-data-cleaning-file" class="section level1">
 <h1>Individual Level Data Cleaning File</h1>
 <div id="user-notes" class="section level3">
@@ -1678,19 +1668,9 @@ remotes::install_github(&quot;DiogoFerrari/occupar&quot;)</code></pre>
 <pre class="r"><code>remotes::install_github(&quot;pdparker/isco88conversion&quot;)</code></pre>
 <pre><code>## Skipping install of &#39;isco88conversion&#39; from a github remote, the SHA1 (9fc8039d) has not changed since last install.
 ##   Use `force = TRUE` to force installation</code></pre>
-<pre class="r"><code>pacman::p_load(&quot;tidyverse&quot;,&quot;occupar&quot;,&quot;isco88conversion&quot;,&quot;haven&quot;,&quot;car&quot;,&quot;plyr&quot;,&quot;e1071&quot;,&quot;MASS&quot;,&quot;brant&quot;,&quot;countrycode&quot;, &quot;Hmisc&quot;, &quot;ineq&quot;, &quot;report&quot;)</code></pre>
-<pre><code>## Installing package into &#39;C:/Users/nbreznau/AppData/Local/R/win-library/4.2&#39;
-## (as &#39;lib&#39; is unspecified)</code></pre>
-<pre><code>## Warning: unable to access index for repository http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.2:
-##   cannot open URL &#39;http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.2/PACKAGES&#39;</code></pre>
-<pre><code>## package &#39;Hmisc&#39; successfully unpacked and MD5 sums checked
-## 
-## The downloaded binary packages are in
-##  C:\Users\nbreznau\AppData\Local\Temp\RtmpI7YmBl\downloaded_packages</code></pre>
-<pre><code>## 
-## Hmisc installed</code></pre>
-<pre><code>## Warning: package &#39;Hmisc&#39; was built under R version 4.2.3</code></pre>
-<pre class="r"><code># We don&#39;t want to see messages in the final document
+<pre class="r"><code>pacman::p_load(&quot;tidyverse&quot;,&quot;occupar&quot;,&quot;isco88conversion&quot;,&quot;haven&quot;,&quot;car&quot;,&quot;plyr&quot;,&quot;e1071&quot;,&quot;MASS&quot;,&quot;brant&quot;,&quot;countrycode&quot;, &quot;Hmisc&quot;, &quot;ineq&quot;, &quot;report&quot;)
+
+# We don&#39;t want to see messages in the final document
 knitr::opts_chunk$set(message = F, warning = F)
 
 # worked up in /data/ISSP_prep.R

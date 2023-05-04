@@ -5,17 +5,7 @@ output:
     df_print: paged
 ---
 
-$~$
-$~$
 
-
-#### **Nate Breznau, Lisa Heukamp & Hung H.V. Nguyen**
-#### **University of Bremen**
-
-_____________________________________________________________________________
-
-$~$
-$~$
 
 # Individual Level Data Cleaning File
 
