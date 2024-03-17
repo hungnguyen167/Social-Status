@@ -6,7 +6,7 @@ output:
 ---
 
 
-
+## Setup
 
 ```{r setup, include=FALSE}
 library(pacman)
@@ -35,30 +35,48 @@ df_ame <- readRDS(here::here("data", "df_ame.RDS"))
 
 ## Spec Curve 
 
+### Tag preferred models
+
+Our preferred models have no additional level-2 variables to identify a clean/parsimonious moderation test. They include all individual-level controls and country-time random intercepts.
+
+```{r tag}
+df_ame <- df_ame %>%
+  mutate(pref_mods = ifelse(i_level_control == "Yes" & ri_cyear == "Yes" & ri_country == "No" & estimation == "GLM" & control_gdp == "No" & control_gini == "No" & control_socx == "No" & control_fb == "No" & mod_imputed == "No" & incdiff_within_cyear == "Yes", 1, 0),
+         pref_mods = ifelse(mod_var == "C_GDP" & i_level_control == "Yes" & ri_cyear == "Yes" & ri_country == "No" & estimation == "GLM" & control_gini == "No" & control_socx == "No" & control_fb == "No" & mod_imputed == "No" & incdiff_within_cyear == "Yes", 1, pref_mods)
+         )
+
+```
+
+### Set up plotting vars
 
 ```{r spec_by_mod_prep}
 df_ame_mod <- df_ame %>%
   mutate(mod_b_A1 = ifelse(mod_var == "A1_Corrupt_micro", mod_b, NA),
          mod_b_A2 = ifelse(mod_var == "A2_Corruption_percept", mod_b, NA),
          mod_b_B = ifelse(mod_var == "B_No_confidence", mod_b, NA),
-         mod_b_C = ifelse(mod_var == "C_GDP", mod_b, NA)) %>%
+         mod_b_C = ifelse(mod_var == "C_GDP", mod_b, NA),
+         prefs = ifelse(pref_mods == 1, mod_b, NA)) %>%
   subset(mod_var != "A1_Corrupt_micro") %>%
-  arrange(mod_var, mod_b) %>%
-  mutate(count = row_number())
+  arrange(mod_var, -mod_b) %>%
+  mutate(count = row_number(),
+         count_pref = ifelse(pref_mods == 1, count, NA)) 
 
 # In the end drop corrupt micro, it is too likely related to individuals not governments
 
-
-```
-
-
-```{r spec_by_mod_plot}
 
 mcount2 = as.numeric(length(df_ame_mod$mod_b[df_ame_mod$mod_var == "A2_Corruption_percept"]))
 mcount3 = as.numeric(length(df_ame_mod$mod_b[df_ame_mod$mod_var == "B_No_confidence"]))
 mcount4 = as.numeric(length(df_ame_mod$mod_b[df_ame_mod$mod_var == "C_GDP"]))
 
-agg_png(here::here("results","Fig4.png"), height = 600, width = 1200, res = 144)
+
+```
+
+### Plot top
+
+```{r spec_by_mod_plot}
+
+
+agg_png(here::here("results","Fig4a.png"), height = 600, width = 1200, res = 144)
 
 
 fig4 <- df_ame_mod %>%
@@ -77,18 +95,21 @@ fig4 <- df_ame_mod %>%
              #shape = "|", 
              shape = 16,
              size = 2, show.legend =F) +
+  geom_point(aes(x = count, y = prefs), color = "black",
+            shape = 16,
+            size = 2.75, show.legend =F) +
   geom_vline(xintercept = mcount2, color = "grey", linetype = "dashed") +
   geom_vline(xintercept = mcount2+mcount3, color = "grey", linetype = "dashed") +
-  geom_hline(yintercept = 0, color = "grey") +
+  #geom_hline(yintercept = 0, color = "grey") +
   labs(#color = "Effect at 95% CI", 
     x = "", 
     y = "Moderation Coefficient\n(XY-standardized)") +
   ylim(-0.12,0.03) +
   #xlim(0,338) +
   scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
-  annotate(geom = "text", x = mcount2/2, y = 0.02, label = "Corruption perceptions\n(CPI)", color = "#28ae80", size = 3.5) +
-  annotate(geom = "text", x = mcount2+(mcount3/2), y = 0.02, label = "Lack of Trust\n in Government (IVS)", color = "#2c728e", size = 3.5) +
-  annotate(geom = "text", x = mcount2+mcount3+(mcount4/2), y = 0.02, label = "Lower Economic\nPerformance\n(OECD/GDPpc)", color = "#453781FF", size = 3.5) +
+  annotate(geom = "text", x = mcount2/2, y = 0.01, label = "Corruption\nPerceptions\n(CPI)", color = "#28ae80", size = 3.5) +
+  annotate(geom = "text", x = mcount2+(mcount3/2), y = 0.01, label = "Lack of Trust\n in Government\n(IVS)", color = "#2c728e", size = 3.5) +
+  annotate(geom = "text", x = mcount2+mcount3+(mcount4/2), y = 0.01, label = "Lower GDP\nPer Capita\n(OECD)", color = "#453781FF", size = 3.5) +
   theme_classic() +
   theme(
     axis.title.x = element_blank(),
@@ -97,8 +118,11 @@ fig4 <- df_ame_mod %>%
 fig4
 dev.off()
 
-knitr::include_graphics(here::here("results","Fig4.png"))
+knitr::include_graphics(here::here("results","Fig4a.png"))
 ```
+
+
+### Plot bottom
 
 ```{r fig4_bottom}
 ivlabs <- c("GDP\n  interaction", "GDP\ncontrol", "Gini\ncontrol", "SocX\ncontrol", "% F.Born\ncontrol", "Imputed\nmoderator")
@@ -106,14 +130,23 @@ ivlabs <- c("GDP\n  interaction", "GDP\ncontrol", "Gini\ncontrol", "SocX\ncontro
 fig4_bot <- ggplot(df_ame_mod) +
   geom_vline(xintercept = mcount2, color = "grey", linetype = "dashed") +
   geom_vline(xintercept = mcount2+mcount3, color = "grey", linetype = "dashed") +
+  # when there are only "No" it defaults to "black" for some reason, just delete them for "No" (everything but gdp and)
   geom_tile(aes(x = count, y = 1, fill = factor(gdp_m_interaction)), height = 0.133, width = 0.3) +
   geom_tile(aes(x = count, y = 0.8, fill = factor(control_gdp)), height = 0.133, width = 0.3) +
   geom_tile(aes(x = count, y = 0.6, fill = factor(control_gini)), height = 0.133, width = 0.3) +
   geom_tile(aes(x = count, y = 0.4, fill = factor(control_socx)), height = 0.133, width = 0.3) +
   geom_tile(aes(x = count, y = 0.2, fill = factor(control_fb)), height = 0.133, width = 0.3) +
   geom_tile(aes(x = count, y = 0, fill = factor(mod_imputed)), height = 0.133, width = 0.3) +
+  # preferred models
+  geom_point(aes(x = count_pref, y = 1, color = factor(gdp_m_interaction)), size = 7, shape = "|") +
+  geom_point(aes(x = count_pref, y = 0.8, color = factor(control_gdp)), size = 7, shape = "|") +
+  geom_point(aes(x = count_pref, y = 0.6, color = factor(control_gini)), size = 7, shape = "|") +
+  geom_point(aes(x = count_pref, y = 0.4, color = factor(control_socx)), size = 7, shape = "|") +
+  geom_point(aes(x = count_pref, y = 0.2, color = factor(control_fb)), size = 7, shape = "|") +
+  geom_point(aes(x = count_pref, y = 0, color = factor(mod_imputed)), size = 7, shape = "|") +
   scale_y_continuous(breaks = c(1,0.8,0.6,0.4,0.2,0), labels=ivlabs) +
   scale_fill_manual(values = c("white","darkblue")) +
+  scale_color_manual(values = c("No" = "white", "Yes" = "black")) +
     theme_classic() +
   scale_x_continuous(expand = expansion(mult = c(0.005, 0.005))) +
   xlab("Models Ordered by Government Heuristic\nand Moderation Coefficient (Y11)") +
@@ -124,18 +157,27 @@ fig4_bot
 ```
 
 ```{r}
-agg_png(here::here("results","Fig6.png"), height = 800, width = 1200, res = 144)
+agg_png(here::here("results","Fig4.png"), height = 750, width = 1300, res = 144)
 ggarrange(fig4,fig4_bot, heights = c(0.8,1), ncol = 1)
 dev.off()
 
-knitr::include_graphics(here::here("results", "Fig6.png"))
+knitr::include_graphics(here::here("results", "Fig4.png"))
 ```
+## Table of specs and results
+
+```{r res_table}
+res_out <- df_ame_mod %>%
+  dplyr::select(c(mod_b:incdiff_within_cyear,pref_mods))
+
+write_csv(res_out, file = here::here("results", "res_table.csv"))
+```
+
 ### Bayes spec curve
 
 ```{r bayes}
 mcount = length(df_ame_mod[,1])/4 # counter to make vertical bars
 
-#agg_png(here::here("results","Fig4.png"), height = 600, width = 1200, res = 144)
+#agg_png(here::here("results","Fig4b.png"), height = 600, width = 1200, res = 144)
 fig4 <- df_ame_mod %>%
   ggplot() +
   #geom_errorbar(aes(ymin = lb, ymax = ub), color = "thistle1") +
@@ -182,7 +224,7 @@ fig4 <- df_ame_mod %>%
 
 #dev.off()
 
-#knitr::include_graphics(here::here("results","Fig4.png"))
+#knitr::include_graphics(here::here("results","Fig4b.png"))
 ```
 
 Colophon
