@@ -1,6 +1,13 @@
 # The Moderating Role of Government Heuristics in Public Preferences for Redistribution
 
-Anonymous version
+Forthcoming in *Journal of European Social Policy*. [Working paper](https://osf.io/preprints/socarxiv/wcqjz)
+
+Nate Breznau 1<br>
+Lisa Heukamp 1<br>
+Hung H.V. Nguyen 1<br>
+Tom Knuf 2 <br>
+
+1 University of Bremen, 2 University of Freiburg
 
 
 ## Note to Users
