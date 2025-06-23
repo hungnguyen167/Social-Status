@@ -1,6 +1,6 @@
 # The Moderating Role of Government Heuristics in Public Preferences for Redistribution
 
-Forthcoming in *Journal of European Social Policy*. [Working paper](https://osf.io/preprints/socarxiv/wcqjz)
+Published in *Journal of European Social Policy*. [Open Access](https://journals.sagepub.com/doi/full/10.1177/09589287241290742)
 
 Nate Breznau 1<br>
 Lisa Heukamp 1<br>
